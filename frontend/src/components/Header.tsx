@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Sparkles, RefreshCw, Bell, ShieldCheck, Database, 
+  Sparkles, RefreshCw, ShieldCheck, Database, 
   Terminal, CheckCircle2, AlertTriangle, ExternalLink,
   Lock, Download
 } from 'lucide-react';
@@ -11,8 +11,6 @@ interface HeaderProps {
   settings: PlatformSettings | null;
   onRefreshDiscovery: () => void;
   isSyncing: boolean;
-  unreadNotificationsCount: number;
-  onToggleNotifications: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLock?: () => void;
@@ -25,8 +23,6 @@ export const Header: React.FC<HeaderProps> = ({
   settings,
   onRefreshDiscovery,
   isSyncing,
-  unreadNotificationsCount,
-  onToggleNotifications,
   activeTab,
   setActiveTab,
   onLock,
@@ -101,19 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Live'}</span>
             </button>
 
-            {/* Notifications Bell */}
-            <button
-              onClick={onToggleNotifications}
-              className="relative h-9 w-9 rounded-xl bg-[#080808] border border-white/15 text-neutral-300 hover:text-white hover:border-white/40 hover:bg-neutral-900 transition flex items-center justify-center active:scale-95 shadow-sm"
-              title="View recorded system events"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-white text-black font-extrabold text-[10px] rounded-full flex items-center justify-center shadow-lg border border-black animate-pulse">
-                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
-                </span>
-              )}
-            </button>
+
 
             {/* Lock Button */}
             {onLock && (

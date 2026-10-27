@@ -330,10 +330,6 @@ export function App() {
           settings={settings}
           onRefreshDiscovery={handleSyncAll}
           isSyncing={isSyncing}
-          unreadNotificationsCount={unreadNotificationsCount}
-          onToggleNotifications={() => {
-            setIsNotificationsOpen(!isNotificationsOpen);
-          }}
           activeTab={activeTab}
           setActiveTab={setActiveTab as any}
           onLock={api.logout}
