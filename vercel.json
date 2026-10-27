@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "if [ -d \"frontend\" ]; then (cd frontend && npm run build) && cp -r frontend/dist ./dist; else npm run build && mkdir -p frontend && cp -r dist frontend/dist; fi",
-  "outputDirectory": "frontend/dist",
-  "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

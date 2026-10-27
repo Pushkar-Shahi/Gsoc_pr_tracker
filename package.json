@@ -2,6 +2,7 @@
   "name": "issue-to-pr-platform",
   "private": true,
   "scripts": {
-    "build": "if [ -d \"frontend\" ]; then (cd frontend && npm run build) && cp -r frontend/dist ./dist; else npm run build && mkdir -p frontend && cp -r dist frontend/dist; fi"
+    "build": "npm --prefix frontend run build",
+    "postinstall": "npm --prefix frontend install"
   }
 }
