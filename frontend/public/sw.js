@@ -1,7 +1,5 @@
-const CACHE_NAME = 'issuetopr-v2';
+const CACHE_NAME = 'issuetopr-v5';
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icons/icon-192.png',
@@ -9,24 +7,25 @@ const PRECACHE_ASSETS = [
   '/icons/icon-maskable-512.png',
 ];
 
-// Install: precache app shell
+// Install: precache static app icons only (never index.html or chunk files)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        console.warn('Precache partial warning:', err);
+        console.warn('[SW] Precache partial warning:', err);
       });
     }).then(() => self.skipWaiting())
   );
 });
 
-// Activate: cleanup old caches
+// Activate: purge all obsolete caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', key);
             return caches.delete(key);
           }
         })
@@ -35,7 +34,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Network-first for APIs, Cache-first for assets
+// Fetch: Smart network-first navigation & safe asset caching
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -49,12 +48,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Clone and cache successful API responses
           if (response.status === 200) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return response;
         })
@@ -70,28 +66,51 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static Assets: Cache First with network fallback
+  // Navigation requests (HTML pages): ALWAYS Network First
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          return new Response('You are currently offline. Please reconnect to access the latest version.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        })
+    );
+    return;
+  }
+
+  // Static Assets: Network-first for hashed bundles to avoid stale chunk mismatches
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-      return fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
+        // Guard: Don't cache HTML responses for .js or .css requests (Vercel rewrite 404 guard)
+        const isScriptOrStyle = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+        const isHtml = response.headers.get('content-type')?.includes('text/html');
+
+        if (isScriptOrStyle && isHtml) {
+          return new Response('Asset not found', { status: 404 });
+        }
+
         if (response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      });
-    }).catch(async () => {
-      // Return offline fallback for navigation requests
-      if (event.request.mode === 'navigate') {
-        const indexCached = await caches.match('/index.html');
-        if (indexCached) return indexCached;
-      }
-      return new Response('Network error occurred.', { status: 408 });
-    })
+      })
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        return new Response('Asset unavailable offline', { status: 404 });
+      })
   );
 });
