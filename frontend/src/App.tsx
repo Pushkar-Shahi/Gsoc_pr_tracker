@@ -160,13 +160,6 @@ export function App() {
     };
   }, [loadInitialData, loadIssues]);
 
-  // Ensure issues load if user opens issues tab and issues are empty
-  useEffect(() => {
-    if (activeTab === 'issues' && issues.length === 0 && !loadingIssues) {
-      loadIssues(issueFilters, pageSize);
-    }
-  }, [activeTab, issues.length, loadingIssues, issueFilters, pageSize, loadIssues]);
-
   const handleInstallPWA = async () => {
     const accepted = await promptPWAInstall();
     if (accepted) {
