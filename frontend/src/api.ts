@@ -1380,14 +1380,44 @@ export async function cancelTask(taskId: string): Promise<Task> {
 }
 
 export async function syncPRStatus(taskId: string): Promise<Task> {
-  const res = await authedFetch(`${API_BASE}/tasks/${taskId}/pr/sync`, {
-    method: 'POST',
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to sync PR status');
+  try {
+    const res = await authedFetch(`${API_BASE}/tasks/${taskId}/pr/sync`, {
+      method: 'POST',
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
   }
-  return res.json();
+
+  const tasks = getLocalTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) throw new Error(`Task ${taskId} not found`);
+
+  if (task.pr_url) {
+    const match = task.pr_url.match(/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/i);
+    if (match) {
+      try {
+        const ghHeaders: Record<string, string> = { 'Accept': 'application/vnd.github.v3+json' };
+        const token = getCustomGitHubToken();
+        if (token) ghHeaders['Authorization'] = `token ${token}`;
+
+        const res = await fetch(`https://api.github.com/repos/${match[1]}/${match[2]}/pulls/${match[3]}`, { headers: ghHeaders });
+        if (res.ok) {
+          const data = await res.json();
+          task.pr_state = data.state;
+          task.pr_merged = data.merged || false;
+          if (data.merged || data.state === 'closed') {
+            task.workflow_state = 'MERGED_OR_CLOSED';
+          }
+          task.updated_at = new Date().toISOString();
+          saveLocalTasks(tasks);
+          return task;
+        }
+      } catch {}
+    }
+  }
+
+  return task;
 }
 
 export async function fetchSettings(): Promise<PlatformSettings> {
@@ -1403,7 +1433,7 @@ export async function fetchSettings(): Promise<PlatformSettings> {
   }
   return {
     github_token_configured: !!getCustomGitHubToken(),
-    github_username: localStorage.getItem('issuetopr_gh_user') || 'contributor',
+    github_username: localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi',
     auto_publish_pr: false,
     workspace_root: '~/workspace/issue-to-pr',
     skills_profile: ['python', 'pytorch', 'react', 'numpy', 'scipy', 'deepchem'],
@@ -1434,7 +1464,7 @@ export async function updateSettings(settings: Partial<PlatformSettings> & { git
 
   const updated: PlatformSettings = {
     github_token_configured: !!getCustomGitHubToken(),
-    github_username: settings.github_username || 'contributor',
+    github_username: settings.github_username || localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi',
     auto_publish_pr: settings.auto_publish_pr ?? false,
     workspace_root: settings.workspace_root || '~/workspace/issue-to-pr',
     skills_profile: settings.skills_profile || ['python', 'react', 'pytorch', 'numpy'],
@@ -1446,17 +1476,15 @@ export async function updateSettings(settings: Partial<PlatformSettings> & { git
   return updated;
 }
 
-export async function fetchAuditLogs(taskId?: string, action?: string): Promise<AuditLog[]> {
+const AUDIT_LOGS_KEY = 'issuetopr_audit_logs';
+const TASKS_KEY = 'issuetopr_tasks';
+
+function getLocalAuditLogs(): AuditLog[] {
   try {
-    const query = new URLSearchParams();
-    if (taskId) query.set('task_id', taskId);
-    if (action) query.set('action', action);
-    const res = await authedFetch(`${API_BASE}/audit-logs?${query.toString()}`);
-    if (res.ok) return await res.json();
-  } catch {
-    // Hosted Vercel fallback
-  }
-  return [
+    const raw = localStorage.getItem(AUDIT_LOGS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  const initial: AuditLog[] = [
     {
       id: 'init-1',
       action: 'CRON_DISCOVERY_COMPLETED',
@@ -1468,61 +1496,287 @@ export async function fetchAuditLogs(taskId?: string, action?: string): Promise<
         organizations: ['NumFOCUS', 'Python Software Foundation', 'DeepChem', 'Kornia'],
         priority_ordering: 'Strict Reverse Chronological Order'
       },
-      created_at: new Date().toISOString()
+      created_at: new Date(Date.now() - 3600000).toISOString()
     }
   ];
+  try {
+    localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(initial));
+  } catch {}
+  return initial;
+}
+
+function saveLocalAuditLog(log: AuditLog) {
+  try {
+    const current = getLocalAuditLogs();
+    const updated = [log, ...current.filter(l => l.id !== log.id)].slice(0, 100);
+    localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
+function getLocalTasks(): Task[] {
+  try {
+    const raw = localStorage.getItem(TASKS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function saveLocalTasks(tasks: Task[]) {
+  try {
+    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+  } catch {}
+}
+
+export async function fetchAuditLogs(taskId?: string, action?: string): Promise<AuditLog[]> {
+  try {
+    const query = new URLSearchParams();
+    if (taskId) query.set('task_id', taskId);
+    if (action) query.set('action', action);
+    const res = await authedFetch(`${API_BASE}/audit-logs?${query.toString()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {
+    // Hosted Vercel fallback
+  }
+  return getLocalAuditLogs();
 }
 
 export async function clearAuditLogs(): Promise<{ status: string; cleared: number }> {
-  const res = await authedFetch(`${API_BASE}/audit-logs`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error(`Failed to clear audit logs: ${res.statusText}`);
-  return res.json();
+  try {
+    const res = await authedFetch(`${API_BASE}/audit-logs`, {
+      method: 'DELETE',
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
+  }
+  const logs = getLocalAuditLogs();
+  try {
+    localStorage.removeItem(AUDIT_LOGS_KEY);
+  } catch {}
+  return { status: 'success', cleared: logs.length };
 }
 
 export async function deleteAuditLog(logId: string): Promise<{ status: string; deleted_id: string }> {
-  const res = await authedFetch(`${API_BASE}/audit-logs/${logId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error(`Failed to delete notification: ${res.statusText}`);
-  return res.json();
+  try {
+    const res = await authedFetch(`${API_BASE}/audit-logs/${logId}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
+  }
+  const logs = getLocalAuditLogs();
+  const updated = logs.filter(l => l.id !== logId);
+  try {
+    localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(updated));
+  } catch {}
+  return { status: 'success', deleted_id: logId };
 }
 
-
 export async function trackItem(url: string): Promise<Task> {
-  const res = await authedFetch(`${API_BASE}/tracker/track`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to track item.');
+  try {
+    const res = await authedFetch(`${API_BASE}/tracker/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
   }
-  return res.json();
+
+  const trimmed = url.trim();
+  const prMatch = trimmed.match(/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/i);
+  const issueMatch = trimmed.match(/github\.com\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/i);
+
+  if (!prMatch && !issueMatch) {
+    throw new Error('Please provide a valid GitHub Issue or Pull Request URL.');
+  }
+
+  const isPR = !!prMatch;
+  const owner = isPR ? prMatch![1] : issueMatch![1];
+  const repo = isPR ? prMatch![2] : issueMatch![2];
+  const number = parseInt(isPR ? prMatch![3] : issueMatch![3], 10);
+
+  const ghHeaders: Record<string, string> = {
+    'Accept': 'application/vnd.github.v3+json',
+  };
+  const token = getCustomGitHubToken();
+  if (token) ghHeaders['Authorization'] = `token ${token}`;
+
+  let itemData: any = null;
+  const apiEndpoint = isPR 
+    ? `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`
+    : `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
+
+  try {
+    const res = await fetch(apiEndpoint, { headers: ghHeaders });
+    if (res.ok) itemData = await res.json();
+  } catch {}
+
+  const title = itemData?.title || `${owner}/${repo} #${number}`;
+  const state = itemData?.state || 'open';
+  const merged = itemData?.merged || false;
+  const createdAt = itemData?.created_at || new Date().toISOString();
+  const updatedAt = itemData?.updated_at || new Date().toISOString();
+
+  const task: Task = {
+    id: `task-${Date.now()}-${number}`,
+    issue_id: `item-${owner}-${repo}-${number}`,
+    workflow_state: merged || state === 'closed' ? 'MERGED_OR_CLOSED' : (isPR ? 'PR_CREATED' : 'ASSIGNMENT_APPROVED'),
+    remote_name: 'origin',
+    assignment_required: false,
+    user_approved_assignment: true,
+    maintainer_approved: true,
+    pr_number: isPR ? number : undefined,
+    pr_url: isPR ? trimmed : undefined,
+    pr_state: state,
+    pr_merged: merged,
+    pr_ci_status: 'success',
+    pr_review_status: 'PENDING',
+    created_at: createdAt,
+    updated_at: updatedAt,
+    issue: {
+      id: `item-${owner}-${repo}-${number}`,
+      repository_id: `repo-${owner}-${repo}`,
+      github_id: number,
+      issue_number: number,
+      title: title,
+      body: itemData?.body || '',
+      state: state,
+      html_url: trimmed,
+      author: itemData?.user?.login || 'contributor',
+      labels: [],
+      assignees: [],
+      comments_count: itemData?.comments || 0,
+      github_created_at: createdAt,
+      is_eligible: true,
+      license_status: 'verified',
+      policy_status: 'eligible',
+      ranking_score: 90,
+      difficulty_estimate: 'intermediate',
+      estimated_effort_hours: 4,
+      repository: {
+        id: `repo-${owner}-${repo}`,
+        owner: owner,
+        name: repo,
+        full_name: `${owner}/${repo}`,
+        html_url: `https://github.com/${owner}/${repo}`,
+        default_branch: 'main',
+        primary_language: 'Python',
+        stars_count: 100,
+        open_issues_count: 10,
+        is_fork: false,
+        is_archived: false,
+        license_spdx: 'Apache-2.0'
+      }
+    }
+  };
+
+  const tasks = getLocalTasks();
+  const updated = [task, ...tasks.filter(t => t.id !== task.id && t.pr_url !== trimmed && t.issue?.html_url !== trimmed)];
+  saveLocalTasks(updated);
+
+  saveLocalAuditLog({
+    id: `track-${Date.now()}`,
+    action: isPR ? 'TRACKER_PR_ADDED' : 'TRACKER_ISSUE_ADDED',
+    actor: 'User',
+    task_id: task.id,
+    details: {
+      url: trimmed,
+      title: title,
+      number: number
+    },
+    created_at: new Date().toISOString()
+  });
+
+  return task;
 }
 
 export async function syncAllTracker(): Promise<{ status: string; synced_prs: number; synced_issues: number; total_active: number }> {
-  const res = await authedFetch(`${API_BASE}/tracker/sync-all`, {
-    method: 'POST',
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to sync tracked items.');
+  try {
+    const res = await authedFetch(`${API_BASE}/tracker/sync-all`, {
+      method: 'POST',
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
   }
-  return res.json();
+
+  const tasks = getLocalTasks();
+  let syncedPrs = 0;
+  let syncedIssues = 0;
+
+  const ghHeaders: Record<string, string> = {
+    'Accept': 'application/vnd.github.v3+json',
+  };
+  const token = getCustomGitHubToken();
+  if (token) ghHeaders['Authorization'] = `token ${token}`;
+
+  const updatedTasks = await Promise.all(tasks.map(async (task) => {
+    if (task.pr_url) {
+      syncedPrs++;
+      const match = task.pr_url.match(/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/i);
+      if (match) {
+        try {
+          const res = await fetch(`https://api.github.com/repos/${match[1]}/${match[2]}/pulls/${match[3]}`, { headers: ghHeaders });
+          if (res.ok) {
+            const data = await res.json();
+            return {
+              ...task,
+              pr_state: data.state,
+              pr_merged: data.merged || false,
+              workflow_state: (data.merged || data.state === 'closed') ? ('MERGED_OR_CLOSED' as const) : task.workflow_state,
+              updated_at: new Date().toISOString()
+            };
+          }
+        } catch {}
+      }
+    } else if (task.issue?.html_url) {
+      syncedIssues++;
+    }
+    return task;
+  }));
+
+  saveLocalTasks(updatedTasks);
+
+  saveLocalAuditLog({
+    id: `sync-${Date.now()}`,
+    action: 'TRACKER_SYNC_ALL',
+    actor: 'Live GitHub Monitor',
+    details: {
+      synced_prs: syncedPrs,
+      synced_issues: syncedIssues,
+      total_active: updatedTasks.length
+    },
+    created_at: new Date().toISOString()
+  });
+
+  return {
+    status: 'success',
+    synced_prs: syncedPrs,
+    synced_issues: syncedIssues,
+    total_active: updatedTasks.length
+  };
 }
 
 export async function untrackItem(taskId: string): Promise<{ status: string; message: string }> {
-  const res = await authedFetch(`${API_BASE}/tracker/${taskId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to untrack item.');
+  try {
+    const res = await authedFetch(`${API_BASE}/tracker/${taskId}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
   }
-  return res.json();
+
+  const tasks = getLocalTasks();
+  const updated = tasks.filter(t => t.id !== taskId);
+  saveLocalTasks(updated);
+  return { status: 'success', message: 'Item untracked.' };
 }
 
 export async function fetchTrackerStats(): Promise<{
@@ -1532,20 +1786,46 @@ export async function fetchTrackerStats(): Promise<{
   prs_changes_requested: number;
   issues_tracked: number;
 }> {
-  const res = await authedFetch(`${API_BASE}/tracker/stats`);
-  if (!res.ok) throw new Error('Failed to fetch tracker stats.');
-  return res.json();
+  try {
+    const res = await authedFetch(`${API_BASE}/tracker/stats`);
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
+  }
+
+  const tasks = getLocalTasks();
+  const prs = tasks.filter(t => Boolean(t.pr_url || t.pr_number));
+  return {
+    total_tracked: tasks.length,
+    prs_open: prs.filter(p => p.pr_state === 'open' && !p.pr_merged).length,
+    prs_merged: prs.filter(p => p.pr_merged || p.pr_state === 'closed').length,
+    prs_changes_requested: prs.filter(p => p.pr_review_status === 'CHANGES_REQUESTED').length,
+    issues_tracked: tasks.filter(t => !t.pr_url && !t.pr_number).length
+  };
 }
 
 export async function removeAllTracked(scope: 'all' | 'merged' | 'issues' | 'prs' = 'all'): Promise<{ status: string; removed: number; scope: string }> {
-  const res = await authedFetch(`${API_BASE}/tracker/all?scope=${scope}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to remove tracked items.');
+  try {
+    const res = await authedFetch(`${API_BASE}/tracker/all?scope=${scope}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    // Hosted Vercel fallback
   }
-  return res.json();
+
+  const tasks = getLocalTasks();
+  let remaining: Task[] = [];
+  if (scope === 'merged') {
+    remaining = tasks.filter(t => !t.pr_merged && t.pr_state !== 'closed');
+  } else if (scope === 'issues') {
+    remaining = tasks.filter(t => Boolean(t.pr_url || t.pr_number));
+  } else if (scope === 'prs') {
+    remaining = tasks.filter(t => !t.pr_url && !t.pr_number);
+  }
+  const removed = tasks.length - remaining.length;
+  saveLocalTasks(remaining);
+  return { status: 'success', removed, scope };
 }
 
 export async function importAuthorPRs(username?: string): Promise<{
@@ -1554,15 +1834,155 @@ export async function importAuthorPRs(username?: string): Promise<{
   found_on_github: number;
   imported: number;
 }> {
-  const query = username ? `?username=${encodeURIComponent(username)}` : '';
-  const res = await authedFetch(`${API_BASE}/tracker/import-author${query}`, {
-    method: 'POST',
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to import author pull requests.');
+  let targetUser = username?.trim();
+  if (!targetUser) {
+    targetUser = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
   }
-  return res.json();
+  try {
+    localStorage.setItem('issuetopr_gh_user', targetUser);
+  } catch {}
+
+  try {
+    const query = `?username=${encodeURIComponent(targetUser)}`;
+    const res = await authedFetch(`${API_BASE}/tracker/import-author${query}`, {
+      method: 'POST',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch {
+    // Hosted Vercel fallback
+  }
+
+  // Client-side GitHub Search API Query
+  const searchUrl = `https://api.github.com/search/issues?q=author:${encodeURIComponent(targetUser)}+type:pr&per_page=50`;
+  const ghHeaders: Record<string, string> = {
+    'Accept': 'application/vnd.github.v3+json',
+  };
+  const token = getCustomGitHubToken();
+  if (token) {
+    ghHeaders['Authorization'] = `token ${token}`;
+  }
+
+  let items: any[] = [];
+  try {
+    const ghRes = await fetch(searchUrl, { headers: ghHeaders });
+    if (!ghRes.ok) {
+      const err = await ghRes.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub Search returned HTTP ${ghRes.status}`);
+    }
+    const data = await ghRes.json();
+    items = data.items || [];
+  } catch (err: any) {
+    throw new Error(`Failed to search GitHub for @${targetUser}: ${err.message}`);
+  }
+
+  const existingTasks = getLocalTasks();
+  let importedCount = 0;
+  const newTasks: Task[] = [...existingTasks];
+
+  for (const item of items) {
+    const prUrl = item.html_url;
+    if (!prUrl) continue;
+
+    const match = prUrl.match(/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/i);
+    const owner = match ? match[1] : 'upstream';
+    const repo = match ? match[2] : 'project';
+    const prNumber = item.number;
+
+    const isClosed = item.state === 'closed';
+    const workflowState: Task['workflow_state'] = isClosed ? 'MERGED_OR_CLOSED' : 'PR_CREATED';
+
+    const existingIndex = newTasks.findIndex(t => 
+      t.pr_url === prUrl || 
+      (t.pr_number === prNumber && t.issue?.repository?.full_name?.toLowerCase() === `${owner}/${repo}`.toLowerCase())
+    );
+
+    const taskObj: Task = {
+      id: existingIndex >= 0 ? newTasks[existingIndex].id : `task-gh-pr-${item.id}`,
+      issue_id: `gh-pr-${item.id}`,
+      workflow_state: workflowState,
+      remote_name: 'origin',
+      assignment_required: false,
+      user_approved_assignment: true,
+      maintainer_approved: true,
+      pr_number: prNumber,
+      pr_url: prUrl,
+      pr_state: item.state,
+      pr_merged: isClosed,
+      pr_ci_status: 'success',
+      pr_review_status: isClosed ? 'APPROVED' : 'PENDING',
+      pr_review_comments: [],
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      issue: {
+        id: `gh-pr-${item.id}`,
+        repository_id: `repo-${owner}-${repo}`,
+        github_id: item.id,
+        issue_number: prNumber,
+        title: item.title,
+        body: item.body || '',
+        state: item.state,
+        html_url: prUrl,
+        author: item.user?.login || targetUser,
+        labels: (item.labels || []).map((l: any) => l.name || l),
+        assignees: item.assignees || [],
+        comments_count: item.comments || 0,
+        github_created_at: item.created_at,
+        is_eligible: true,
+        license_status: 'verified',
+        policy_status: 'eligible',
+        ranking_score: 95,
+        difficulty_estimate: 'intermediate',
+        estimated_effort_hours: 4,
+        repository: {
+          id: `repo-${owner}-${repo}`,
+          owner: owner,
+          name: repo,
+          full_name: `${owner}/${repo}`,
+          html_url: `https://github.com/${owner}/${repo}`,
+          default_branch: 'main',
+          primary_language: 'Python',
+          stars_count: 1000,
+          open_issues_count: 50,
+          is_fork: false,
+          is_archived: false,
+          license_spdx: 'Apache-2.0'
+        }
+      }
+    };
+
+    if (existingIndex >= 0) {
+      newTasks[existingIndex] = { ...newTasks[existingIndex], ...taskObj };
+    } else {
+      newTasks.unshift(taskObj);
+      importedCount++;
+    }
+  }
+
+  saveLocalTasks(newTasks);
+
+  saveLocalAuditLog({
+    id: `import-${Date.now()}`,
+    action: 'TRACKER_AUTHOR_IMPORTED',
+    actor: `@${targetUser}`,
+    task_id: undefined,
+    details: {
+      username: targetUser,
+      found: items.length,
+      imported: importedCount,
+      message: `Imported ${items.length} pull requests authored by @${targetUser} from GitHub.`
+    },
+    created_at: new Date().toISOString()
+  });
+
+  return {
+    status: 'success',
+    username: targetUser,
+    found_on_github: items.length,
+    imported: importedCount
+  };
 }
 
 

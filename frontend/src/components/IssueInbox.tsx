@@ -487,16 +487,16 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     </span>
                   </div>
 
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">License:</span>
-                    <span className="text-cyan-400">
+                  <div className="bg-[#000000] px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center justify-between">
+                    <span className="text-neutral-400">License:</span>
+                    <span className="text-white font-medium">
                       {importSuccessResult.conditions_checked.license_spdx || 'OSI Verified ✓'}
                     </span>
                   </div>
 
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">Toolbox Match:</span>
-                    <span className="text-emerald-400">
+                  <div className="bg-[#000000] px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center justify-between">
+                    <span className="text-neutral-400">Toolbox Match:</span>
+                    <span className="text-white font-medium">
                       {importSuccessResult.conditions_checked.skill_match?.length > 0
                         ? importSuccessResult.conditions_checked.skill_match.join(', ')
                         : 'General Scope'}
@@ -870,7 +870,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             </span>
           )}
           {reconcileFeedback && (
-            <span className="text-[11px] text-cyan-400 font-mono">
+            <span className="text-[11px] text-white font-mono bg-neutral-900 px-2.5 py-0.5 rounded-full border border-white/20">
               {reconcileFeedback}
             </span>
           )}
@@ -1094,16 +1094,16 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
       {/* Load More & Infinite Scroll Section */}
       {!loading && issues.length > 0 && (
-        <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800/80">
+        <div className="bg-[#000000] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-white">Issues Explorer Progress</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/40 font-mono">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-white border border-white/20 font-mono">
                   {issues.length} / {totalIssues.toLocaleString()} Loaded ({progressPercent}%)
                 </span>
               </div>
-              <p className="text-[11px] text-gray-400 mt-0.5">
+              <p className="text-[11px] text-neutral-400 mt-0.5">
                 {hasMore 
                   ? `${(totalIssues - issues.length).toLocaleString()} more public issues match your criteria` 
                   : 'All available matching issues have been loaded'}
@@ -1112,8 +1112,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
             <div className="flex items-center gap-3 text-xs">
               {/* Batch Size Selector */}
-              <div className="flex items-center gap-1.5 bg-[#0b0f19] border border-gray-800 rounded-xl px-2.5 py-1">
-                <span className="text-gray-400 text-[11px]">Batch:</span>
+              <div className="flex items-center gap-1.5 bg-[#080808] border border-white/15 rounded-xl px-2.5 py-1">
+                <span className="text-neutral-400 text-[11px]">Batch:</span>
                 {[25, 50, 100].map(size => (
                   <button
                     key={size}
@@ -1121,8 +1121,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     onClick={() => onPageSizeChange && onPageSizeChange(size)}
                     className={`px-2 py-0.5 rounded-lg text-xs font-medium transition ${
                       pageSize === size
-                        ? 'bg-emerald-500/20 text-emerald-300 font-bold'
-                        : 'text-gray-400 hover:text-white'
+                        ? 'bg-white text-black font-bold shadow-sm'
+                        : 'text-neutral-400 hover:text-white'
                     }`}
                   >
                     {size}
@@ -1136,21 +1136,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 onClick={() => setAutoLoad(!autoLoad)}
                 className={`px-3 py-1 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 ${
                   autoLoad
-                    ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-white'
+                    ? 'bg-neutral-900 text-white border-white/30'
+                    : 'bg-[#080808] text-neutral-400 border-white/10 hover:text-white'
                 }`}
                 title="Automatically fetch next batch when scrolling near the bottom"
               >
-                <span className={`w-2 h-2 rounded-full ${autoLoad ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${autoLoad ? 'bg-white animate-pulse' : 'bg-neutral-600'}`} />
                 <span>Auto-load: {autoLoad ? 'ON' : 'OFF'}</span>
               </button>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-[#0b0f19] rounded-full h-2 overflow-hidden border border-gray-800">
+          <div className="w-full bg-neutral-900 rounded-full h-2 overflow-hidden border border-white/15">
             <div 
-              className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full transition-all duration-300 rounded-full"
+              className="bg-white h-full transition-all duration-300 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.7)]"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -1162,26 +1162,26 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 type="button"
                 onClick={onLoadMore}
                 disabled={loadingMore}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white hover:bg-neutral-200 text-black font-extrabold text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loadingMore ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Loading next batch of issues...</span>
+                    <RefreshCw className="w-4 h-4 animate-spin text-black" />
+                    <span className="text-black">Loading next batch of issues...</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4" />
-                    <span>Load More Issues (+{pageSize || 25})</span>
-                    <span className="text-[11px] opacity-80 font-normal">
+                    <Plus className="w-4 h-4 text-black" />
+                    <span className="text-black">Load More Issues (+{pageSize || 25})</span>
+                    <span className="text-[11px] text-neutral-700 font-semibold">
                       ({(totalIssues - issues.length).toLocaleString()} remaining)
                     </span>
                   </>
                 )}
               </button>
             ) : (
-              <div className="py-2 text-center text-xs text-gray-400 flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className="py-2 text-center text-xs text-neutral-300 flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-white" />
                 <span>All {totalIssues.toLocaleString()} open unassigned issues loaded cleanly.</span>
               </div>
             )}
@@ -1197,10 +1197,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 left-6 z-40 px-3.5 py-2 rounded-2xl bg-[#111827]/90 hover:bg-[#1f2937] text-gray-300 hover:text-white border border-gray-700/80 shadow-2xl backdrop-blur-md text-xs font-semibold transition flex items-center gap-1.5 active:scale-95"
+          className="fixed bottom-6 left-6 z-40 px-3.5 py-2 rounded-2xl bg-[#000000]/95 hover:bg-[#111111] text-white border border-white/20 shadow-2xl backdrop-blur-md text-xs font-semibold transition flex items-center gap-1.5 active:scale-95"
           title="Scroll back to top"
         >
-          <ArrowUp className="w-3.5 h-3.5 text-cyan-400" />
+          <ArrowUp className="w-3.5 h-3.5 text-white" />
           <span>Back to Top</span>
         </button>
       )}

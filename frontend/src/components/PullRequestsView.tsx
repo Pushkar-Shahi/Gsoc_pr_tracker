@@ -3,7 +3,7 @@ import {
   GitPullRequest, ExternalLink, CheckCircle2, Clock, 
   AlertCircle, ShieldCheck, GitBranch, RefreshCw, MessageSquare,
   AlertTriangle, Terminal, Check, Trash2, Columns, List, 
-  ArrowUpDown, Download, Sparkles, Filter
+  ArrowUpDown, Download, Sparkles, Filter, X, User
 } from 'lucide-react';
 import { Task } from '../types';
 import { syncPRStatus } from '../api';
@@ -32,6 +32,14 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
   const [sortBy, setSortBy] = useState<SortField>('updated');
   const [sortAsc, setSortAsc] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importUsername, setImportUsername] = useState(() => {
+    try {
+      return localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
+    } catch {
+      return 'Pushkar-Shahi';
+    }
+  });
 
   // Filter tasks that have PR number or PR URL
   const prTasks = useMemo(() => {
@@ -53,14 +61,17 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
     }
   };
 
-  const handleImportClick = async () => {
+  const handleImportSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!onImportAuthorPRs) return;
+    const target = importUsername.trim() || 'Pushkar-Shahi';
     setIsImporting(true);
     setSyncMessage(null);
     try {
-      await onImportAuthorPRs();
+      await onImportAuthorPRs(target);
       onRefreshTasks();
-      setSyncMessage('✓ Successfully searched GitHub and imported your pull requests!');
+      setShowImportModal(false);
+      setSyncMessage(`✓ Successfully searched GitHub and imported PRs for @${target}!`);
       setTimeout(() => setSyncMessage(null), 5000);
     } catch (err: any) {
       setSyncMessage(`Import error: ${err.message}`);
@@ -351,7 +362,7 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
           {/* Import PRs button */}
           {onImportAuthorPRs && (
             <button
-              onClick={handleImportClick}
+              onClick={() => setShowImportModal(true)}
               disabled={isImporting}
               className="min-h-[44px] sm:min-h-[38px] px-3.5 py-2 rounded-xl bg-white text-black hover:bg-neutral-200 border border-white text-xs font-semibold transition flex items-center gap-2 shadow-sm active:scale-95 disabled:opacity-50"
               title="Search GitHub for all pull requests authored by you and import them"
@@ -431,7 +442,7 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
           </p>
           {onImportAuthorPRs && (
             <button
-              onClick={handleImportClick}
+              onClick={() => setShowImportModal(true)}
               disabled={isImporting}
               className="min-h-[44px] px-6 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition inline-flex items-center gap-2"
             >
@@ -516,6 +527,81 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
         /* List View */
         <div className="grid grid-cols-1 gap-4">
           {allSortedPRs.map(task => renderPRCard(task, false))}
+        </div>
+      )}
+
+      {/* AMOLED Author PR Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="fixed inset-0" onClick={() => !isImporting && setShowImportModal(false)} />
+          <div className="relative bg-[#000000] border border-white/20 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl z-10 space-y-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-white text-black">
+                  <GitPullRequest className="w-5 h-5 text-black" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Import Pull Requests</h3>
+                  <p className="text-[11px] text-neutral-400">Search GitHub for all PRs authored by account</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                disabled={isImporting}
+                className="p-1.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-900 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleImportSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-neutral-300 flex items-center justify-between">
+                  <span>GitHub Username</span>
+                  <span className="text-[10px] text-neutral-500">Public search query</span>
+                </label>
+                <div className="relative flex items-center">
+                  <User className="absolute left-3.5 w-4 h-4 text-neutral-500" />
+                  <input
+                    type="text"
+                    value={importUsername}
+                    onChange={(e) => setImportUsername(e.target.value)}
+                    placeholder="e.g. Pushkar-Shahi"
+                    disabled={isImporting}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#080808] border border-white/20 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white transition"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="bg-[#080808] border border-white/10 rounded-2xl p-3 text-[11px] text-neutral-400 space-y-1 font-sans">
+                <p className="text-neutral-200 font-semibold">What will be imported:</p>
+                <p>• All open & merged pull requests by <strong className="text-white">@{importUsername.trim() || 'Pushkar-Shahi'}</strong></p>
+                <p>• Categorized into Active, Action Required, and Merged</p>
+                <p>• Live synchronization of CI checks and maintainer reviews</p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  disabled={isImporting}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-900 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isImporting}
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs flex items-center gap-2 shadow-md active:scale-95 transition disabled:opacity-50"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 text-black ${isImporting ? 'animate-spin' : ''}`} />
+                  <span>{isImporting ? 'Searching GitHub...' : 'Search & Import PRs'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

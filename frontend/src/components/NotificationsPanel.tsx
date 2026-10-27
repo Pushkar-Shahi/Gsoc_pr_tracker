@@ -53,12 +53,34 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     return `${days}d ago`;
   };
 
+  const [notificationPermission, setNotificationPermission] = useState<string>(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'default';
+  });
+
+  const requestNotificationPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        setNotificationPermission(perm);
+        if (perm === 'granted') {
+          new Notification('✓ Live Notifications Activated', {
+            body: 'You will receive instant desktop alerts for PR status updates, review comments, and 2-hour scan sweeps.',
+            icon: '/icons/icon-192.png'
+          });
+        }
+      } catch {}
+    }
+  };
+
   const getEventMeta = (log: AuditLog) => {
     const action = log.action || '';
     if (action.includes('PR_MERGED')) {
       return {
-        icon: <GitPullRequest className="w-4 h-4 text-purple-400" />,
-        badgeBg: 'bg-purple-500/10 border-purple-500/20 text-purple-300',
+        icon: <GitPullRequest className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-white/10 border-white/20 text-white font-bold',
         title: log.details?.pr_number ? `PR #${log.details.pr_number} Merged Upstream 🎉` : 'Pull Request Merged 🎉',
         desc: log.details?.merged_at 
           ? `Successfully merged into default branch upstream.` 
@@ -68,8 +90,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('CHANGES_REQUESTED')) {
       return {
-        icon: <AlertCircle className="w-4 h-4 text-rose-400" />,
-        badgeBg: 'bg-rose-500/10 border-rose-500/20 text-rose-300',
+        icon: <AlertCircle className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/30 text-white',
         title: log.details?.pr_number ? `Review Changes on PR #${log.details.pr_number}` : 'Maintainer Requested Changes ⚠️',
         desc: 'Maintainer requested feedback adjustments on your pull request.',
         tab: 'prs',
@@ -77,8 +99,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('PR_PUBLISHED')) {
       return {
-        icon: <Send className="w-4 h-4 text-emerald-400" />,
-        badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
+        icon: <Send className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: 'Pull Request Published to GitHub',
         desc: log.details?.pr_url || 'PR branch submitted and live on GitHub.',
         tab: 'prs',
@@ -86,10 +108,10 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('TRACKER_IMPORT') || action.includes('IMPORT')) {
       return {
-        icon: <Sparkles className="w-4 h-4 text-cyan-400" />,
-        badgeBg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300',
+        icon: <Sparkles className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: 'Author Pull Requests Imported',
-        desc: log.details?.imported 
+        desc: log.details?.imported !== undefined
           ? `Imported ${log.details.imported} pull requests from GitHub author search.` 
           : (log.details?.message || 'Pull requests synced from GitHub.'),
         tab: 'prs',
@@ -97,8 +119,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('TRACKER_ITEM_ADDED') || action.includes('TRACK')) {
       return {
-        icon: <Sparkles className="w-4 h-4 text-cyan-400" />,
-        badgeBg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300',
+        icon: <Sparkles className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: 'New Item Tracked',
         desc: log.details?.url || log.details?.title || 'GitHub item added to live tracking board.',
         tab: 'tracker',
@@ -106,8 +128,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('VALIDATION')) {
       return {
-        icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
-        badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
+        icon: <CheckCircle2 className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: 'CI & Local Validation Executed',
         desc: log.details?.message || 'Test suite and security diff checks finished.',
         tab: 'prs',
@@ -115,8 +137,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('CRON_DISCOVERY')) {
       return {
-        icon: <Clock className="w-4 h-4 text-emerald-400" />,
-        badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
+        icon: <Clock className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: '2-Hour Cron Scan Completed ⏰',
         desc: `Synced ${log.details?.items_synced ?? 0} issues, pruned ${log.details?.items_pruned ?? 0} closed across NumFOCUS, PSF, DeepChem, and Kornia.`,
         tab: 'issues',
@@ -124,8 +146,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('DISCOVERY')) {
       return {
-        icon: <RefreshCw className="w-4 h-4 text-blue-400" />,
-        badgeBg: 'bg-blue-500/10 border-blue-500/20 text-blue-300',
+        icon: <RefreshCw className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: 'Issue Discovery Synced',
         desc: log.details?.items_synced 
           ? `Synchronized ${log.details.items_synced} candidate issues.` 
@@ -135,8 +157,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
     if (action.includes('SETTINGS')) {
       return {
-        icon: <ShieldCheck className="w-4 h-4 text-gray-400" />,
-        badgeBg: 'bg-gray-800 border-gray-700 text-gray-300',
+        icon: <ShieldCheck className="w-4 h-4 text-white" />,
+        badgeBg: 'bg-neutral-900 border-white/20 text-neutral-300',
         title: 'Configuration Updated',
         desc: log.details?.github_token_set ? 'GitHub Personal Access Token updated.' : 'Platform settings saved.',
         tab: 'settings',
@@ -144,8 +166,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     }
 
     return {
-      icon: <Bell className="w-4 h-4 text-gray-400" />,
-      badgeBg: 'bg-gray-800 border-gray-700 text-gray-300',
+      icon: <Bell className="w-4 h-4 text-neutral-300" />,
+      badgeBg: 'bg-neutral-900 border-white/10 text-neutral-300',
       title: action.replace(/_/g, ' '),
       desc: log.details?.message || log.details?.recommendation || `Event recorded (${log.actor})`,
       tab: 'tracker',
@@ -181,7 +203,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex justify-end bg-black/80 backdrop-blur-sm animate-fade-in">
       <div 
         className="fixed inset-0" 
         onClick={onClose} 
@@ -226,7 +248,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           </div>
         </div>
 
-        {/* Toolbar: Filters, Mark All Read & Clear All */}
+        {/* Toolbar: Filters, Desktop Notification Permission, Mark All Read & Clear All */}
         <div className="px-5 py-2.5 border-b border-white/10 bg-[#000000] flex items-center justify-between gap-2 text-xs">
           {/* Tab Filter */}
           <div className="flex items-center gap-1 bg-[#050505] p-0.5 rounded-xl border border-white/10">
@@ -250,6 +272,22 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
             >
               Unread ({unreadCount})
             </button>
+          </div>
+
+          {/* Right Toolbar Actions */}
+          <div className="flex items-center gap-1.5">
+            {/* Desktop Notification Request Button */}
+            {notificationPermission !== 'granted' && typeof window !== 'undefined' && 'Notification' in window && (
+              <button
+                type="button"
+                onClick={requestNotificationPermission}
+                className="px-2 py-1 rounded-lg bg-neutral-900 text-neutral-300 border border-white/15 hover:border-white/40 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition"
+                title="Enable desktop notifications"
+              >
+                <Bell className="w-3 h-3 text-white" />
+                <span className="hidden sm:inline">Allow Alerts</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Actions */}
