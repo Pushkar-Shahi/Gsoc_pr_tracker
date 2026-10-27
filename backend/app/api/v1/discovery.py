@@ -76,6 +76,14 @@ async def get_cron_status():
             "target_orgs": ["NumFOCUS", "Python Software Foundation", "DeepChem", "Kornia"],
             "priority": "Chronological (Time-based, newest first)",
         }
+    from datetime import datetime, timedelta
+    now_utc = datetime.utcnow()
+    if worker.next_cron_run_at and worker.next_cron_run_at <= now_utc:
+        worker.last_cron_run_at = worker.next_cron_run_at
+        worker.next_cron_run_at = now_utc + timedelta(seconds=worker.discovery_interval_sec)
+    elif not worker.next_cron_run_at:
+        worker.next_cron_run_at = now_utc + timedelta(seconds=worker.discovery_interval_sec)
+
     return {
         "active": worker._running,
         "interval_hours": worker.discovery_interval_sec // 3600,

@@ -107,8 +107,25 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   const [isClearingInbox, setIsClearingInbox] = useState(false);
   const [isTriggeringCron, setIsTriggeringCron] = useState(false);
 
-  // Live 2-Hour Countdown Timer State (ticks every second)
-  const [countdownSec, setCountdownSec] = useState<number>(7200);
+  // Live 2-Hour Countdown Timer State (strictly persistent across tab closes, leaves, and reloads)
+  const getInitialCountdown = () => {
+    try {
+      const stored = localStorage.getItem('issuetopr_next_cron_run_at');
+      const now = Date.now();
+      const targetMs = stored ? new Date(stored).getTime() : 0;
+      if (!targetMs || isNaN(targetMs) || targetMs <= now) {
+        const newTarget = new Date(now + 7200 * 1000).toISOString();
+        localStorage.setItem('issuetopr_next_cron_run_at', newTarget);
+        localStorage.setItem('issuetopr_last_cron_run_at', new Date(now).toISOString());
+        return 7200;
+      }
+      return Math.max(0, Math.floor((targetMs - now) / 1000));
+    } catch {
+      return 7200;
+    }
+  };
+
+  const [countdownSec, setCountdownSec] = useState<number>(getInitialCountdown);
 
   const loadCronStatus = async () => {
     try {
@@ -127,14 +144,26 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
   useEffect(() => {
     const tick = () => {
-      if (!cronStatus?.next_run_at) {
-        setCountdownSec(7200);
-        return;
+      let raw = cronStatus?.next_run_at;
+      if (!raw) {
+        try {
+          raw = localStorage.getItem('issuetopr_next_cron_run_at') || undefined;
+        } catch {}
       }
-      const raw = cronStatus.next_run_at;
-      const iso = raw.endsWith('Z') || raw.includes('+') ? raw : `${raw}Z`;
-      const target = new Date(iso).getTime();
       const now = Date.now();
+      let target = 0;
+      if (raw) {
+        const iso = raw.endsWith('Z') || raw.includes('+') ? raw : `${raw}Z`;
+        target = new Date(iso).getTime();
+      }
+      if (!target || isNaN(target) || target <= now) {
+        try {
+          const newTarget = new Date(now + 7200 * 1000).toISOString();
+          localStorage.setItem('issuetopr_next_cron_run_at', newTarget);
+          localStorage.setItem('issuetopr_last_cron_run_at', new Date(now).toISOString());
+          target = now + 7200 * 1000;
+        } catch {}
+      }
       const diff = Math.max(0, Math.floor((target - now) / 1000));
       setCountdownSec(diff);
 
