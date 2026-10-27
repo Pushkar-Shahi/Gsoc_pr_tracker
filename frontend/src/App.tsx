@@ -229,13 +229,24 @@ export function App() {
 
   // Mark an issue as complete in finder
   const handleCompleteIssue = async (issueId: string) => {
+    const target = issues.find(i => i.id === issueId);
+
+    // 1. Immediate optimistic removal from UI state
+    setIssues(prev => prev.filter(i => {
+      if (i.id === issueId) return false;
+      if (target?.html_url && i.html_url === target.html_url) return false;
+      return true;
+    }));
+    setTotalIssues(prev => Math.max(0, prev - 1));
+
+    // 2. Persist completion in localStorage & backend
     try {
-      await api.completeIssue(issueId);
+      await api.completeIssue(issueId, target);
       showToast('✓ Issue marked as completed and removed from finder.');
-      loadIssues(issueFilters);
       api.fetchAuditLogs().then(setAuditLogs).catch(() => {});
     } catch (err: any) {
       showToast(`Error: ${err.message}`);
+      loadIssues(issueFilters);
     }
   };
 

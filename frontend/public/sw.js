@@ -1,4 +1,4 @@
-const CACHE_NAME = 'issuetopr-v8';
+const CACHE_NAME = 'issuetopr-v9';
 const PRECACHE_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.svg',

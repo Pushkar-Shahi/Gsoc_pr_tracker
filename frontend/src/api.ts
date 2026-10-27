@@ -620,15 +620,79 @@ const DEFAULT_TARGET_ORG_ISSUES: Issue[] = [
   }
 ];
 
+const COMPLETED_ISSUES_KEY = 'issuetopr_completed_issue_keys';
+
+export function getCompletedIssueKeys(): Set<string> {
+  try {
+    const raw = localStorage.getItem(COMPLETED_ISSUES_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch {}
+  return new Set();
+}
+
+export function isIssueCompleted(issue: {
+  id?: string;
+  html_url?: string;
+  github_id?: number;
+  repository_id?: string;
+  issue_number?: number;
+  repository?: any;
+}): boolean {
+  const keys = getCompletedIssueKeys();
+  if (issue.id && keys.has(issue.id)) return true;
+  if (issue.html_url && keys.has(issue.html_url)) return true;
+  if (issue.github_id && (keys.has(String(issue.github_id)) || keys.has(`gh-${issue.github_id}`))) return true;
+  if (issue.repository_id && issue.issue_number && keys.has(`${issue.repository_id}#${issue.issue_number}`)) return true;
+  if (issue.repository?.full_name && issue.issue_number && keys.has(`${issue.repository.full_name}#${issue.issue_number}`)) return true;
+  return false;
+}
+
+export function markIssueCompletedLocally(issueOrId: string | Partial<Issue>): void {
+  try {
+    const keys = getCompletedIssueKeys();
+    if (typeof issueOrId === 'string') {
+      keys.add(issueOrId);
+    } else {
+      if (issueOrId.id) keys.add(issueOrId.id);
+      if (issueOrId.html_url) keys.add(issueOrId.html_url);
+      if (issueOrId.github_id) {
+        keys.add(String(issueOrId.github_id));
+        keys.add(`gh-${issueOrId.github_id}`);
+      }
+      if (issueOrId.repository_id && issueOrId.issue_number) {
+        keys.add(`${issueOrId.repository_id}#${issueOrId.issue_number}`);
+      }
+      if (issueOrId.repository && typeof issueOrId.repository === 'object' && 'full_name' in issueOrId.repository && issueOrId.issue_number) {
+        keys.add(`${issueOrId.repository.full_name}#${issueOrId.issue_number}`);
+      }
+    }
+    localStorage.setItem(COMPLETED_ISSUES_KEY, JSON.stringify(Array.from(keys)));
+
+    // Clean up cached issues
+    const raw = localStorage.getItem(CACHED_ISSUES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const cleaned = parsed.filter((i: any) => !isIssueCompleted(i));
+        localStorage.setItem(CACHED_ISSUES_KEY, JSON.stringify(cleaned));
+      }
+    }
+  } catch (err) {
+    console.error('Failed to mark issue completed locally:', err);
+  }
+}
+
 function getCachedIssues(): Issue[] {
   try {
     const raw = localStorage.getItem(CACHED_ISSUES_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter(i => !isIssueCompleted(i));
+      }
     }
   } catch {}
-  return DEFAULT_TARGET_ORG_ISSUES;
+  return DEFAULT_TARGET_ORG_ISSUES.filter(i => !isIssueCompleted(i));
 }
 
 function saveCachedIssues(issues: Issue[]) {
@@ -758,17 +822,19 @@ export async function fetchIssuesFromGitHub(params: {
             open_issues_count: 50,
           }
         };
-      });
+      }).filter((i: Issue) => !isIssueCompleted(i));
 
       if (items.length > 0) {
         saveCachedIssues(items);
       }
 
+      const totalCalculated = Math.max(0, (data.total_count || items.length) - getCompletedIssueKeys().size);
+
       return {
         items,
-        total: data.total_count || items.length,
+        total: totalCalculated || items.length,
         page,
-        total_pages: Math.ceil((data.total_count || items.length) / pageSize) || 1,
+        total_pages: Math.ceil((totalCalculated || items.length) / pageSize) || 1,
         coverage_status: { rate_limit: 'live_github_api' }
       };
     }
@@ -818,6 +884,7 @@ export async function fetchIssues(params: {
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.items)) {
+        data.items = data.items.filter((i: Issue) => !isIssueCompleted(i));
         return data;
       }
     }
@@ -934,12 +1001,15 @@ export async function reconcileIssues(purge: boolean = false): Promise<{
   };
 }
 
-export async function completeIssue(id: string): Promise<{
+export async function completeIssue(id: string, issueDetails?: Partial<Issue>): Promise<{
   status: string;
   message: string;
   issue_id: string;
   issue_number: number;
 }> {
+  // 1. Mark completed in localStorage keys immediately
+  markIssueCompletedLocally(issueDetails || id);
+
   try {
     const res = await authedFetch(`${API_BASE}/issues/${id}/complete`, {
       method: 'POST',
@@ -949,11 +1019,29 @@ export async function completeIssue(id: string): Promise<{
   } catch {
     // Hosted Vercel fallback
   }
+
+  const repoName = issueDetails?.repository?.full_name || issueDetails?.repository_id || 'repository';
+  const issueNum = issueDetails?.issue_number || 1;
+
+  // 2. Persist audit log event
+  saveLocalAuditLog({
+    id: `log-${Date.now()}`,
+    action: 'ISSUE_COMPLETED',
+    actor: 'Contributor',
+    task_id: undefined,
+    details: {
+      message: `Issue #${issueNum} in ${repoName} marked as completed and removed from finder.`,
+      repository: repoName,
+      issue_number: issueNum
+    },
+    created_at: new Date().toISOString()
+  });
+
   return {
     status: 'success',
-    message: 'Issue marked as completed.',
+    message: `Issue #${issueNum} in ${repoName} marked as completed and removed from inbox.`,
     issue_id: id,
-    issue_number: 1
+    issue_number: issueNum
   };
 }
 

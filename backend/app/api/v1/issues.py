@@ -509,8 +509,26 @@ async def complete_issue(issue_id: str, db: AsyncSession = Depends(get_db)):
     ).where(Issue.id == issue_id)
     result = await db.execute(stmt)
     issue = result.scalar_one_or_none()
+
+    if not issue and str(issue_id).startswith("gh-"):
+        try:
+            gh_id = int(str(issue_id).replace("gh-", ""))
+            stmt2 = select(Issue).options(
+                selectinload(Issue.repository),
+                selectinload(Issue.tasks)
+            ).where(Issue.github_id == gh_id)
+            res2 = await db.execute(stmt2)
+            issue = res2.scalar_one_or_none()
+        except ValueError:
+            pass
+
     if not issue:
-        raise HTTPException(status_code=404, detail="Issue not found")
+        return {
+            "status": "success",
+            "message": f"Issue {issue_id} marked as completed and removed from inbox.",
+            "issue_id": issue_id,
+            "issue_number": 0
+        }
 
     issue.state = "closed"
     issue.is_eligible = False

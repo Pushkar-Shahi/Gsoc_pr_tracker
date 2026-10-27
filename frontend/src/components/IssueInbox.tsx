@@ -6,7 +6,7 @@ import {
   ArrowUp, Trash2, Calendar
 } from 'lucide-react';
 import { Issue } from '../types';
-import { importIssue, reconcileIssues, triggerDiscoverySync, getCronStatus, triggerCronRunNow, clearInboxIssues } from '../api';
+import { importIssue, reconcileIssues, triggerDiscoverySync, getCronStatus, triggerCronRunNow, clearInboxIssues, isIssueCompleted } from '../api';
 
 interface IssueInboxProps {
   issues: Issue[];
@@ -73,11 +73,20 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     };
   }, [autoLoad, hasMore, loadingMore, loading, onLoadMore]);
 
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+
   const handleComplete = async (issueId: string) => {
     if (!onCompleteIssue) return;
+    setCompletedIds(prev => new Set(prev).add(issueId));
     setCompletingIds(prev => new Set(prev).add(issueId));
     try {
       await onCompleteIssue(issueId);
+    } catch {
+      setCompletedIds(prev => {
+        const next = new Set(prev);
+        next.delete(issueId);
+        return next;
+      });
     } finally {
       setCompletingIds(prev => {
         const next = new Set(prev);
@@ -364,7 +373,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     }
   };
 
-  const progressPercent = totalIssues > 0 ? Math.min(100, Math.round((issues.length / totalIssues) * 100)) : 100;
+  const visibleIssues = issues.filter(i => !completedIds.has(i.id) && !isIssueCompleted(i));
+  const progressPercent = totalIssues > 0 ? Math.min(100, Math.round((visibleIssues.length / totalIssues) * 100)) : 100;
 
   return (
     <div className="space-y-6">
@@ -834,7 +844,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 </span>
               </span>
               <span>
-                Ingested: <strong className="text-white">{cronStatus.last_issues_synced || issues.length}</strong>
+                Ingested: <strong className="text-white">{cronStatus.last_issues_synced || visibleIssues.length}</strong>
               </span>
               <span>
                 Status: <strong className="text-white">{cronStatus.is_running ? 'Scanning online...' : 'Every 2 Hours Active'}</strong>
@@ -851,7 +861,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-400 px-1 py-1 bg-gray-900/40 rounded-xl border border-gray-800/60 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <span>
-            Showing <span className="font-semibold text-emerald-400">{issues.length}</span> of <span className="font-semibold text-white">{totalIssues.toLocaleString()}</span> issues across <span className="font-semibold text-amber-300">4 Target Orgs</span>
+            Showing <span className="font-semibold text-emerald-400">{visibleIssues.length}</span> of <span className="font-semibold text-white">{totalIssues.toLocaleString()}</span> issues across <span className="font-semibold text-amber-300">4 Target Orgs</span>
           </span>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-semibold">
             <span>🎯</span>
@@ -907,7 +917,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       )}
 
       {/* Empty State */}
-      {!loading && issues.length === 0 && (
+      {!loading && visibleIssues.length === 0 && (
         <div className="bg-[#080808] border border-white/10 rounded-2xl p-8 sm:p-12 text-center space-y-4 shadow-2xl">
           <div className="w-12 h-12 rounded-2xl bg-neutral-900 border border-white/15 flex items-center justify-center mx-auto text-white">
             <Search className="w-6 h-6" />
@@ -921,7 +931,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
       {/* Issue Cards Grid */}
       <div className="grid grid-cols-1 gap-4">
-        {issues.map((issue) => {
+        {visibleIssues.map((issue) => {
           const breakdown = issue.ranking_breakdown;
           const isTaskActive = Boolean(issue.active_task);
 
@@ -1093,19 +1103,19 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       </div>
 
       {/* Load More & Infinite Scroll Section */}
-      {!loading && issues.length > 0 && (
+      {!loading && visibleIssues.length > 0 && (
         <div className="bg-[#000000] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-white">Issues Explorer Progress</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-white border border-white/20 font-mono">
-                  {issues.length} / {totalIssues.toLocaleString()} Loaded ({progressPercent}%)
+                  {visibleIssues.length} / {totalIssues.toLocaleString()} Loaded ({progressPercent}%)
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5">
                 {hasMore 
-                  ? `${(totalIssues - issues.length).toLocaleString()} more public issues match your criteria` 
+                  ? `${(totalIssues - visibleIssues.length).toLocaleString()} more public issues match your criteria` 
                   : 'All available matching issues have been loaded'}
               </p>
             </div>
@@ -1174,7 +1184,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     <Plus className="w-4 h-4 text-black" />
                     <span className="text-black">Load More Issues (+{pageSize || 25})</span>
                     <span className="text-[11px] text-neutral-700 font-semibold">
-                      ({(totalIssues - issues.length).toLocaleString()} remaining)
+                      ({(totalIssues - visibleIssues.length).toLocaleString()} remaining)
                     </span>
                   </>
                 )}
@@ -1193,7 +1203,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       )}
 
       {/* Floating Back-to-Top Button */}
-      {issues.length > 20 && (
+      {visibleIssues.length > 20 && (
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
