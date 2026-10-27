@@ -80,6 +80,12 @@ export function AuthGate({ children }: AuthGateProps) {
       return;
     }
 
+    const storedId = getStoredBiometricCredentialId();
+    if (!storedId) {
+      setInfoMessage('To activate Touch ID / device fingerprint, enter your password once below with "Sync fingerprint" checked.');
+      return;
+    }
+
     setIsBiometricScanning(true);
 
     try {
@@ -89,9 +95,9 @@ export function AuthGate({ children }: AuthGateProps) {
       console.warn('Biometric unlock attempt:', err);
       const msg = err.message || '';
       if (msg.includes('cancelled') || msg.includes('canceled') || msg.includes('AbortError')) {
-        setInfoMessage('Fingerprint prompt was cancelled. Tap again or use password.');
-      } else if (msg.includes('No credentials') || msg.includes('NotAllowedError') || !getStoredBiometricCredentialId()) {
-        setInfoMessage('No fingerprint linked to this device yet. Enter password once below with "Sync fingerprint" checked to pair.');
+        setInfoMessage('Fingerprint verification was cancelled. Touch sensor or enter password.');
+      } else if (msg === 'NO_DEVICE_CREDENTIAL' || msg.includes('No credentials') || msg.includes('NotAllowedError')) {
+        setInfoMessage('To link your device fingerprint, enter your password once below with "Sync fingerprint" checked.');
       } else {
         setError(msg || 'Fingerprint verification failed. Try again or enter password.');
         triggerShake();

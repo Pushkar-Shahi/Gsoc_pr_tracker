@@ -212,8 +212,8 @@ export async function registerDeviceBiometrics(password?: string, deviceName?: s
       ],
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
-        userVerification: 'preferred',
-        residentKey: 'preferred',
+        userVerification: 'required',
+        residentKey: 'discouraged',
         requireResidentKey: false,
       },
       timeout: 60000,
@@ -266,24 +266,26 @@ export async function loginWithBiometrics(): Promise<string> {
     throw new Error('Biometric authentication is not supported by your browser.');
   }
 
-  const challenge = await fetchOrGenerateChallenge();
   const storedCredId = getStoredBiometricCredentialId();
+  if (!storedCredId) {
+    throw new Error('NO_DEVICE_CREDENTIAL');
+  }
+
+  const challenge = await fetchOrGenerateChallenge();
   const rpId = getValidRpId();
 
-  const allowCredentials: PublicKeyCredentialDescriptor[] = storedCredId
-    ? [{
-        id: base64UrlToBuffer(storedCredId),
-        type: 'public-key',
-        transports: ['internal'],
-      }]
-    : [];
-
+  // Explicitly specify transports: ['internal'] and userVerification: 'required'
+  // to invoke the local device sensor (Touch ID / fingerprint) directly without passkey picker
   const assertion = await navigator.credentials.get({
     publicKey: {
       challenge: base64UrlToBuffer(challenge),
       ...(rpId ? { rpId } : {}),
-      allowCredentials: allowCredentials.length > 0 ? allowCredentials : undefined,
-      userVerification: 'preferred',
+      allowCredentials: [{
+        id: base64UrlToBuffer(storedCredId),
+        type: 'public-key',
+        transports: ['internal'],
+      }],
+      userVerification: 'required',
       timeout: 60000,
     },
   }) as PublicKeyCredential | null;
