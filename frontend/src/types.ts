@@ -1,0 +1,185 @@
+export interface Repository {
+  id: string;
+  owner: string;
+  name: string;
+  full_name: string;
+  html_url: string;
+  default_branch: string;
+  primary_language?: string;
+  license_spdx?: string;
+  license_name?: string;
+  stars_count: number;
+  open_issues_count: number;
+  is_fork: boolean;
+  is_archived: boolean;
+  is_gsoc?: boolean;
+  gsoc_org_name?: string;
+}
+
+export interface RankingBreakdown {
+  skill_match: number;
+  clarity_score: number;
+  repo_health_score: number;
+  effort_score: number;
+  reasons: string[];
+  has_blocker_risk?: boolean;
+  matched_skills?: string[];
+}
+
+export interface ActiveTaskSummary {
+  id: string;
+  workflow_state: string;
+  worktree_path?: string;
+  branch_name?: string;
+  assignment_required: boolean;
+  pr_number?: number;
+  pr_url?: string;
+}
+
+export interface Issue {
+  id: string;
+  repository_id: string;
+  github_id: number;
+  issue_number: number;
+  title: string;
+  body?: string;
+  author?: string;
+  html_url: string;
+  state: string;
+  labels: Array<{ name: string; color?: string } | string>;
+  assignees: any[];
+  comments_count: number;
+  github_created_at?: string;
+  is_eligible: boolean;
+  ineligibility_reason?: string;
+  license_status: string;
+  policy_status: string;
+  ranking_score: number;
+  difficulty_estimate: 'beginner' | 'intermediate' | 'advanced';
+  estimated_effort_hours: number;
+  ranking_breakdown?: RankingBreakdown;
+  ai_summary?: string;
+  last_verified_at?: string;
+  repository?: Repository;
+  active_task?: ActiveTaskSummary;
+}
+
+export interface ImplementationBrief {
+  brief_path?: string;
+  prompt_text?: string;
+  default_branch?: string;
+  issue_number?: number;
+  repository?: string;
+  title?: string;
+  category?: 'bug' | 'feature' | 'refactor' | 'documentation' | string;
+  primary_language?: string;
+  executive_summary?: string;
+  root_cause_analysis?: string;
+  extracted_errors?: string[];
+  affected_files?: string[];
+  proposed_plan?: string[];
+  test_strategy?: {
+    runner: string;
+    command: string;
+    verification: string;
+  };
+  rule_check?: {
+    assignment_required: boolean;
+    workflow_state: string;
+    rule_title: string;
+    rule_explanation: string;
+    evidence: string[];
+    action_on_approval: string;
+    draft_comment?: string;
+  };
+}
+
+export interface Task {
+  id: string;
+  issue_id: string;
+  workflow_state: string;
+  worktree_path?: string;
+  branch_name?: string;
+  remote_name: string;
+  upstream_url?: string;
+  fork_owner?: string;
+  fork_url?: string;
+  implementation_brief?: ImplementationBrief;
+  assignment_required: boolean;
+  draft_assignment_comment?: string;
+  user_approved_assignment: boolean;
+  assignment_posted_at?: string;
+  assignment_comment_id?: string;
+  maintainer_approved: boolean;
+  maintainer_notes?: string;
+  validation_results?: {
+    passed: boolean;
+    commands: Array<{
+      command: string;
+      exit_code: number;
+      passed: boolean;
+      stdout: string;
+      stderr: string;
+    }>;
+    status: string;
+  };
+  diff_security_report?: {
+    passed: boolean;
+    changed_files_count: number;
+    changed_files: Array<{ status: string; file: string }>;
+    secrets_detected: string[];
+    unrelated_files: string[];
+    diff_preview: string;
+  };
+  pr_number?: number;
+  pr_url?: string;
+  pr_state?: string;
+  pr_ci_status?: string;
+  pr_review_status?: string;
+  pr_review_comments?: Array<{
+    id?: string;
+    author: string;
+    body: string;
+    state?: string;
+    submitted_at?: string;
+  }>;
+  pr_merged?: boolean;
+  blocked_reason?: string;
+  created_at: string;
+  updated_at: string;
+  issue?: Issue;
+}
+
+export interface PlatformSettings {
+  github_token_configured: boolean;
+  github_username?: string;
+  auto_publish_pr: boolean;
+  workspace_root: string;
+  antigravity_app_path?: string;
+  skills_profile: string[];
+  discovery_filters: Record<string, any>;
+  detected_antigravity_installed: boolean;
+  detected_agy_cli: boolean;
+}
+
+export interface DiscoveryStatus {
+  last_synced_at?: string;
+  total_issues: number;
+  total_eligible: number;
+  rate_limit_remaining: number;
+  rate_limit_limit: number;
+  rate_limit_reset?: string;
+  is_syncing: boolean;
+  coverage_label: string;
+  errors: string[];
+}
+
+export interface AuditLog {
+  id: string;
+  task_id?: string;
+  issue_id?: string;
+  action: string;
+  actor: string;
+  details: Record<string, any>;
+  created_at: string;
+}

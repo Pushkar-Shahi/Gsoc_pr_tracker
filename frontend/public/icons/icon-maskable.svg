@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e1424"/>
+      <stop offset="100%" stop-color="#070b14"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+  
+  <g transform="translate(51, 51) scale(0.8)">
+    <path d="M180 140 L180 372" stroke="url(#lineGrad)" stroke-width="28" stroke-linecap="round"/>
+    <path d="M180 230 C 230 230, 332 210, 332 290 L332 372" stroke="url(#lineGrad)" stroke-width="28" stroke-linecap="round" fill="none"/>
+    <circle cx="180" cy="140" r="32" fill="#10b981" stroke="#0e1424" stroke-width="8"/>
+    <circle cx="180" cy="372" r="32" fill="#10b981" stroke="#0e1424" stroke-width="8"/>
+    <circle cx="332" cy="372" r="32" fill="#06b6d4" stroke="#0e1424" stroke-width="8"/>
+    <path d="M332 150 L336 170 L356 174 L336 178 L332 198 L328 178 L308 174 L328 170 Z" fill="#38bdf8"/>
+  </g>
+</svg>
