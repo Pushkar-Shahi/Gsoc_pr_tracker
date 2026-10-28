@@ -1,4 +1,7 @@
 import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog } from './types';
+import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
+
+export { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC };
 
 const API_BASE = '/api/v1';
 
@@ -1119,42 +1122,14 @@ export async function fetchDiscoveryStatus(): Promise<DiscoveryStatus> {
   };
 }
 
-const NEXT_CRON_KEY = 'issuetopr_next_cron_run_at';
-const LAST_CRON_KEY = 'issuetopr_last_cron_run_at';
-const TWO_HOURS_MS = 7200 * 1000;
-
 export function getPersistentCronSchedule(): { next_run_at: string; last_run_at: string } {
-  const now = Date.now();
-  let next = localStorage.getItem(NEXT_CRON_KEY);
-  let last = localStorage.getItem(LAST_CRON_KEY);
-
-  let nextMs = next ? new Date(next).getTime() : 0;
-  // If next is not set, invalid, or already expired in the past
-  if (!nextMs || isNaN(nextMs) || nextMs <= now) {
-    const previousTarget = nextMs > 0 ? nextMs : now;
-    last = new Date(previousTarget).toISOString();
-    // Schedule next 2-hour scan cycle from current time
-    const newNext = new Date(now + TWO_HOURS_MS).toISOString();
-    localStorage.setItem(LAST_CRON_KEY, last);
-    localStorage.setItem(NEXT_CRON_KEY, newNext);
-    return { next_run_at: newNext, last_run_at: last };
-  }
-
-  if (!last) {
-    last = new Date(nextMs - TWO_HOURS_MS).toISOString();
-    localStorage.setItem(LAST_CRON_KEY, last);
-  }
-
-  return { next_run_at: next!, last_run_at: last };
+  const schedule = getWebsiteInternalSchedule();
+  return { next_run_at: schedule.next_run_at, last_run_at: schedule.last_run_at };
 }
 
 export function resetPersistentCronSchedule(): { next_run_at: string; last_run_at: string } {
-  const now = Date.now();
-  const last = new Date(now).toISOString();
-  const next = new Date(now + TWO_HOURS_MS).toISOString();
-  localStorage.setItem(LAST_CRON_KEY, last);
-  localStorage.setItem(NEXT_CRON_KEY, next);
-  return { next_run_at: next, last_run_at: last };
+  const schedule = recordManualCronScan();
+  return { next_run_at: schedule.next_run_at, last_run_at: schedule.last_run_at };
 }
 
 export async function getCronStatus(): Promise<{
@@ -1172,36 +1147,27 @@ export async function getCronStatus(): Promise<{
     if (res.ok) {
       const data = await res.json();
       if (data && data.next_run_at) {
-        const raw = data.next_run_at;
-        const iso = raw.endsWith('Z') || raw.includes('+') ? raw : `${raw}Z`;
-        const nextMs = new Date(iso).getTime();
-        if (!isNaN(nextMs) && nextMs > Date.now()) {
-          try {
-            localStorage.setItem(NEXT_CRON_KEY, iso);
-            if (data.last_run_at) localStorage.setItem(LAST_CRON_KEY, data.last_run_at);
-          } catch {}
-          return {
-            enabled: data.active ?? true,
-            interval_seconds: data.interval_seconds ?? 7200,
-            interval_hours: data.interval_hours ?? 2,
-            last_run_at: data.last_run_at || null,
-            next_run_at: iso,
-            last_run_status: 'success',
-            last_issues_synced: data.last_issues_synced ?? 421,
-            last_issues_pruned: data.last_issues_pruned ?? 0
-          };
-        }
+        return {
+          enabled: data.active ?? true,
+          interval_seconds: data.interval_seconds ?? TWO_HOURS_SEC,
+          interval_hours: data.interval_hours ?? 2,
+          last_run_at: data.last_run_at || null,
+          next_run_at: data.next_run_at,
+          last_run_status: 'success',
+          last_issues_synced: data.last_issues_synced ?? 421,
+          last_issues_pruned: data.last_issues_pruned ?? 0
+        };
       }
     }
   } catch {
     // Hosted Vercel fallback
   }
 
-  const schedule = getPersistentCronSchedule();
+  const schedule = getWebsiteInternalSchedule();
 
   return {
     enabled: true,
-    interval_seconds: 7200,
+    interval_seconds: TWO_HOURS_SEC,
     interval_hours: 2,
     last_run_at: schedule.last_run_at,
     next_run_at: schedule.next_run_at,
@@ -1230,7 +1196,7 @@ export async function triggerCronRunNow(): Promise<{
     // Hosted Vercel fallback
   }
 
-  const schedule = resetPersistentCronSchedule();
+  const schedule = recordManualCronScan();
 
   return {
     status: 'success',

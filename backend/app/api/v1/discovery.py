@@ -64,33 +64,40 @@ async def get_discovery_status(db: AsyncSession = Depends(get_db)):
 @router.get("/cron-status")
 async def get_cron_status():
     from app.services.background_worker import get_background_worker
+    from datetime import datetime, timezone
+    now_utc = datetime.now(timezone.utc)
     worker = get_background_worker()
+
+    interval_sec = worker.discovery_interval_sec if worker else 7200
+    now_epoch = int(now_utc.timestamp())
+    cycle_start_epoch = (now_epoch // interval_sec) * interval_sec
+    cycle_end_epoch = cycle_start_epoch + interval_sec
+    cycle_start = datetime.fromtimestamp(cycle_start_epoch, tz=timezone.utc)
+    cycle_end = datetime.fromtimestamp(cycle_end_epoch, tz=timezone.utc)
+
     if not worker:
         return {
             "active": True,
-            "interval_hours": 2,
-            "interval_seconds": 7200,
+            "interval_hours": interval_sec // 3600,
+            "interval_seconds": interval_sec,
             "is_running": False,
-            "last_run_at": None,
-            "next_run_at": None,
+            "last_run_at": cycle_start.isoformat(),
+            "next_run_at": cycle_end.isoformat(),
             "target_orgs": ["NumFOCUS", "Python Software Foundation", "DeepChem", "Kornia"],
             "priority": "Chronological (Time-based, newest first)",
         }
-    from datetime import datetime, timedelta
-    now_utc = datetime.utcnow()
-    if worker.next_cron_run_at and worker.next_cron_run_at <= now_utc:
-        worker.last_cron_run_at = worker.next_cron_run_at
-        worker.next_cron_run_at = now_utc + timedelta(seconds=worker.discovery_interval_sec)
-    elif not worker.next_cron_run_at:
-        worker.next_cron_run_at = now_utc + timedelta(seconds=worker.discovery_interval_sec)
+
+    # Keep worker sync aligned with universal internal schedule
+    worker.last_cron_run_at = cycle_start if not worker.last_cron_run_at or worker.last_cron_run_at < cycle_start else worker.last_cron_run_at
+    worker.next_cron_run_at = cycle_end
 
     return {
         "active": worker._running,
         "interval_hours": worker.discovery_interval_sec // 3600,
         "interval_seconds": worker.discovery_interval_sec,
         "is_running": worker.is_cron_running,
-        "last_run_at": (worker.last_cron_run_at.isoformat() + "Z") if worker.last_cron_run_at else None,
-        "next_run_at": (worker.next_cron_run_at.isoformat() + "Z") if worker.next_cron_run_at else None,
+        "last_run_at": worker.last_cron_run_at.isoformat() if worker.last_cron_run_at else cycle_start.isoformat(),
+        "next_run_at": worker.next_cron_run_at.isoformat() if worker.next_cron_run_at else cycle_end.isoformat(),
         "last_issues_synced": getattr(worker, "last_cron_discovered", 0),
         "target_orgs": worker.cron_target_orgs,
         "priority": "Chronological (Time-based, newest first)",

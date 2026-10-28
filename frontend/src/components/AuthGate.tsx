@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Fingerprint, KeyRound, ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Lock, Fingerprint, KeyRound, ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, CheckCircle2, ShieldCheck, AlertCircle, Clock } from 'lucide-react';
 import { 
   loginWithPassword, 
   verifyAuth, 
@@ -9,7 +9,8 @@ import {
   registerDeviceBiometrics, 
   getStoredBiometricCredentialId,
   getBiometricStatus,
-  isSecureContextAvailable
+  isSecureContextAvailable,
+  getWebsiteInternalSchedule
 } from '../api';
 
 interface AuthGateProps {
@@ -29,6 +30,17 @@ export function AuthGate({ children }: AuthGateProps) {
   const [hasEnrolledBiometrics, setHasEnrolledBiometrics] = useState(false);
   const [rememberBiometrics, setRememberBiometrics] = useState(true);
   const [isSecure, setIsSecure] = useState(true);
+
+  // Live 2-Hour Website Internal Timer State (runs independently before & across login)
+  const [internalSchedule, setInternalSchedule] = useState(() => getWebsiteInternalSchedule());
+
+  useEffect(() => {
+    const tick = () => {
+      setInternalSchedule(getWebsiteInternalSchedule());
+    };
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Check auth & biometric availability on mount
   useEffect(() => {
@@ -187,6 +199,33 @@ export function AuthGate({ children }: AuthGateProps) {
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
           AMOLED SECURE
         </span>
+      </div>
+
+      {/* 2-Hour Autonomous Online Scanner Live Banner (Website Internal Timer) */}
+      <div className="max-w-md w-full mx-auto mt-4 p-3.5 rounded-2xl bg-[#090909] border border-white/15 shadow-xl flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-white text-black shrink-0 shadow-md">
+            <Clock className="w-4 h-4 text-black animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full animate-ping" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-white font-bold text-xs">Autonomous 2H Scanner</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-white/20 font-mono">
+                Website Engine Active
+              </span>
+            </div>
+            <p className="text-[10px] text-neutral-400 truncate">
+              Continuous scan &bull; NumFOCUS, PSF, DeepChem, Kornia
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[9px] uppercase font-semibold text-neutral-400 font-mono">Next Scan In</span>
+          <span className="text-xs font-mono font-extrabold text-white px-2 py-0.5 rounded-lg bg-neutral-900 border border-white/25 shadow-inner">
+            {internalSchedule.formatted.digital}
+          </span>
+        </div>
       </div>
 
       {/* Main Lock Modal */}
