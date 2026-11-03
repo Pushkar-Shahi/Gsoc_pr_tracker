@@ -291,3 +291,4 @@ class WorkspaceProviderFactory:
         if ptype in ("docker", "sandbox", "cloud"):
             return EphemeralDockerSandboxProvider()
         return LocalWorktreeProvider()
+

@@ -5,3 +5,4 @@ to execute isolated test suites, worktrees, and diff security inspections.
 """
 
 __version__ = "1.0.0"
+

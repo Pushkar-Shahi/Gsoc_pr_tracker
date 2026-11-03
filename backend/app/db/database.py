@@ -136,6 +136,28 @@ async def create_tables():
             except Exception:
                 pass
 
+        # Safe migration for Phase 4: Bounty and SSO columns
+        phase4_cols = [
+            ("organizations", "sso_provider", "VARCHAR(64)"),
+            ("organizations", "sso_metadata_url", "VARCHAR(1024)"),
+            ("organizations", "sso_entity_id", "VARCHAR(512)"),
+            ("organizations", "sso_enforced", "BOOLEAN DEFAULT FALSE"),
+            ("organizations", "sso_config", "JSON DEFAULT '{}'::json" if is_pg else "TEXT"),
+            ("issues", "bounty_amount", "DOUBLE PRECISION DEFAULT 0.0" if is_pg else "REAL DEFAULT 0.0"),
+            ("issues", "bounty_currency", "VARCHAR(16) DEFAULT 'USD'"),
+            ("issues", "bounty_platform", "VARCHAR(64)"),
+            ("issues", "bounty_url", "VARCHAR(1024)"),
+            ("issues", "bounty_status", "VARCHAR(32) DEFAULT 'NONE'")
+        ]
+        for tbl, col_name, col_type in phase4_cols:
+            try:
+                if is_pg:
+                    await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+                else:
+                    await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN {col_name} {col_type};"))
+            except Exception:
+                pass
+
         try:
             if is_pg:
                 await conn.execute(text("ALTER TABLE runners ALTER COLUMN registration_token TYPE TEXT;"))

@@ -105,6 +105,13 @@ class IssueRead(BaseModel):
     ranking_breakdown: Optional[Dict[str, Any]] = None
     ai_summary: Optional[str] = None
     last_verified_at: Optional[datetime] = None
+
+    # Phase 4 Bounty Fields
+    bounty_amount: Optional[float] = 0.0
+    bounty_currency: Optional[str] = "USD"
+    bounty_platform: Optional[str] = None
+    bounty_url: Optional[str] = None
+    bounty_status: Optional[str] = "NONE"
     
     repository: Optional[RepositoryRead] = None
     active_task: Optional[Dict[str, Any]] = None
@@ -366,3 +373,41 @@ class AuditLogRead(BaseModel):
     actor: str
     details: Dict[str, Any]
     created_at: datetime
+
+
+# Phase 4: Bounty & Enterprise SSO Schemas
+class BountyStatsResponse(BaseModel):
+    total_available_usd: float
+    total_bounties_count: int
+    average_bounty_usd: float
+    claimed_bounties_count: int
+    potential_earnings_usd: float
+    top_platform: str
+
+
+class BountyClaimRequest(BaseModel):
+    custom_notes: Optional[str] = None
+
+
+class SSOConfigRead(BaseModel):
+    sso_provider: Optional[str] = None
+    sso_metadata_url: Optional[str] = None
+    sso_entity_id: Optional[str] = None
+    sso_enforced: bool = False
+    sso_configured: bool = False
+
+
+class SSOConfigUpdate(BaseModel):
+    sso_provider: str = Field(..., description="okta, azure_ad, google, saml, oidc")
+    sso_metadata_url: str
+    sso_entity_id: Optional[str] = None
+    sso_enforced: Optional[bool] = False
+
+
+class SSOTestResponse(BaseModel):
+    status: str
+    message: str
+    provider: str
+    entity_id: Optional[str] = None
+    endpoints_detected: Dict[str, str] = Field(default_factory=dict)
+

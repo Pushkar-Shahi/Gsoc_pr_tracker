@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
-import { History, Search, Filter, ShieldCheck, Terminal, Clock, CheckCircle } from 'lucide-react';
+import { 
+  History, Search, Filter, ShieldCheck, Terminal, Clock, CheckCircle, 
+  Download, FileSpreadsheet, FileCode, Shield 
+} from 'lucide-react';
 import { AuditLog } from '../types';
+import { exportAuditLogs } from '../api';
+import { EnterpriseSSOModal } from './EnterpriseSSOModal';
 
 interface ActivityHistoryViewProps {
   logs: AuditLog[];
@@ -9,6 +14,19 @@ interface ActivityHistoryViewProps {
 export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('');
+  const [isExporting, setIsExporting] = useState<string | null>(null);
+  const [isSSOModalOpen, setIsSSOModalOpen] = useState(false);
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    try {
+      setIsExporting(format);
+      await exportAuditLogs(format);
+    } catch (err: any) {
+      alert(`Export failed: ${err.message}`);
+    } finally {
+      setIsExporting(null);
+    }
+  };
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = !searchTerm || 
@@ -39,6 +57,37 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
           <p className="text-xs text-neutral-400 mt-1">
             Cryptographically stored timestamped record of every workflow transition, decision, and external GitHub interaction.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => handleExport('csv')}
+            disabled={isExporting !== null}
+            className="px-3 py-2 rounded-xl bg-[#080808] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+            title="Download audit logs in RFC 4180 CSV format"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isExporting === 'csv' ? 'Exporting...' : 'Export CSV'}</span>
+          </button>
+
+          <button
+            onClick={() => handleExport('json')}
+            disabled={isExporting !== null}
+            className="px-3 py-2 rounded-xl bg-[#080808] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+            title="Download logs in SIEM NDJSON format for Splunk/Datadog"
+          >
+            <FileCode className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{isExporting === 'json' ? 'Exporting...' : 'Export SIEM'}</span>
+          </button>
+
+          <button
+            onClick={() => setIsSSOModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-purple-950/40 border border-purple-500/30 hover:bg-purple-900/40 text-purple-300 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95"
+            title="Configure SAML 2.0 / OIDC Identity Provider"
+          >
+            <Shield className="w-3.5 h-3.5 text-purple-400" />
+            <span>Enterprise SSO</span>
+          </button>
         </div>
       </div>
 
@@ -106,6 +155,11 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
           </div>
         )}
       </div>
+
+      <EnterpriseSSOModal
+        isOpen={isSSOModalOpen}
+        onClose={() => setIsSSOModalOpen(false)}
+      />
     </div>
   );
 };

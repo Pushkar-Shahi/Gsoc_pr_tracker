@@ -62,6 +62,38 @@ export interface Issue {
   last_verified_at?: string;
   repository?: Repository;
   active_task?: ActiveTaskSummary;
+
+  // Phase 4 Bounty Fields
+  bounty_amount?: number;
+  bounty_currency?: string;
+  bounty_platform?: string;
+  bounty_url?: string;
+  bounty_status?: string;
+}
+
+export interface BountyStats {
+  total_available_usd: number;
+  total_bounties_count: number;
+  average_bounty_usd: number;
+  claimed_bounties_count: number;
+  potential_earnings_usd: number;
+  top_platform: string;
+}
+
+export interface SSOConfig {
+  sso_provider?: string;
+  sso_metadata_url?: string;
+  sso_entity_id?: string;
+  sso_enforced: boolean;
+  sso_configured: boolean;
+}
+
+export interface SSOTestResult {
+  status: string;
+  message: string;
+  provider: string;
+  entity_id?: string;
+  endpoints_detected?: Record<string, string>;
 }
 
 export interface ImplementationBrief {

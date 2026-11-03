@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Layers, GitPullRequest, Settings as SettingsIcon, History, 
-  ShieldCheck, Search, Cpu, CreditCard
+  ShieldCheck, Search, Cpu, CreditCard, Coins
 } from 'lucide-react';
 
 import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, SubscriptionInfo } from './types';
@@ -16,12 +16,13 @@ import { ActivityHistoryView } from './components/ActivityHistoryView';
 import { RunnersView } from './components/RunnersView';
 import { BillingView } from './components/BillingView';
 import { UpgradeModal } from './components/UpgradeModal';
+import { BountiesView } from './components/BountiesView';
 import { SettingsView } from './components/SettingsView';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { promptPWAInstall } from './registerSW';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
+  const [activeTab, setActiveTab] = useState<'issues' | 'bounties' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
   const [planTier, setPlanTier] = useState<string>('starter');
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -401,7 +402,25 @@ export function App() {
                 )}
               </button>
 
-              {/* 2. Tracked Items */}
+              {/* 2. Bounties & Monetization */}
+              <button
+                onClick={() => setActiveTab('bounties')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
+                  activeTab === 'bounties'
+                    ? 'bg-amber-400 text-black font-extrabold shadow-sm'
+                    : 'text-amber-400 hover:text-amber-300 hover:bg-amber-950/20'
+                }`}
+              >
+                <Coins className="w-4 h-4" />
+                <span>Bounties</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  activeTab === 'bounties' ? 'bg-black text-amber-300' : 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
+                }`}>
+                  $$$
+                </span>
+              </button>
+
+              {/* 3. Tracked Items */}
               <button
                 onClick={() => setActiveTab('tracker')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
@@ -513,6 +532,16 @@ export function App() {
             />
           )}
 
+          {activeTab === 'bounties' && (
+            <BountiesView
+              onNavigateToTracker={() => setActiveTab('tracker')}
+              onStartBountyWork={(_res) => {
+                refreshTasks();
+                setActiveTab('tracker');
+              }}
+            />
+          )}
+
           {activeTab === 'tracker' && (
             <TrackedIssuesView
               tasks={tasks}
@@ -579,7 +608,22 @@ export function App() {
               <span>Issues</span>
             </button>
 
-            {/* 2. Tracked */}
+            {/* 2. Bounties */}
+            <button
+              onClick={() => setActiveTab('bounties')}
+              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+                activeTab === 'bounties'
+                  ? 'text-amber-400 bg-amber-950/40 border border-amber-500/30 font-bold'
+                  : 'text-neutral-400 hover:text-amber-300'
+              }`}
+            >
+              <div className="relative">
+                <Coins className="w-5 h-5 mb-0.5 text-amber-400" />
+              </div>
+              <span>Bounties</span>
+            </button>
+
+            {/* 3. Tracked */}
             <button
               onClick={() => setActiveTab('tracker')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${

@@ -1,6 +1,7 @@
 import { 
   Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob,
-  BillingPlan, SubscriptionInfo, CheckoutSessionResponse, PortalSessionResponse
+  BillingPlan, SubscriptionInfo, CheckoutSessionResponse, PortalSessionResponse,
+  BountyStats, SSOConfig, SSOTestResult
 } from './types';
 import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
 
@@ -2208,6 +2209,117 @@ export async function simulateTierChange(tier: 'starter' | 'pro' | 'team'): Prom
   }
   return await res.json();
 }
+
+// ==========================================
+// Phase 4: Bounty Platform Integrations & Enterprise SSO
+// ==========================================
+
+export async function fetchBounties(params?: {
+  platform?: string;
+  min_amount?: number;
+  search?: string;
+  sort_by?: string;
+}): Promise<Issue[]> {
+  const query = new URLSearchParams();
+  if (params?.platform) query.set('platform', params.platform);
+  if (params?.min_amount !== undefined) query.set('min_amount', String(params.min_amount));
+  if (params?.search) query.set('search', params.search);
+  if (params?.sort_by) query.set('sort_by', params.sort_by);
+
+  const res = await authedFetch(`${API_BASE}/bounties?${query.toString()}`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch bounties');
+  }
+  return await res.json();
+}
+
+export async function fetchBountyStats(): Promise<BountyStats> {
+  const res = await authedFetch(`${API_BASE}/bounties/stats`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch bounty statistics');
+  }
+  return await res.json();
+}
+
+export async function syncBounties(): Promise<{ status: string; synced_count: number }> {
+  const res = await authedFetch(`${API_BASE}/bounties/sync`, { method: 'POST' });
+  if (!res.ok) {
+    throw new Error('Failed to synchronize live bounties');
+  }
+  return await res.json();
+}
+
+export async function startBountyWork(issueId: string, customNotes?: string): Promise<any> {
+  const res = await authedFetch(`${API_BASE}/bounties/${issueId}/start-work`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ custom_notes: customNotes })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to claim bounty and start work');
+  }
+  return await res.json();
+}
+
+export async function exportAuditLogs(format: 'csv' | 'json' = 'csv'): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/audit-logs/export?format=${format}`);
+  if (!res.ok) {
+    throw new Error(`Failed to export audit logs as ${format.toUpperCase()}`);
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit_logs_${new Date().toISOString().slice(0, 10)}.${format === 'csv' ? 'csv' : 'json'}`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
+export async function fetchSSOConfig(): Promise<SSOConfig> {
+  const res = await authedFetch(`${API_BASE}/enterprise/sso`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch enterprise SSO configuration');
+  }
+  return await res.json();
+}
+
+export async function updateSSOConfig(payload: {
+  sso_provider: string;
+  sso_metadata_url: string;
+  sso_entity_id?: string;
+  sso_enforced?: boolean;
+}): Promise<SSOConfig> {
+  const res = await authedFetch(`${API_BASE}/enterprise/sso`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to save SSO configuration');
+  }
+  return await res.json();
+}
+
+export async function testSSOConnection(payload: {
+  metadata_url: string;
+  provider?: string;
+}): Promise<SSOTestResult> {
+  const res = await authedFetch(`${API_BASE}/enterprise/sso/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to test SSO connection');
+  }
+  return await res.json();
+}
+
 
 
 

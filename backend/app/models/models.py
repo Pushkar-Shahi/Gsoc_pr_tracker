@@ -45,6 +45,11 @@ class Organization(Base):
     github_installation_id = Column(BigInteger, nullable=True, index=True)
     is_personal = Column(Boolean, default=False)
     billing_tier = Column(String(64), default="starter")
+    sso_provider = Column(String(64), nullable=True)  # okta, azure_ad, google, saml, oidc
+    sso_metadata_url = Column(String(1024), nullable=True)
+    sso_entity_id = Column(String(512), nullable=True)
+    sso_enforced = Column(Boolean, default=False)
+    sso_config = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -137,6 +142,13 @@ class Issue(Base):
     estimated_effort_hours = Column(Float, default=4.0)
     ranking_breakdown = Column(JSON, default=dict)
     ai_summary = Column(Text, nullable=True)
+
+    # Phase 4: Bounty Platform Integrations (Polar.sh, Algora, Sponsors)
+    bounty_amount = Column(Float, nullable=True, default=0.0, index=True)
+    bounty_currency = Column(String(16), default="USD")
+    bounty_platform = Column(String(64), nullable=True, index=True)  # polar, algora, github_sponsors
+    bounty_url = Column(String(1024), nullable=True)
+    bounty_status = Column(String(32), default="NONE", index=True)  # NONE, AVAILABLE, CLAIMED, MERGED_PENDING_PAYOUT, PAID
     
     last_verified_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
