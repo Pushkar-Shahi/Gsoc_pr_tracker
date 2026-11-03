@@ -127,3 +127,4 @@ export function UpgradeModal({
     </div>
   );
 }
+
