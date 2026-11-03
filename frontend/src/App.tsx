@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Layers, GitPullRequest, Settings as SettingsIcon, History, 
-  ShieldCheck, Search
+  ShieldCheck, Search, Cpu
 } from 'lucide-react';
 
 import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog } from './types';
@@ -13,12 +13,13 @@ import { IssueDetailsModal } from './components/IssueDetailsModal';
 import { TrackedIssuesView } from './components/TrackedIssuesView';
 import { PullRequestsView } from './components/PullRequestsView';
 import { ActivityHistoryView } from './components/ActivityHistoryView';
+import { RunnersView } from './components/RunnersView';
 import { SettingsView } from './components/SettingsView';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { promptPWAInstall } from './registerSW';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'settings'>('issues');
+  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
 
   // Tracked Items & PRs
@@ -423,7 +424,20 @@ export function App() {
                 <span>Activity Timeline</span>
               </button>
 
-              {/* 5. Settings */}
+              {/* 5. Hybrid Runners */}
+              <button
+                onClick={() => setActiveTab('runners')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
+                  activeTab === 'runners'
+                    ? 'bg-white text-black font-bold shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                }`}
+              >
+                <Cpu className="w-4 h-4" />
+                <span>Runners</span>
+              </button>
+
+              {/* 6. Settings */}
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 ml-auto active:scale-95 ${
@@ -481,6 +495,10 @@ export function App() {
             <ActivityHistoryView logs={auditLogs} />
           )}
 
+          {activeTab === 'runners' && (
+            <RunnersView />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsView
               settings={settings}
@@ -495,7 +513,7 @@ export function App() {
 
         {/* Mobile Bottom Navigation Bar (iOS / Android Style) */}
         <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#030303]/95 backdrop-blur-2xl border-t border-white/10 px-2 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black">
-          <div className="grid grid-cols-5 gap-1 text-[10px] font-medium text-center">
+          <div className="grid grid-cols-6 gap-1 text-[10px] font-medium text-center">
             {/* 1. Find Issues */}
             <button
               onClick={() => setActiveTab('issues')}
@@ -569,7 +587,20 @@ export function App() {
               <span>Timeline</span>
             </button>
 
-            {/* 5. Settings */}
+            {/* 5. Runners */}
+            <button
+              onClick={() => setActiveTab('runners')}
+              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+                activeTab === 'runners'
+                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              <Cpu className="w-5 h-5 mb-0.5" />
+              <span>Runners</span>
+            </button>
+
+            {/* 6. Settings */}
             <button
               onClick={() => setActiveTab('settings')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${

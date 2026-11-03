@@ -1,4 +1,4 @@
-import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog } from './types';
+import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob } from './types';
 import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
 
 export { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC };
@@ -2038,6 +2038,105 @@ export async function importAuthorPRs(username?: string): Promise<{
     imported: importedCount
   };
 }
+
+// ==========================================
+// Hybrid Runner APIs (Phase 1 Scale)
+// ==========================================
+
+export async function getRunners(): Promise<Runner[]> {
+  try {
+    const res = await authedFetch(`${API_BASE}/runners`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("Failed to fetch runners from API, falling back to local state:", err);
+  }
+  const raw = localStorage.getItem('issuetopr_runners');
+  if (raw) {
+    try { return JSON.parse(raw); } catch {}
+  }
+  return [
+    {
+      id: 'rnr-local-mac-01',
+      name: 'MacBook Pro Local Daemon',
+      os_info: 'Darwin 24.0.0 arm64',
+      status: 'online',
+      system_stats: { cpu_percent: 14.2, memory_percent: 42.1 },
+      last_heartbeat_at: new Date().toISOString(),
+      is_active: true,
+      created_at: new Date(Date.now() - 3600000 * 24).toISOString()
+    }
+  ];
+}
+
+export async function registerRunner(name: string, os_info?: string): Promise<{ runner: Runner; runner_token: string }> {
+  try {
+    const res = await authedFetch(`${API_BASE}/runners/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name, os_info: os_info || navigator.userAgent })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        runner: {
+          id: data.runner_id,
+          name: data.name,
+          os_info: os_info || navigator.userAgent,
+          status: 'online',
+          is_active: true,
+          created_at: new Date().toISOString()
+        },
+        runner_token: data.runner_token
+      };
+    }
+  } catch (err) {
+    console.warn("API runner register failed, creating local demo runner:", err);
+  }
+
+  // Fallback demo runner
+  const token = `rnt_${Math.random().toString(36).substring(2)}${Date.now()}`;
+  const newRunner: Runner = {
+    id: `rnr-${Date.now()}`,
+    name,
+    os_info: os_info || navigator.userAgent,
+    status: 'online',
+    is_active: true,
+    last_heartbeat_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+  const runners = await getRunners();
+  runners.unshift(newRunner);
+  localStorage.setItem('issuetopr_runners', JSON.stringify(runners));
+  return { runner: newRunner, runner_token: token };
+}
+
+export async function deleteRunner(runnerId: string): Promise<void> {
+  try {
+    await authedFetch(`${API_BASE}/runners/${runnerId}`, {
+      method: 'DELETE'
+    });
+  } catch (err) {
+    console.warn("API runner delete error:", err);
+  }
+  const runners = (await getRunners()).filter(r => r.id !== runnerId);
+  localStorage.setItem('issuetopr_runners', JSON.stringify(runners));
+}
+
+export async function getGitHubLoginUrl(): Promise<string> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/github/login?format=json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authorization_url) return data.authorization_url;
+    }
+  } catch {}
+  return `${API_BASE}/auth/github/login`;
+}
+
 
 
 

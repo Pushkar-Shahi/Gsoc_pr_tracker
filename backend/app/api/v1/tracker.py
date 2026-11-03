@@ -14,6 +14,7 @@ from app.models.models import Task, Issue, Repository, PlatformSettings, AuditLo
 from app.schemas.schemas import TaskRead
 from app.services.github_client import GitHubClient
 from app.services.background_worker import sync_task_pr_status
+from app.core.tenant import TenantContext, get_current_tenant
 
 router = APIRouter(prefix="/tracker", tags=["Contribution Tracker"])
 logger = logging.getLogger(__name__)
@@ -29,7 +30,11 @@ class TrackItemRequest(BaseModel):
     url: str = Field(..., description="GitHub Issue or PR URL (e.g. https://github.com/owner/repo/pull/123 or https://github.com/owner/repo/issues/456)")
 
 @router.post("/track", response_model=TaskRead)
-async def track_item(payload: TrackItemRequest, db: AsyncSession = Depends(get_db)):
+async def track_item(
+    payload: TrackItemRequest,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Accepts any GitHub Pull Request or Issue URL (or owner/repo#number),
     fetches live status from GitHub, and adds it to the active tracker.
@@ -151,7 +156,8 @@ async def track_item(payload: TrackItemRequest, db: AsyncSession = Depends(get_d
         task_stmt = select(Task).options(
             selectinload(Task.issue).selectinload(Issue.repository)
         ).where(
-            Task.issue_id == issue.id
+            Task.issue_id == issue.id,
+            Task.tenant_id == ctx.organization.id
         )
         t_res = await db.execute(task_stmt)
         task = t_res.scalar_one_or_none()
@@ -162,6 +168,8 @@ async def track_item(payload: TrackItemRequest, db: AsyncSession = Depends(get_d
 
         if not task:
             task = Task(
+                tenant_id=ctx.organization.id,
+                user_id=ctx.user.id,
                 issue_id=issue.id,
                 pr_number=item_number,
                 pr_url=html_url,
@@ -188,6 +196,8 @@ async def track_item(payload: TrackItemRequest, db: AsyncSession = Depends(get_d
             logger.warning(f"Initial PR sync warning for {full_name}#{item_number}: {e}")
 
         audit = AuditLog(
+            tenant_id=ctx.organization.id,
+            user_id=ctx.user.id,
             task_id=task.id,
             issue_id=issue.id,
             action="TRACKER_PR_ADDED",
@@ -251,13 +261,16 @@ async def track_item(payload: TrackItemRequest, db: AsyncSession = Depends(get_d
         task_stmt = select(Task).options(
             selectinload(Task.issue).selectinload(Issue.repository)
         ).where(
-            Task.issue_id == issue.id
+            Task.issue_id == issue.id,
+            Task.tenant_id == ctx.organization.id
         )
         t_res = await db.execute(task_stmt)
         task = t_res.scalar_one_or_none()
 
         if not task:
             task = Task(
+                tenant_id=ctx.organization.id,
+                user_id=ctx.user.id,
                 issue_id=issue.id,
                 workflow_state="TRACKING" if state == "open" else "MERGED_OR_CLOSED"
             )
@@ -269,6 +282,8 @@ async def track_item(payload: TrackItemRequest, db: AsyncSession = Depends(get_d
                 task.workflow_state = "MERGED_OR_CLOSED"
 
         audit = AuditLog(
+            tenant_id=ctx.organization.id,
+            user_id=ctx.user.id,
             task_id=task.id,
             issue_id=issue.id,
             action="TRACKER_ISSUE_ADDED",

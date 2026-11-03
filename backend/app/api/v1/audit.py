@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.models.models import AuditLog
 from app.schemas.schemas import AuditLogRead
+from app.core.tenant import TenantContext, get_current_tenant
 
 router = APIRouter(prefix="/audit-logs", tags=["Audit"])
 
@@ -14,9 +15,12 @@ async def list_audit_logs(
     task_id: Optional[str] = None,
     action: Optional[str] = None,
     limit: int = Query(100, ge=1, le=500),
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(AuditLog).order_by(desc(AuditLog.created_at))
+    stmt = select(AuditLog).where(
+        AuditLog.tenant_id == ctx.organization.id
+    ).order_by(desc(AuditLog.created_at))
     if task_id:
         stmt = stmt.where(AuditLog.task_id == task_id)
     if action:
@@ -27,10 +31,11 @@ async def list_audit_logs(
 
 @router.delete("")
 async def clear_all_audit_logs(
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
-    """Clear all audit logs / notification history."""
-    stmt = delete(AuditLog)
+    """Clear all audit logs / notification history for the current tenant."""
+    stmt = delete(AuditLog).where(AuditLog.tenant_id == ctx.organization.id)
     result = await db.execute(stmt)
     await db.commit()
     return {"status": "success", "cleared": result.rowcount}
@@ -38,10 +43,14 @@ async def clear_all_audit_logs(
 @router.delete("/{log_id}")
 async def delete_audit_log(
     log_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
-    """Delete a single audit log notification."""
-    stmt = delete(AuditLog).where(AuditLog.id == log_id)
+    """Delete a single audit log notification within the current tenant."""
+    stmt = delete(AuditLog).where(
+        AuditLog.id == log_id,
+        AuditLog.tenant_id == ctx.organization.id
+    )
     result = await db.execute(stmt)
     await db.commit()
     if result.rowcount == 0:

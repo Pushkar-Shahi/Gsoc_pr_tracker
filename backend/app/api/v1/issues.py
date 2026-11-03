@@ -14,6 +14,7 @@ from app.services.ranking_service import RankingService
 from app.services.policy_inspector import PolicyInspector
 from app.core.config import settings
 from app.core.gsoc_orgs import ALL_GSOC_OWNERS, FOCUS_GSOC_OWNERS, FOCUS_GSOC_ORGS, get_gsoc_info, is_gsoc_org, is_focus_gsoc_org
+from app.core.tenant import TenantContext, get_current_tenant
 
 router = APIRouter(prefix="/issues", tags=["Issues"])
 
@@ -33,6 +34,7 @@ async def list_issues(
     gsoc_org: Optional[str] = None,
     sort_by: str = Query("created", pattern="^(rank|created|stars|effort)$"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
+    ctx: Optional[TenantContext] = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Issue).options(
@@ -136,20 +138,22 @@ async def list_issues(
 
     # Enrich active task data if present
     items = []
+    org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
     for issue in issues:
         active_task = None
         if issue.tasks:
-            # Get latest active task
-            latest_task = sorted(issue.tasks, key=lambda t: t.created_at, reverse=True)[0]
-            active_task = {
-                "id": latest_task.id,
-                "workflow_state": latest_task.workflow_state,
-                "worktree_path": latest_task.worktree_path,
-                "branch_name": latest_task.branch_name,
-                "assignment_required": latest_task.assignment_required,
-                "pr_number": latest_task.pr_number,
-                "pr_url": latest_task.pr_url
-            }
+            tenant_tasks = [t for t in issue.tasks if t.tenant_id == org_id] if org_id else []
+            if tenant_tasks:
+                latest_task = sorted(tenant_tasks, key=lambda t: t.created_at, reverse=True)[0]
+                active_task = {
+                    "id": latest_task.id,
+                    "workflow_state": latest_task.workflow_state,
+                    "worktree_path": latest_task.worktree_path,
+                    "branch_name": latest_task.branch_name,
+                    "assignment_required": latest_task.assignment_required,
+                    "pr_number": latest_task.pr_number,
+                    "pr_url": latest_task.pr_url
+                }
 
         issue_dict = IssueRead.model_validate(issue)
         issue_dict.active_task = active_task
@@ -176,7 +180,11 @@ async def list_issues(
     )
 
 @router.get("/{issue_id}", response_model=IssueRead)
-async def get_issue(issue_id: str, db: AsyncSession = Depends(get_db)):
+async def get_issue(
+    issue_id: str,
+    ctx: Optional[TenantContext] = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Issue).options(
         selectinload(Issue.repository),
         selectinload(Issue.tasks)
@@ -189,16 +197,19 @@ async def get_issue(issue_id: str, db: AsyncSession = Depends(get_db)):
     
     active_task = None
     if issue.tasks:
-        latest = sorted(issue.tasks, key=lambda t: t.created_at, reverse=True)[0]
-        active_task = {
-            "id": latest.id,
-            "workflow_state": latest.workflow_state,
-            "worktree_path": latest.worktree_path,
-            "branch_name": latest.branch_name,
-            "assignment_required": latest.assignment_required,
-            "pr_number": latest.pr_number,
-            "pr_url": latest.pr_url
-        }
+        org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
+        tenant_tasks = [t for t in issue.tasks if t.tenant_id == org_id] if org_id else []
+        if tenant_tasks:
+            latest = sorted(tenant_tasks, key=lambda t: t.created_at, reverse=True)[0]
+            active_task = {
+                "id": latest.id,
+                "workflow_state": latest.workflow_state,
+                "worktree_path": latest.worktree_path,
+                "branch_name": latest.branch_name,
+                "assignment_required": latest.assignment_required,
+                "pr_number": latest.pr_number,
+                "pr_url": latest.pr_url
+            }
     
     res = IssueRead.model_validate(issue)
     res.active_task = active_task

@@ -12,6 +12,7 @@ from app.schemas.schemas import (
     TaskRead, TaskCreate, PreflightResult, AssignmentApprovalRequest,
     AutonomousApproveRequest, ValidationRunRequest, ValidationResult, PublishRequest, PublishResult
 )
+from app.core.tenant import TenantContext, get_current_tenant
 from app.services.policy_inspector import PolicyInspector
 from app.services.issue_analyzer import IssueAnalyzer
 from app.services.workspace_manager import WorkspaceManager
@@ -22,6 +23,26 @@ from app.services.github_client import GitHubClient
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
+
+class _FallbackEntity:
+    def __init__(self, id_val: str, name_val: str = "default"):
+        self.id = id_val
+        self.name = name_val
+        self.github_username = name_val
+
+class _FallbackTenantContext:
+    def __init__(self):
+        self.organization = _FallbackEntity("default-org")
+        self.user = _FallbackEntity("default-user")
+        self.membership = None
+        self.role = "owner"
+
+def _resolve_tenant_ctx(ctx: Any) -> Any:
+    if isinstance(ctx, TenantContext) and ctx.organization and ctx.user:
+        return ctx
+    if ctx is not None and hasattr(ctx, "organization") and ctx.organization is not None and not isinstance(getattr(ctx, "organization"), Depends):
+        return ctx
+    return _FallbackTenantContext()
 
 async def get_github_client(db: AsyncSession) -> GitHubClient:
     stmt = select(PlatformSettings).where(PlatformSettings.id == 1)
@@ -34,11 +55,13 @@ async def get_github_client(db: AsyncSession) -> GitHubClient:
 async def list_tasks(
     state: Optional[str] = None,
     limit: int = Query(50, ge=1, le=100),
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
+    ctx = _resolve_tenant_ctx(ctx)
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).order_by(desc(Task.updated_at))
+    ).where(Task.tenant_id == ctx.organization.id).order_by(desc(Task.updated_at))
 
     if state:
         stmt = stmt.where(Task.workflow_state == state)
@@ -49,10 +72,15 @@ async def list_tasks(
     return tasks
 
 @router.get("/{task_id}", response_model=TaskRead)
-async def get_task(task_id: str, db: AsyncSession = Depends(get_db)):
+async def get_task(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    ctx = _resolve_tenant_ctx(ctx)
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
     if not task:
@@ -60,7 +88,12 @@ async def get_task(task_id: str, db: AsyncSession = Depends(get_db)):
     return task
 
 @router.post("/select", response_model=TaskRead)
-async def select_issue(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
+async def select_issue(
+    payload: TaskCreate,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    ctx = _resolve_tenant_ctx(ctx)
     # 1. Fetch issue
     issue_stmt = select(Issue).options(selectinload(Issue.repository)).where(Issue.id == payload.issue_id)
     res = await db.execute(issue_stmt)
@@ -73,6 +106,7 @@ async def select_issue(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
         selectinload(Task.issue).selectinload(Issue.repository)
     ).where(
         Task.issue_id == issue.id,
+        Task.tenant_id == ctx.organization.id,
         Task.workflow_state.notin_(["CANCELLED", "MERGED_OR_CLOSED"])
     )
     existing_res = await db.execute(existing_task_stmt)
@@ -124,6 +158,8 @@ async def select_issue(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     # 4. Create Task in SELECTED
     task = Task(
         issue_id=issue.id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         workflow_state="SELECTED"
     )
     db.add(task)
@@ -156,6 +192,8 @@ async def select_issue(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     audit = AuditLog(
         task_id=task.id,
         issue_id=issue.id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="ISSUE_SELECTED_AND_ANALYZED",
         actor="USER",
         details={
@@ -172,15 +210,19 @@ async def select_issue(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     # Re-fetch with relationships
     task_stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task.id)
+    ).where(Task.id == task.id, Task.tenant_id == ctx.organization.id)
     r = await db.execute(task_stmt)
     return r.scalar_one()
 
 @router.post("/{task_id}/preflight", response_model=PreflightResult)
-async def rerun_preflight(task_id: str, db: AsyncSession = Depends(get_db)):
+async def rerun_preflight(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -209,6 +251,8 @@ async def rerun_preflight(task_id: str, db: AsyncSession = Depends(get_db)):
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="PREFLIGHT_RERUN",
         actor="USER",
         details=preflight
@@ -230,11 +274,12 @@ async def rerun_preflight(task_id: str, db: AsyncSession = Depends(get_db)):
 async def approve_and_post_assignment(
     task_id: str,
     payload: AssignmentApprovalRequest,
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -269,6 +314,8 @@ async def approve_and_post_assignment(
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="ASSIGNMENT_COMMENT_POSTED",
         actor="USER",
         details={
@@ -282,10 +329,30 @@ async def approve_and_post_assignment(
     await db.refresh(task)
     return task
 
+@router.post("/{task_id}/approve", response_model=TaskRead)
+async def approve_task(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    ctx = _resolve_tenant_ctx(ctx)
+    stmt = select(Task).options(
+        selectinload(Task.issue).selectinload(Issue.repository)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
+    res = await db.execute(stmt)
+    task = res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task.user_approved_assignment = True
+    await db.commit()
+    await db.refresh(task)
+    return task
+
 @router.post("/{task_id}/autonomous-approve", response_model=TaskRead)
 async def autonomous_approve(
     task_id: str,
     payload: Optional[AutonomousApproveRequest] = None,
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -295,7 +362,7 @@ async def autonomous_approve(
     """
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -336,6 +403,8 @@ async def autonomous_approve(
         audit = AuditLog(
             task_id=task.id,
             issue_id=task.issue_id,
+            tenant_id=ctx.organization.id,
+            user_id=ctx.user.id,
             action="AUTONOMOUS_ASSIGNMENT_SUBMITTED",
             actor="USER",
             details={
@@ -385,6 +454,8 @@ async def autonomous_approve(
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="AUTONOMOUS_WORKSPACE_PREPARED",
         actor="USER",
         details={
@@ -400,13 +471,17 @@ async def autonomous_approve(
     return task
 
 @router.post("/{task_id}/briefing/generate", response_model=TaskRead)
-async def generate_task_briefing(task_id: str, db: AsyncSession = Depends(get_db)):
+async def generate_task_briefing(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Generates or refreshes the comprehensive autonomous issue briefing for a task.
     """
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -436,10 +511,14 @@ async def generate_task_briefing(task_id: str, db: AsyncSession = Depends(get_db
     return task
 
 @router.post("/{task_id}/assignment/recheck", response_model=TaskRead)
-async def recheck_assignment_status(task_id: str, db: AsyncSession = Depends(get_db)):
+async def recheck_assignment_status(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -477,10 +556,14 @@ async def recheck_assignment_status(task_id: str, db: AsyncSession = Depends(get
     return task
 
 @router.post("/{task_id}/workspace/prepare", response_model=TaskRead)
-async def prepare_workspace(task_id: str, db: AsyncSession = Depends(get_db)):
+async def prepare_workspace(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -516,6 +599,8 @@ async def prepare_workspace(task_id: str, db: AsyncSession = Depends(get_db)):
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="WORKSPACE_PREPARED",
         actor="USER",
         details={
@@ -529,10 +614,14 @@ async def prepare_workspace(task_id: str, db: AsyncSession = Depends(get_db)):
     return task
 
 @router.post("/{task_id}/antigravity/open")
-async def open_in_antigravity(task_id: str, db: AsyncSession = Depends(get_db)):
+async def open_in_antigravity(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -576,10 +665,14 @@ async def open_in_antigravity(task_id: str, db: AsyncSession = Depends(get_db)):
     return handoff_result
 
 @router.post("/{task_id}/ready-for-validation", response_model=TaskRead)
-async def mark_ready_for_validation(task_id: str, db: AsyncSession = Depends(get_db)):
+async def mark_ready_for_validation(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -594,11 +687,12 @@ async def mark_ready_for_validation(task_id: str, db: AsyncSession = Depends(get
 async def run_validation(
     task_id: str,
     payload: Optional[ValidationRunRequest] = None,
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -663,6 +757,8 @@ async def run_validation(
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="VALIDATION_RUN",
         actor="USER",
         details={
@@ -702,6 +798,8 @@ async def run_validation(
             audit_pub = AuditLog(
                 task_id=task.id,
                 issue_id=task.issue_id,
+                tenant_id=ctx.organization.id,
+                user_id=ctx.user.id,
                 action="PR_PUBLISHED_AUTOMATIC",
                 actor="SYSTEM",
                 details=pub_res
@@ -722,13 +820,17 @@ async def run_validation(
 
 
 @router.post("/{task_id}/validation/override", response_model=TaskRead)
-async def override_validation(task_id: str, db: AsyncSession = Depends(get_db)):
+async def override_validation(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Manually overrides validation check results and marks task as READY_TO_PUBLISH.
     """
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -739,6 +841,8 @@ async def override_validation(task_id: str, db: AsyncSession = Depends(get_db)):
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="VALIDATION_OVERRIDE",
         actor="USER",
         details={"note": "Manual validation override applied by user"}
@@ -753,11 +857,12 @@ async def override_validation(task_id: str, db: AsyncSession = Depends(get_db)):
 async def publish_pr(
     task_id: str,
     payload: Optional[PublishRequest] = None,
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -794,6 +899,8 @@ async def publish_pr(
         audit = AuditLog(
             task_id=task.id,
             issue_id=task.issue_id,
+            tenant_id=ctx.organization.id,
+            user_id=ctx.user.id,
             action="PR_PUBLISHED",
             actor="USER",
             details=pub_res
@@ -820,10 +927,14 @@ async def publish_pr(
         )
 
 @router.post("/{task_id}/cancel", response_model=TaskRead)
-async def cancel_task(task_id: str, db: AsyncSession = Depends(get_db)):
+async def cancel_task(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:
@@ -837,6 +948,8 @@ async def cancel_task(task_id: str, db: AsyncSession = Depends(get_db)):
     audit = AuditLog(
         task_id=task.id,
         issue_id=task.issue_id,
+        tenant_id=ctx.organization.id,
+        user_id=ctx.user.id,
         action="TASK_CANCELLED",
         actor="USER",
         details={"previous_state": task.workflow_state}
@@ -847,11 +960,15 @@ async def cancel_task(task_id: str, db: AsyncSession = Depends(get_db)):
     return task
 
 @router.post("/{task_id}/pr/sync", response_model=TaskRead)
-async def sync_pr_status_endpoint(task_id: str, db: AsyncSession = Depends(get_db)):
+async def sync_pr_status_endpoint(
+    task_id: str,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     """Synchronizes pull request status, merge outcome, CI check runs, and maintainer reviews from GitHub."""
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id)
+    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
     res = await db.execute(stmt)
     task = res.scalar_one_or_none()
     if not task:

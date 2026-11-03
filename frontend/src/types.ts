@@ -183,3 +183,29 @@ export interface AuditLog {
   details: Record<string, any>;
   created_at: string;
 }
+
+export interface Runner {
+  id: string;
+  name: string;
+  os_info?: string;
+  status: 'online' | 'offline' | 'idle' | 'busy' | string;
+  system_stats?: Record<string, any>;
+  last_heartbeat_at?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface RunnerJob {
+  id: string;
+  task_id: string;
+  tenant_id: string;
+  runner_id?: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | string;
+  payload: Record<string, any>;
+  result?: Record<string, any>;
+  error_message?: string;
+  logs?: string;
+  started_at?: string;
+  completed_at?: string;
+  created_at?: string;
+}

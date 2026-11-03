@@ -48,4 +48,5 @@ yarn-debug.log*
 yarn-error.log*
 
 # Antigravity & local caches
+.agents/
 .system_generated/

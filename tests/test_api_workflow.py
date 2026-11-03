@@ -47,40 +47,46 @@ async def test_full_api_workflow():
         session.add(iss)
         await session.commit()
 
-    async with lifespan(app):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", headers=headers) as ac:
-            # 1. Health check
-            r = await ac.get("/api/health")
-            assert r.status_code == 200
+    from unittest.mock import AsyncMock, patch
 
-            # 2. Issues listing
-            issues_res = await ac.get("/api/v1/issues")
-            assert issues_res.status_code == 200
-            data = issues_res.json()
-            assert len(data["items"]) > 0
+    with patch("app.services.background_worker.reconcile_tasks_on_startup", new_callable=AsyncMock), \
+         patch("app.services.github_client.GitHubClient.get_issue", new_callable=AsyncMock, return_value={"state": "open", "assignees": []}), \
+         patch("app.services.github_client.GitHubClient.get_pull_request", new_callable=AsyncMock, return_value=None), \
+         patch("app.services.github_client.GitHubClient.get_pull_request_reviews", new_callable=AsyncMock, return_value=[]), \
+         patch("app.services.github_client.GitHubClient.get_commit_check_runs", new_callable=AsyncMock, return_value={"status": "success"}):
+        async with lifespan(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", headers=headers) as ac:
+                # 1. Health check
+                r = await ac.get("/api/health")
+                assert r.status_code == 200
 
-            # 3. Select issue
-            from unittest.mock import AsyncMock, patch
-            mock_gh = AsyncMock()
-            mock_gh.get_issue.return_value = {"state": "open", "assignees": [], "title": "Test Issue", "body": "Sample", "labels": []}
-            mock_gh.list_issue_comments.return_value = []
-            mock_gh.get_contributing_guidelines.return_value = None
-            with patch("app.api.v1.tasks.get_github_client", return_value=mock_gh):
-                select_res = await ac.post("/api/v1/tasks/select", json={"issue_id": test_iss_id})
-                assert select_res.status_code == 200
-                task = select_res.json()
-                task_id = task["id"]
-                assert task["workflow_state"] in ("READY_TO_WORK", "ASSIGNMENT_REQUEST_REQUIRED", "POLICY_REVIEW_REQUIRED", "BLOCKED")
+                # 2. Issues listing
+                issues_res = await ac.get("/api/v1/issues")
+                assert issues_res.status_code == 200
+                data = issues_res.json()
+                assert len(data["items"]) > 0
 
-            # 4. Settings read & update
-            sett_res = await ac.get("/api/v1/settings")
-            assert sett_res.status_code == 200
+                # 3. Select issue
+                mock_gh = AsyncMock()
+                mock_gh.get_issue.return_value = {"state": "open", "assignees": [], "title": "Test Issue", "body": "Sample", "labels": []}
+                mock_gh.list_issue_comments.return_value = []
+                mock_gh.get_contributing_guidelines.return_value = None
+                with patch("app.api.v1.tasks.get_github_client", return_value=mock_gh):
+                    select_res = await ac.post("/api/v1/tasks/select", json={"issue_id": test_iss_id})
+                    assert select_res.status_code == 200
+                    task = select_res.json()
+                    task_id = task["id"]
+                    assert task["workflow_state"] in ("READY_TO_WORK", "ASSIGNMENT_REQUEST_REQUIRED", "POLICY_REVIEW_REQUIRED", "BLOCKED")
 
-            update_res = await ac.put("/api/v1/settings", json={"auto_publish_pr": False})
-            assert update_res.status_code == 200
-            assert update_res.json()["auto_publish_pr"] is False
+                # 4. Settings read & update
+                sett_res = await ac.get("/api/v1/settings")
+                assert sett_res.status_code == 200
 
-            # 5. Audit logs verify recording
-            audit_res = await ac.get("/api/v1/audit-logs")
-            assert audit_res.status_code == 200
-            assert len(audit_res.json()) > 0
+                update_res = await ac.put("/api/v1/settings", json={"auto_publish_pr": False})
+                assert update_res.status_code == 200
+                assert update_res.json()["auto_publish_pr"] is False
+
+                # 5. Audit logs verify recording
+                audit_res = await ac.get("/api/v1/audit-logs")
+                assert audit_res.status_code == 200
+                assert len(audit_res.json()) > 0

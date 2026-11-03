@@ -2,15 +2,26 @@ import json
 import os
 import secrets
 import time
+import uuid
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Header, status
+import httpx
+from fastapi import APIRouter, HTTPException, Header, Depends, status
 from pydantic import BaseModel
+from starlette.responses import RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
-from app.core.security import verify_password, generate_session_token, verify_session_token
+from app.core.security import verify_password, generate_session_token, verify_session_token, decode_session_token
+from app.db.database import get_db
+from app.models.models import User, Organization, Membership
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# OAuth In-Memory State Storage
+_oauth_states: Dict[str, float] = {}
 
 # Biometric Credentials Storage
 BIOMETRIC_FILE = settings.DATA_DIR / "biometric_credentials.json"
@@ -45,6 +56,11 @@ class LoginResponse(BaseModel):
 class AuthStatusResponse(BaseModel):
     authenticated: bool
     user: str = "admin"
+    username: Optional[str] = None
+    id: Optional[str] = None
+    tenant_id: Optional[str] = None
+    role: Optional[str] = None
+    tier: Optional[str] = None
 
 class BiometricChallengeResponse(BaseModel):
     challenge: str
@@ -78,21 +94,172 @@ async def login(req: LoginRequest):
     token = generate_session_token("admin")
     return LoginResponse(token=token)
 
-@router.get("/me", response_model=AuthStatusResponse)
+@router.get("/github/login")
+async def github_login(format: Optional[str] = None):
+    """Initiates GitHub OAuth 2.0 authorization code flow."""
+    now = time.time()
+    for s in [k for k, exp in _oauth_states.items() if exp < now]:
+        _oauth_states.pop(s, None)
+
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = now + 600
+
+    client_id = settings.GITHUB_CLIENT_ID or "mock_client_id_12345"
+    redirect_uri = settings.GITHUB_REDIRECT_URI
+    auth_url = (
+        f"https://github.com/login/oauth/authorize?"
+        f"client_id={client_id}&redirect_uri={redirect_uri}&scope=read:user,user:email,repo&state={state}"
+    )
+
+    if format == "json":
+        return {"authorization_url": auth_url, "state": state}
+    return RedirectResponse(url=auth_url, status_code=302)
+
+@router.get("/github/callback")
+async def github_callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Exchanges GitHub OAuth code for access token, upserts user and workspace, and issues session token."""
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing authorization code")
+    if not state or state not in _oauth_states or _oauth_states[state] < time.time():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state parameter")
+
+    _oauth_states.pop(state, None)
+
+    token_url = "https://github.com/login/oauth/access_token"
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(
+            token_url,
+            json={
+                "client_id": settings.GITHUB_CLIENT_ID,
+                "client_secret": settings.GITHUB_CLIENT_SECRET,
+                "code": code,
+                "redirect_uri": settings.GITHUB_REDIRECT_URI
+            },
+            headers={"Accept": "application/json"}
+        )
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to retrieve access token from GitHub")
+
+        user_resp = await client.get(
+            "https://api.github.com/user",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
+        )
+        gh_user = user_resp.json()
+
+    gh_id = gh_user.get("id")
+    gh_username = gh_user.get("login") or f"user_{gh_id}"
+    email = gh_user.get("email")
+    name = gh_user.get("name") or gh_username
+    avatar_url = gh_user.get("avatar_url")
+
+    # Upsert User
+    user = None
+    if gh_id:
+        u_res = await db.execute(select(User).where(User.github_id == gh_id))
+        user = u_res.scalar_one_or_none()
+    if not user:
+        u_res2 = await db.execute(select(User).where(User.github_username == gh_username))
+        user = u_res2.scalar_one_or_none()
+
+    if user:
+        if email:
+            user.email = email
+        if avatar_url:
+            user.avatar_url = avatar_url
+        if name:
+            user.name = name
+    else:
+        u_id = f"usr-{uuid.uuid4().hex[:12]}"
+        user = User(
+            id=u_id,
+            github_id=gh_id,
+            github_username=gh_username,
+            email=email or f"{gh_username}@platform.dev",
+            name=name,
+            avatar_url=avatar_url
+        )
+        db.add(user)
+        await db.flush()
+
+    # Look up or create personal organization workspace
+    mem_stmt = select(Membership).options(selectinload(Membership.organization)).where(Membership.user_id == user.id)
+    mem_res = await db.execute(mem_stmt)
+    membership = mem_res.scalars().first()
+
+    if not membership:
+        o_id = f"org-{uuid.uuid4().hex[:12]}"
+        org = Organization(
+            id=o_id,
+            name=f"{gh_username}'s Workspace",
+            slug=f"org-{gh_username}-{uuid.uuid4().hex[:6]}",
+            is_personal=True,
+            billing_tier="starter"
+        )
+        db.add(org)
+        await db.flush()
+
+        membership = Membership(
+            id=f"mem-{uuid.uuid4().hex[:8]}",
+            user_id=user.id,
+            org_id=org.id,
+            role="owner"
+        )
+        db.add(membership)
+        await db.flush()
+        tenant_id = org.id
+    else:
+        tenant_id = membership.org_id
+
+    await db.commit()
+
+    claims = {
+        "user_id": user.id,
+        "username": user.github_username,
+        "tenant_id": tenant_id,
+        "role": membership.role,
+        "tier": "starter"
+    }
+    session_token = generate_session_token(subject=user.id, claims=claims)
+    redirect_target = f"{settings.FRONTEND_AUTH_CALLBACK_URL}?token={session_token}"
+    return RedirectResponse(url=redirect_target, status_code=302)
+
+@router.get("/me")
 async def check_auth(authorization: Optional[str] = Header(None)):
-    """Checks whether the currently provided token is valid."""
+    """Checks whether the currently provided token is valid and returns user profile with claims."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authentication header."
         )
     token = authorization.split("Bearer ", 1)[1].strip()
-    if not verify_session_token(token):
+    payload = decode_session_token(token)
+    if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session expired or invalid. Please re-enter your password."
         )
-    return AuthStatusResponse(authenticated=True, user="admin")
+
+    user_claim = payload.get("username") or payload.get("sub", "admin")
+    user_id = payload.get("user_id") or payload.get("sub", "default-user")
+    tenant_id = payload.get("tenant_id") or "default-org"
+    role = payload.get("role", "owner")
+    tier = payload.get("tier", "starter")
+
+    return {
+        "authenticated": True,
+        "user": user_claim,
+        "username": user_claim,
+        "id": user_id,
+        "tenant_id": tenant_id,
+        "role": role,
+        "tier": tier
+    }
 
 @router.post("/logout")
 async def logout():

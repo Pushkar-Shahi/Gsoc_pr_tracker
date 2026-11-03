@@ -1,3 +1,4 @@
+import enum
 import uuid
 from datetime import datetime
 from sqlalchemy import (
@@ -10,10 +11,71 @@ from app.db.database import Base
 def generate_uuid():
     return str(uuid.uuid4())
 
+class MembershipRole(str, enum.Enum):
+    OWNER = "owner"
+    ADMIN = "admin"
+    MEMBER = "member"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    github_id = Column(BigInteger, unique=True, nullable=True, index=True)
+    github_username = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), nullable=True, index=True)
+    name = Column(String(255), nullable=True)
+    avatar_url = Column(String(1024), nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
+    tasks = relationship("Task", primaryjoin="User.id == Task.user_id", foreign_keys="Task.user_id", back_populates="user")
+    audit_logs = relationship("AuditLog", primaryjoin="User.id == AuditLog.user_id", foreign_keys="AuditLog.user_id", back_populates="user")
+    settings = relationship("UserSettings", uselist=False, back_populates="user", cascade="all, delete-orphan")
+
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True, nullable=False, index=True)
+    github_org_id = Column(BigInteger, nullable=True, index=True)
+    github_installation_id = Column(BigInteger, nullable=True, index=True)
+    is_personal = Column(Boolean, default=False)
+    billing_tier = Column(String(64), default="starter")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    memberships = relationship("Membership", back_populates="organization", cascade="all, delete-orphan")
+    repositories = relationship("Repository", primaryjoin="Organization.id == Repository.tenant_id", foreign_keys="Repository.tenant_id", back_populates="organization", cascade="all, delete-orphan")
+    tasks = relationship("Task", primaryjoin="Organization.id == Task.tenant_id", foreign_keys="Task.tenant_id", back_populates="organization", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", primaryjoin="Organization.id == AuditLog.tenant_id", foreign_keys="AuditLog.tenant_id", back_populates="organization", cascade="all, delete-orphan")
+    settings = relationship("OrganizationSettings", uselist=False, back_populates="organization", cascade="all, delete-orphan")
+
+class Membership(Base):
+    __tablename__ = "memberships"
+    __table_args__ = (
+        UniqueConstraint("user_id", "org_id", name="uq_membership_user_org"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    org_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(32), default=MembershipRole.MEMBER.value, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="memberships")
+    organization = relationship("Organization", back_populates="memberships")
+
 class Repository(Base):
     __tablename__ = "repositories"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), index=True, nullable=True)
+    user_id = Column(String(36), index=True, nullable=True)
     owner = Column(String(255), nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
     full_name = Column(String(512), unique=True, nullable=False, index=True)
@@ -34,6 +96,8 @@ class Repository(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     issues = relationship("Issue", back_populates="repository", cascade="all, delete-orphan")
+    organization = relationship("Organization", primaryjoin="Repository.tenant_id == Organization.id", foreign_keys=[tenant_id], back_populates="repositories")
+    user = relationship("User", primaryjoin="Repository.user_id == User.id", foreign_keys=[user_id])
 
 
 class Issue(Base):
@@ -43,6 +107,8 @@ class Issue(Base):
     )
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), index=True, nullable=True)
+    user_id = Column(String(36), index=True, nullable=True)
     repository_id = Column(String(36), ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False, index=True)
     github_id = Column(BigInteger, unique=True, nullable=False, index=True)
     issue_number = Column(Integer, nullable=False, index=True)
@@ -76,12 +142,16 @@ class Issue(Base):
 
     repository = relationship("Repository", back_populates="issues")
     tasks = relationship("Task", back_populates="issue", cascade="all, delete-orphan")
+    organization = relationship("Organization", primaryjoin="Issue.tenant_id == Organization.id", foreign_keys=[tenant_id])
+    user = relationship("User", primaryjoin="Issue.user_id == User.id", foreign_keys=[user_id])
 
 
 class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), index=True, nullable=True)
+    user_id = Column(String(36), index=True, nullable=True)
     issue_id = Column(String(36), ForeignKey("issues.id", ondelete="CASCADE"), nullable=False, index=True)
     workflow_state = Column(String(64), default="SELECTED", index=True)
     
@@ -122,6 +192,8 @@ class Task(Base):
 
     issue = relationship("Issue", back_populates="tasks")
     audit_logs = relationship("AuditLog", back_populates="task", cascade="all, delete-orphan")
+    organization = relationship("Organization", primaryjoin="Task.tenant_id == Organization.id", foreign_keys=[tenant_id], back_populates="tasks")
+    user = relationship("User", primaryjoin="Task.user_id == User.id", foreign_keys=[user_id], back_populates="tasks")
 
 
 class DiscoveryCheckpoint(Base):
@@ -141,6 +213,8 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), index=True, nullable=True)
+    user_id = Column(String(36), index=True, nullable=True)
     task_id = Column(String(36), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
     issue_id = Column(String(36), ForeignKey("issues.id", ondelete="SET NULL"), nullable=True, index=True)
     action = Column(String(128), nullable=False, index=True)
@@ -149,6 +223,8 @@ class AuditLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     task = relationship("Task", back_populates="audit_logs")
+    organization = relationship("Organization", primaryjoin="AuditLog.tenant_id == Organization.id", foreign_keys=[tenant_id], back_populates="audit_logs")
+    user = relationship("User", primaryjoin="AuditLog.user_id == User.id", foreign_keys=[user_id], back_populates="audit_logs")
 
 
 class PlatformSettings(Base):
@@ -163,3 +239,85 @@ class PlatformSettings(Base):
     skills_profile = Column(JSON, default=list)
     discovery_filters = Column(JSON, default=dict)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    openai_api_key_encrypted = Column(Text, nullable=True)
+    anthropic_api_key_encrypted = Column(Text, nullable=True)
+    gemini_api_key_encrypted = Column(Text, nullable=True)
+    custom_api_key_encrypted = Column(Text, nullable=True)
+    custom_endpoint = Column(String(1024), nullable=True)
+    preferred_ai_provider = Column(String(64), default="gemini")
+    skills_profile = Column(JSON, default=list)
+    auto_publish_pr = Column(Boolean, default=False)
+    workspace_root = Column(String(1024), nullable=True)
+    antigravity_app_path = Column(String(1024), nullable=True)
+    discovery_filters = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="settings")
+
+
+class OrganizationSettings(Base):
+    __tablename__ = "organization_settings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    org_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    openai_api_key_encrypted = Column(Text, nullable=True)
+    anthropic_api_key_encrypted = Column(Text, nullable=True)
+    gemini_api_key_encrypted = Column(Text, nullable=True)
+    custom_api_key_encrypted = Column(Text, nullable=True)
+    custom_endpoint = Column(String(1024), nullable=True)
+    enforce_shared_keys = Column(Boolean, default=False)
+    billing_tier = Column(String(64), default="starter")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="settings")
+
+
+class Runner(Base):
+    __tablename__ = "runners"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), index=True, nullable=True)
+    user_id = Column(String(36), index=True, nullable=True)
+    name = Column(String(255), nullable=False)
+    os_info = Column(String(255), nullable=True)
+    status = Column(String(32), default="idle")
+    runner_token = Column(String(255), unique=True, nullable=True, index=True)
+    token_hash = Column(String(255), unique=True, nullable=True, index=True)
+    registration_token = Column(Text, nullable=True)
+    system_stats = Column(JSON, default=dict)
+    is_active = Column(Boolean, default=True)
+    last_heartbeat_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    jobs = relationship("RunnerJob", back_populates="runner", cascade="all, delete-orphan")
+
+
+class RunnerJob(Base):
+    __tablename__ = "runner_jobs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), index=True, nullable=True)
+    runner_id = Column(String(36), ForeignKey("runners.id", ondelete="SET NULL"), nullable=True, index=True)
+    task_id = Column(String(36), nullable=True, index=True)
+    job_type = Column(String(64), nullable=False)
+    status = Column(String(32), default="queued")
+    payload = Column(JSON, default=dict)
+    result = Column(JSON, default=dict)
+    error_message = Column(Text, nullable=True)
+    logs = Column(Text, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    runner = relationship("Runner", back_populates="jobs")

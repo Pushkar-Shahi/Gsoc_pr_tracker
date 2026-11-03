@@ -18,6 +18,8 @@ from app.api.v1.tracker import router as tracker_router
 from app.api.v1.settings import router as settings_router
 from app.api.v1.discovery import router as discovery_router
 from app.api.v1.audit import router as audit_router
+from app.api.v1.webhooks import router as webhooks_router
+from app.api.v1.runners import router as runners_router
 from app.services.ranking_service import RankingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -98,13 +100,15 @@ async def enforce_auth_middleware(request: Request, call_next):
     # Protect all /api/v1/* endpoints except auth login, biometric authentication, and health checks
     PUBLIC_AUTH_PATHS = {
         "/api/v1/auth/login",
+        "/api/v1/auth/github/login",
+        "/api/v1/auth/github/callback",
         "/api/v1/auth/biometric/challenge",
         "/api/v1/auth/biometric/status",
         "/api/v1/auth/biometric/verify",
         "/api/v1/auth/biometric/register",
     }
     if path.startswith("/api/v1"):
-        if path in PUBLIC_AUTH_PATHS:
+        if path in PUBLIC_AUTH_PATHS or path.startswith("/api/v1/webhooks") or path.startswith("/api/v1/runners"):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
@@ -130,6 +134,8 @@ app.include_router(tasks_router, prefix=settings.API_V1_STR)
 app.include_router(settings_router, prefix=settings.API_V1_STR)
 app.include_router(discovery_router, prefix=settings.API_V1_STR)
 app.include_router(audit_router, prefix=settings.API_V1_STR)
+app.include_router(webhooks_router, prefix=settings.API_V1_STR)
+app.include_router(runners_router, prefix=settings.API_V1_STR)
 
 @app.get("/api/health")
 async def health_check():

@@ -2,6 +2,49 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
+# User & Organization Schemas
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    github_id: Optional[int] = None
+    github_username: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_active: bool = True
+    is_superuser: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrganizationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    slug: str
+    github_org_id: Optional[int] = None
+    github_installation_id: Optional[int] = None
+    is_personal: bool = False
+    billing_tier: str = "starter"
+    created_at: datetime
+    updated_at: datetime
+
+
+class MembershipRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    org_id: str
+    role: str = "member"
+    created_at: datetime
+    updated_at: datetime
+    user: Optional[UserRead] = None
+    organization: Optional[OrganizationRead] = None
+
+
 # Repository Schemas
 class RepositoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -95,6 +138,8 @@ class TaskRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    tenant_id: Optional[str] = None
+    user_id: Optional[str] = None
     issue_id: str
     workflow_state: str
     worktree_path: Optional[str] = None
@@ -197,6 +242,8 @@ class DiscoveryStatusResponse(BaseModel):
 
 
 class PlatformSettingsRead(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     github_token_configured: bool = False
     github_username: Optional[str] = None
     auto_publish_pr: bool = False
@@ -206,9 +253,29 @@ class PlatformSettingsRead(BaseModel):
     discovery_filters: Dict[str, Any]
     detected_antigravity_installed: bool = False
     detected_agy_cli: bool = False
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    custom_api_key: Optional[str] = None
+    has_openai_key: bool = False
+    has_anthropic_key: bool = False
+    has_gemini_key: bool = False
+    has_custom_key: bool = False
+    enforce_shared_keys: bool = False
+    preferred_ai_provider: Optional[str] = "gemini"
+    org_openai_api_key: Optional[str] = None
+    org_anthropic_api_key: Optional[str] = None
+    org_gemini_api_key: Optional[str] = None
+    org_custom_api_key: Optional[str] = None
+    has_org_openai_key: bool = False
+    has_org_anthropic_key: bool = False
+    has_org_gemini_key: bool = False
+    has_org_custom_key: bool = False
 
 
 class PlatformSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     github_token: Optional[str] = None
     github_username: Optional[str] = None
     auto_publish_pr: Optional[bool] = None
@@ -216,12 +283,83 @@ class PlatformSettingsUpdate(BaseModel):
     antigravity_app_path: Optional[str] = None
     skills_profile: Optional[List[str]] = None
     discovery_filters: Optional[Dict[str, Any]] = None
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    custom_api_key: Optional[str] = None
+    enforce_shared_keys: Optional[bool] = None
+    preferred_ai_provider: Optional[str] = None
+    scope: Optional[str] = None
+    org_openai_api_key: Optional[str] = None
+    org_anthropic_api_key: Optional[str] = None
+    org_gemini_api_key: Optional[str] = None
+    org_custom_api_key: Optional[str] = None
+
+
+SettingsRead = PlatformSettingsRead
+SettingsUpdate = PlatformSettingsUpdate
+
+
+class RunnerRegisterRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    registration_token: str
+    name: str
+    os_info: Optional[str] = None
+
+
+class RunnerRegisterResponse(BaseModel):
+    runner_id: str
+    runner_token: str
+
+
+class RunnerHeartbeatRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    status: Optional[str] = "idle"
+    system_stats: Optional[Dict[str, Any]] = None
+
+
+class RunnerJobRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+    id: str
+    runner_id: Optional[str] = None
+    task_id: Optional[str] = None
+    job_type: str
+    status: str
+    payload: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = None
+
+
+class RunnerJobCompleteRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    status: Optional[str] = "completed"
+    result: Optional[Dict[str, Any]] = None
+    error_message: Optional[str] = None
+    logs: Optional[str] = None
+
+
+class RunnerRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+    id: str
+    name: str
+    os_info: Optional[str] = None
+    status: str
+    system_stats: Optional[Dict[str, Any]] = None
+    last_heartbeat_at: Optional[datetime] = None
+    is_active: bool = True
+    created_at: Optional[datetime] = None
 
 
 class AuditLogRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    tenant_id: Optional[str] = None
+    user_id: Optional[str] = None
     task_id: Optional[str] = None
     issue_id: Optional[str] = None
     action: str

@@ -22,12 +22,40 @@ def _get_github_token() -> Optional[str]:
                 return res.stdout.strip()
         except Exception:
             pass
-    return None
+def _get_secret_key_default() -> str:
+    return os.getenv("SECRET_KEY", "issuetopr_secure_jwt_secret_mwps_2026")
+
+class _SecretKeyDescriptor:
+    def __init__(self, default_factory):
+        self.default_factory = default_factory
+        self.val = None
+
+    def __get__(self, instance, owner=None):
+        if self.val is not None:
+            return self.val
+        if instance is not None and getattr(instance, "_secret_key_override", None) is not None:
+            return instance._secret_key_override
+        return self.default_factory()
+
+    def __set__(self, instance, value):
+        if instance is None:
+            self.val = value
+        else:
+            instance._secret_key_override = value
+
+def Field(default=None, default_factory=None, **kwargs):
+    """Field helper for settings configuration."""
+    if default_factory is not None:
+        return _SecretKeyDescriptor(default_factory)
+    return default
 
 class Settings:
     PROJECT_NAME: str = "Issue-to-PR Platform"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    
+    # Security: configurable via environment
+    SECRET_KEY: str = Field(default_factory=lambda: os.getenv("SECRET_KEY", "issuetopr_secure_jwt_secret_mwps_2026"))
     
     # Database
     DATABASE_URL: str = os.getenv(
@@ -40,6 +68,11 @@ class Settings:
     GITHUB_TOKEN: Optional[str] = _get_github_token()
     GITHUB_API_BASE: str = "https://api.github.com"
     GITHUB_API_VERSION: str = "2022-11-28"
+    GITHUB_CLIENT_ID: Optional[str] = os.getenv("GITHUB_CLIENT_ID", "")
+    GITHUB_CLIENT_SECRET: Optional[str] = os.getenv("GITHUB_CLIENT_SECRET", "")
+    GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/github/callback")
+    GITHUB_WEBHOOK_SECRET: str = os.getenv("GITHUB_WEBHOOK_SECRET", "test_github_webhook_secret_hmac_2026")
+    FRONTEND_AUTH_CALLBACK_URL: str = os.getenv("FRONTEND_AUTH_CALLBACK_URL", "http://localhost:5173/auth/callback")
     
     # Workspace & Worktree
     DATA_DIR: Path = DEFAULT_DATA_DIR
