@@ -209,3 +209,44 @@ export interface RunnerJob {
   completed_at?: string;
   created_at?: string;
 }
+
+export interface PlanFeature {
+  name: string;
+  included: boolean;
+  highlight?: boolean;
+}
+
+export interface BillingPlan {
+  id: 'starter' | 'pro' | 'team';
+  name: string;
+  description: string;
+  price_monthly: number;
+  price_annual: number;
+  price_id_monthly: string;
+  price_id_annual: string;
+  quota_tasks: number | null;
+  features: PlanFeature[];
+}
+
+export interface SubscriptionInfo {
+  tier: 'starter' | 'pro' | 'team';
+  status: 'active' | 'trialing' | 'past_due' | 'canceled';
+  cancel_at_period_end: boolean;
+  current_period_end?: string | null;
+  tasks_created_this_month: number;
+  monthly_task_limit: number | null;
+  is_simulation: boolean;
+}
+
+export interface CheckoutSessionResponse {
+  checkout_url: string;
+  session_id: string;
+  is_simulated: boolean;
+  plan_tier: string;
+  billing_cycle?: string;
+}
+
+export interface PortalSessionResponse {
+  portal_url: string;
+  is_simulated: boolean;
+}

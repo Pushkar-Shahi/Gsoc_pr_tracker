@@ -53,6 +53,8 @@ class Organization(Base):
     tasks = relationship("Task", primaryjoin="Organization.id == Task.tenant_id", foreign_keys="Task.tenant_id", back_populates="organization", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", primaryjoin="Organization.id == AuditLog.tenant_id", foreign_keys="AuditLog.tenant_id", back_populates="organization", cascade="all, delete-orphan")
     settings = relationship("OrganizationSettings", uselist=False, back_populates="organization", cascade="all, delete-orphan")
+    subscription = relationship("Subscription", uselist=False, back_populates="organization", cascade="all, delete-orphan")
+    billing_customer = relationship("BillingCustomer", uselist=False, back_populates="organization", cascade="all, delete-orphan")
 
 class Membership(Base):
     __tablename__ = "memberships"
@@ -321,3 +323,60 @@ class RunnerJob(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     runner = relationship("Runner", back_populates="jobs")
+
+
+class BillingCustomer(Base):
+    __tablename__ = "billing_customers"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    stripe_customer_id = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="billing_customer")
+    user = relationship("User")
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    stripe_subscription_id = Column(String(255), unique=True, nullable=False, index=True)
+    stripe_customer_id = Column(String(255), nullable=False, index=True)
+    stripe_price_id = Column(String(255), nullable=True)
+    plan_tier = Column(String(64), default="pro", nullable=False)  # starter, pro, team, enterprise
+    status = Column(String(64), default="active", nullable=False)  # active, trialing, past_due, canceled
+    current_period_start = Column(DateTime, nullable=True)
+    current_period_end = Column(DateTime, nullable=True)
+    cancel_at_period_end = Column(Boolean, default=False)
+    quantity = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="subscription")
+    user = relationship("User")
+
+
+class UsageMeter(Base):
+    __tablename__ = "usage_meters"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "metric_name", "period_start", name="uq_tenant_metric_period"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    metric_name = Column(String(64), nullable=False, index=True)  # tasks_created, compute_minutes
+    period_start = Column(DateTime, nullable=False, index=True)
+    period_end = Column(DateTime, nullable=False)
+    usage_count = Column(Integer, default=0, nullable=False)
+    limit_count = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    organization = relationship("Organization")
+

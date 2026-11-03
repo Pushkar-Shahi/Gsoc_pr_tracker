@@ -16,6 +16,7 @@ interface HeaderProps {
   onLock?: () => void;
   isInstallable?: boolean;
   onInstallPWA?: () => void;
+  planTier?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,7 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onLock,
   isInstallable,
-  onInstallPWA
+  onInstallPWA,
+  planTier = 'starter'
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#000000]/90 backdrop-blur-xl border-b border-white/10">
@@ -58,6 +60,22 @@ export const Header: React.FC<HeaderProps> = ({
               <Database className="w-3.5 h-3.5 text-white" />
               <span>Storage: Connected</span>
             </div>
+
+            {/* Plan Tier Badge */}
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition active:scale-95 ${
+                planTier === 'pro'
+                  ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20'
+                  : planTier === 'team'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+                  : 'bg-[#080808] border-white/10 text-neutral-300 hover:border-white/20'
+              }`}
+              title="View subscription and plan limits"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="capitalize">{planTier} Plan</span>
+            </button>
 
             {/* GitHub Token Status */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#080808] border border-white/10 text-neutral-300">

@@ -20,6 +20,7 @@ from app.api.v1.discovery import router as discovery_router
 from app.api.v1.audit import router as audit_router
 from app.api.v1.webhooks import router as webhooks_router
 from app.api.v1.runners import router as runners_router
+from app.api.v1.billing import router as billing_router
 from app.services.ranking_service import RankingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -106,6 +107,8 @@ async def enforce_auth_middleware(request: Request, call_next):
         "/api/v1/auth/biometric/status",
         "/api/v1/auth/biometric/verify",
         "/api/v1/auth/biometric/register",
+        "/api/v1/billing/webhook",
+        "/api/v1/billing/plans",
     }
     if path.startswith("/api/v1"):
         if path in PUBLIC_AUTH_PATHS or path.startswith("/api/v1/webhooks") or path.startswith("/api/v1/runners"):
@@ -136,6 +139,7 @@ app.include_router(discovery_router, prefix=settings.API_V1_STR)
 app.include_router(audit_router, prefix=settings.API_V1_STR)
 app.include_router(webhooks_router, prefix=settings.API_V1_STR)
 app.include_router(runners_router, prefix=settings.API_V1_STR)
+app.include_router(billing_router, prefix=settings.API_V1_STR)
 
 @app.get("/api/health")
 async def health_check():

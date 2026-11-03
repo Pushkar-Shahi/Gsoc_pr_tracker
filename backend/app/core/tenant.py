@@ -91,7 +91,8 @@ async def get_current_tenant(
         chk_stmt = select(User).where(User.github_username == assigned_username)
         chk_res = await db.execute(chk_stmt)
         if chk_res.scalar_one_or_none():
-            assigned_username = f"{username_claim}_{user_claim[:8]}"
+            import uuid as _u
+            assigned_username = f"{username_claim}_{_u.uuid4().hex[:8]}"
 
         user = User(
             id=user_claim,

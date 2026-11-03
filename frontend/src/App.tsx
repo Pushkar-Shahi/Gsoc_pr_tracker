@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Layers, GitPullRequest, Settings as SettingsIcon, History, 
-  ShieldCheck, Search, Cpu
+  ShieldCheck, Search, Cpu, CreditCard
 } from 'lucide-react';
 
-import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog } from './types';
+import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, SubscriptionInfo } from './types';
 import * as api from './api';
 
 import { Header } from './components/Header';
@@ -14,13 +14,18 @@ import { TrackedIssuesView } from './components/TrackedIssuesView';
 import { PullRequestsView } from './components/PullRequestsView';
 import { ActivityHistoryView } from './components/ActivityHistoryView';
 import { RunnersView } from './components/RunnersView';
+import { BillingView } from './components/BillingView';
+import { UpgradeModal } from './components/UpgradeModal';
 import { SettingsView } from './components/SettingsView';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { promptPWAInstall } from './registerSW';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'settings'>('issues');
+  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
+  const [planTier, setPlanTier] = useState<string>('starter');
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<string | undefined>(undefined);
 
   // Tracked Items & PRs
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -58,21 +63,37 @@ export function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // 1. Fetch initial platform settings, logs, and tracked tasks
+  // 1. Fetch initial platform settings, logs, tracked tasks, and subscription
   const loadInitialData = useCallback(async () => {
     try {
-      const [sett, disc, logs, tList] = await Promise.all([
+      const [sett, disc, logs, tList, sub] = await Promise.all([
         api.fetchSettings(),
         api.fetchDiscoveryStatus(),
         api.fetchAuditLogs(),
         api.fetchTasks(),
+        api.fetchSubscriptionInfo().catch(() => null),
       ]);
       setSettings(sett);
       setDiscoveryStatus(disc);
       setAuditLogs(logs);
       setTasks(tList);
+      if (sub?.tier) {
+        setPlanTier(sub.tier);
+      }
     } catch (err: any) {
       console.error('Failed to load initial platform metadata:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('billing') === 'success') {
+      showToast('🎉 Subscription confirmed! Welcome to Pro.');
+      setActiveTab('billing');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('billing') === 'cancel') {
+      showToast('Checkout was cancelled. No charges were made.');
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -224,7 +245,13 @@ export function App() {
       setActiveTab('tracker');
       api.fetchAuditLogs().then(setAuditLogs).catch(() => {});
     } catch (err: any) {
-      showToast(`Notice: ${err.message}`);
+      const msg = err.message || '';
+      if (msg.includes('limit') || msg.includes('quota') || msg.includes('402') || msg.includes('QUOTA_EXCEEDED')) {
+        setUpgradeReason(msg);
+        setUpgradeModalOpen(true);
+      } else {
+        showToast(`Notice: ${msg}`);
+      }
     }
   };
 
@@ -347,6 +374,7 @@ export function App() {
           onLock={api.logout}
           isInstallable={isInstallable}
           onInstallPWA={handleInstallPWA}
+          planTier={planTier}
         />
 
         {/* Desktop Top Navigation Bar (Hidden on Mobile) */}
@@ -437,7 +465,20 @@ export function App() {
                 <span>Runners</span>
               </button>
 
-              {/* 6. Settings */}
+              {/* 6. Billing & Plans */}
+              <button
+                onClick={() => setActiveTab('billing')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
+                  activeTab === 'billing'
+                    ? 'bg-white text-black font-bold shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Billing</span>
+              </button>
+
+              {/* 7. Settings */}
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 ml-auto active:scale-95 ${
@@ -499,6 +540,10 @@ export function App() {
             <RunnersView />
           )}
 
+          {activeTab === 'billing' && (
+            <BillingView />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsView
               settings={settings}
@@ -513,7 +558,7 @@ export function App() {
 
         {/* Mobile Bottom Navigation Bar (iOS / Android Style) */}
         <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#030303]/95 backdrop-blur-2xl border-t border-white/10 px-2 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black">
-          <div className="grid grid-cols-6 gap-1 text-[10px] font-medium text-center">
+          <div className="grid grid-cols-7 gap-1 text-[10px] font-medium text-center">
             {/* 1. Find Issues */}
             <button
               onClick={() => setActiveTab('issues')}
@@ -600,7 +645,20 @@ export function App() {
               <span>Runners</span>
             </button>
 
-            {/* 6. Settings */}
+            {/* 6. Billing */}
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+                activeTab === 'billing'
+                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              <CreditCard className="w-5 h-5 mb-0.5" />
+              <span>Billing</span>
+            </button>
+
+            {/* 7. Settings */}
             <button
               onClick={() => setActiveTab('settings')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
@@ -630,6 +688,14 @@ export function App() {
             }}
           />
         )}
+
+        {/* Pro Upgrade & Quota Modal */}
+        <UpgradeModal
+          isOpen={upgradeModalOpen}
+          onClose={() => setUpgradeModalOpen(false)}
+          reason={upgradeReason}
+          onNavigateToBilling={() => setActiveTab('billing')}
+        />
 
         {/* Notifications Drawer */}
         <NotificationsPanel

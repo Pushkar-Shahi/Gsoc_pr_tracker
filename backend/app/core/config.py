@@ -73,6 +73,17 @@ class Settings:
     GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/github/callback")
     GITHUB_WEBHOOK_SECRET: str = os.getenv("GITHUB_WEBHOOK_SECRET", "test_github_webhook_secret_hmac_2026")
     FRONTEND_AUTH_CALLBACK_URL: str = os.getenv("FRONTEND_AUTH_CALLBACK_URL", "http://localhost:5173/auth/callback")
+
+    # Stripe & Monetization Settings
+    STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock_stripe_key_2026")
+    STRIPE_PUBLISHABLE_KEY: Optional[str] = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_mock_stripe_key_2026")
+    STRIPE_WEBHOOK_SECRET: Optional[str] = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_mock_stripe_webhook_secret_2026")
+    STRIPE_PRO_MONTHLY_PRICE_ID: str = os.getenv("STRIPE_PRO_MONTHLY_PRICE_ID", "price_pro_monthly_29")
+    STRIPE_PRO_ANNUAL_PRICE_ID: str = os.getenv("STRIPE_PRO_ANNUAL_PRICE_ID", "price_pro_annual_290")
+    STRIPE_TEAM_SEAT_PRICE_ID: str = os.getenv("STRIPE_TEAM_SEAT_PRICE_ID", "price_team_monthly_79")
+    BILLING_SUCCESS_URL: str = os.getenv("BILLING_SUCCESS_URL", "http://localhost:5173/?billing=success")
+    BILLING_CANCEL_URL: str = os.getenv("BILLING_CANCEL_URL", "http://localhost:5173/?billing=cancel")
+    FREE_TIER_MONTHLY_TASK_LIMIT: int = int(os.getenv("FREE_TIER_MONTHLY_TASK_LIMIT", "5"))
     
     # Workspace & Worktree
     DATA_DIR: Path = DEFAULT_DATA_DIR

@@ -20,6 +20,8 @@ from app.services.antigravity_handoff import AntigravityHandoffService
 from app.services.validation_service import ValidationService
 from app.services.pr_publisher import PRPublisher
 from app.services.github_client import GitHubClient
+from app.core.entitlements import enforce_task_creation_quota
+from app.services.billing_service import BillingService
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
@@ -155,6 +157,9 @@ async def select_issue(
                 detail=f"Issue #{issue.issue_number} is no longer available (it was closed or assigned upstream on GitHub). Your inbox has been updated."
             )
 
+    # 3.5 Entitlement Check: Enforce monthly task quota
+    await enforce_task_creation_quota(ctx, db)
+
     # 4. Create Task in SELECTED
     task = Task(
         issue_id=issue.id,
@@ -164,6 +169,7 @@ async def select_issue(
     )
     db.add(task)
     await db.flush()
+    await BillingService.record_task_created(ctx.organization.id, db)
 
     # 5. Run automated deep intelligence & policy inspection
     analyzer = IssueAnalyzer(github_client=gh)

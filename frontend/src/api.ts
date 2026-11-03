@@ -1,4 +1,7 @@
-import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob } from './types';
+import { 
+  Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob,
+  BillingPlan, SubscriptionInfo, CheckoutSessionResponse, PortalSessionResponse
+} from './types';
 import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
 
 export { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC };
@@ -2136,6 +2139,76 @@ export async function getGitHubLoginUrl(): Promise<string> {
   } catch {}
   return `${API_BASE}/auth/github/login`;
 }
+
+export async function fetchBillingPlans(): Promise<BillingPlan[]> {
+  try {
+    const res = await authedFetch(`${API_BASE}/billing/plans`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchBillingPlans error:", err);
+  }
+  return [];
+}
+
+export async function fetchSubscriptionInfo(): Promise<SubscriptionInfo> {
+  const res = await authedFetch(`${API_BASE}/billing/subscription`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch subscription summary');
+  }
+  return await res.json();
+}
+
+export async function createCheckoutSession(
+  planTier: 'pro' | 'team',
+  billingCycle: 'monthly' | 'annual' = 'monthly',
+  returnUrl?: string
+): Promise<CheckoutSessionResponse> {
+  const res = await authedFetch(`${API_BASE}/billing/checkout-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      plan_tier: planTier,
+      billing_cycle: billingCycle,
+      return_url: returnUrl || `${window.location.origin}/?billing=success`
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to initialize checkout session');
+  }
+  return await res.json();
+}
+
+export async function createPortalSession(returnUrl?: string): Promise<PortalSessionResponse> {
+  const res = await authedFetch(`${API_BASE}/billing/portal-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      return_url: returnUrl || `${window.location.origin}/?tab=billing`
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to initialize customer portal');
+  }
+  return await res.json();
+}
+
+export async function simulateTierChange(tier: 'starter' | 'pro' | 'team'): Promise<SubscriptionInfo> {
+  const res = await authedFetch(`${API_BASE}/billing/simulate-tier`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tier })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to simulate tier change');
+  }
+  return await res.json();
+}
+
 
 
 
