@@ -5,6 +5,7 @@ import {
   Folder, GitBranch, Check, Layers, ChevronDown, MessageSquare, GitPullRequest
 } from 'lucide-react';
 import { Task, PlatformSettings } from '../types';
+import { LiveConsoleModal } from './LiveConsoleModal';
 
 interface ValidationViewProps {
   task: Task | null;
@@ -27,6 +28,7 @@ export const ValidationView: React.FC<ValidationViewProps> = ({
 }) => {
   const [customTestCmd, setCustomTestCmd] = useState('');
   const [isValidating, setIsValidating] = useState(false);
+  const [isStreamConsoleOpen, setIsStreamConsoleOpen] = useState(false);
   const [isOverriding, setIsOverriding] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [statusFeedback, setStatusFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -236,6 +238,15 @@ export const ValidationView: React.FC<ValidationViewProps> = ({
                 <span>{isOverriding ? 'Applying...' : 'Override & Mark Ready'}</span>
               </button>
             )}
+
+            <button
+              onClick={() => setIsStreamConsoleOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-semibold shadow-lg shadow-cyan-600/10 active:scale-95 transition flex items-center gap-1.5"
+              title="Open real-time sandboxed terminal stream"
+            >
+              <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Live Terminal</span>
+            </button>
 
             <button
               onClick={handleRunValidation}
@@ -473,6 +484,19 @@ export const ValidationView: React.FC<ValidationViewProps> = ({
           </div>
         </div>
       </div>
+
+      {task && (
+        <LiveConsoleModal
+          isOpen={isStreamConsoleOpen}
+          onClose={() => setIsStreamConsoleOpen(false)}
+          taskId={task.id}
+          taskTitle={task.issue?.title}
+          customCommand={customTestCmd}
+          onFinished={(_passed) => {
+            // Stream finished callback
+          }}
+        />
+      )}
     </div>
   );
 };

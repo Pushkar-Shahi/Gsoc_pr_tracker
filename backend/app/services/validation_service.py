@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+from app.services.sandbox_executor import SandboxedExecutionEngine
+
 logger = logging.getLogger(__name__)
 
 class ValidationService:
@@ -133,47 +135,23 @@ class ValidationService:
         all_passed = True
 
         for cmd_str in commands_to_run:
-            logger.info(f"Running validation command in {p}: {cmd_str}")
-            try:
-                proc = await asyncio.create_subprocess_shell(
-                    cmd_str,
-                    cwd=str(p),
-                    env=sub_env,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60.0)
-                exit_code = proc.returncode
-                
-                passed = (exit_code == 0)
-                if not passed:
-                    all_passed = False
+            exec_res = await SandboxedExecutionEngine.execute_command(
+                cmd_str=cmd_str,
+                cwd=p,
+                timeout_sec=120.0
+            )
+            passed = exec_res["passed"]
+            if not passed:
+                all_passed = False
 
-                command_results.append({
-                    "command": cmd_str,
-                    "exit_code": exit_code,
-                    "passed": passed,
-                    "stdout": stdout.decode("utf-8", errors="replace")[:8000],
-                    "stderr": stderr.decode("utf-8", errors="replace")[:8000]
-                })
-            except asyncio.TimeoutError:
-                all_passed = False
-                command_results.append({
-                    "command": cmd_str,
-                    "exit_code": -1,
-                    "passed": False,
-                    "stdout": "",
-                    "stderr": "Command timed out after 60 seconds."
-                })
-            except Exception as e:
-                all_passed = False
-                command_results.append({
-                    "command": cmd_str,
-                    "exit_code": -1,
-                    "passed": False,
-                    "stdout": "",
-                    "stderr": f"Failed to execute command: {str(e)}"
-                })
+            command_results.append({
+                "command": cmd_str,
+                "exit_code": exec_res["exit_code"],
+                "passed": passed,
+                "stdout": exec_res["stdout"][:8000],
+                "stderr": exec_res["stderr"][:8000],
+                "sandbox_mode": exec_res.get("sandbox_mode", "isolated")
+            })
 
         return {
             "passed": all_passed,

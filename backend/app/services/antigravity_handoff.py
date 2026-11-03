@@ -109,3 +109,24 @@ class AntigravityHandoffService:
             "workspace_path": str(p),
             "fallback_prompt": prompt_text
         }
+
+    def generate_remote_cloud_bridge_command(
+        self,
+        task_id: str,
+        repo_name: str,
+        branch_name: str,
+        remote_url: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generates remote Antigravity cloud connection commands for developers connecting
+        their local Antigravity instance to an ephemeral cloud worktree.
+        """
+        target_url = remote_url or f"https://github.com/Pushkar-Shahi/{repo_name}.git"
+        return {
+            "agy_command": f"agy clone-remote {target_url} --branch {branch_name} --task {task_id[:8]}",
+            "ssh_tunnel_command": f"ssh -N -L 8000:localhost:8000 runner@cloud-fleet.issuetopr.dev",
+            "remote_prompt_snippet": (
+                f"Connect to cloud worktree for task {task_id[:8]} (branch: {branch_name}). "
+                f"Execute preflight policy checks and report diffs back to the Issue-to-PR coordinator."
+            )
+        }

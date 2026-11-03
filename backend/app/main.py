@@ -21,6 +21,7 @@ from app.api.v1.audit import router as audit_router
 from app.api.v1.webhooks import router as webhooks_router
 from app.api.v1.runners import router as runners_router
 from app.api.v1.billing import router as billing_router
+from app.api.v1.streaming import router as streaming_router
 from app.services.ranking_service import RankingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -140,6 +141,7 @@ app.include_router(audit_router, prefix=settings.API_V1_STR)
 app.include_router(webhooks_router, prefix=settings.API_V1_STR)
 app.include_router(runners_router, prefix=settings.API_V1_STR)
 app.include_router(billing_router, prefix=settings.API_V1_STR)
+app.include_router(streaming_router, prefix=settings.API_V1_STR)
 
 @app.get("/api/health")
 async def health_check():

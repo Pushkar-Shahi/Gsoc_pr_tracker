@@ -328,12 +328,24 @@ export function RunnersView() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-mono uppercase text-neutral-400">Launch Command</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono uppercase text-neutral-400">Launch Command</span>
+                    <button
+                      onClick={() => copyToClipboard(`python3 -m runner.agent --url ${window.location.origin} --token "${createdToken}"`)}
+                      className="text-[11px] text-neutral-400 hover:text-white flex items-center gap-1 transition"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>Copy Command</span>
+                    </button>
+                  </div>
                   <div className="p-3 rounded-xl bg-[#030303] border border-white/10 text-[11px] font-mono text-neutral-300 overflow-x-auto">
                     <code>
-                      RUNNER_TOKEN="{createdToken}" python3 -m app.services.runner_daemon
+                      python3 -m runner.agent --url {window.location.origin} --token "{createdToken}"
                     </code>
                   </div>
+                  <p className="text-[10px] text-neutral-500 font-mono">
+                    Zero dependencies required. Runs directly with standard Python 3.10+.
+                  </p>
                 </div>
 
                 <div className="pt-2 flex justify-end">
