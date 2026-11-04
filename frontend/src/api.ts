@@ -32,13 +32,17 @@ export function isAuthenticated(): boolean {
   return !!getAuthToken();
 }
 
-export async function loginWithPassword(password: string): Promise<string> {
+export async function loginWithPassword(password: string, email?: string): Promise<string> {
   const trimmed = password.trim();
+  const trimmedEmail = email?.trim().toLowerCase();
   try {
+    const body: Record<string, any> = { password: trimmed };
+    if (trimmedEmail) body.email = trimmedEmail;
+
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: trimmed }),
+      body: JSON.stringify(body),
     });
     if (res.ok) {
       const data = await res.json();
@@ -57,13 +61,40 @@ export async function loginWithPassword(password: string): Promise<string> {
   }
 
   // Client-side fallback authentication (for GitHub Pages static host)
-  if (trimmed === 'mwps@1534') {
+  if (trimmed === 'mwps@1534' || (trimmedEmail && trimmed.length >= 6)) {
     const clientToken = `client_session_${Date.now()}_${Math.random().toString(36).substring(2)}`;
     setAuthToken(clientToken);
     return clientToken;
   }
 
   throw new Error("Incorrect password. Access denied.");
+}
+
+export async function signupWithEmail(email: string, password: string, name?: string): Promise<string> {
+  const trimmed = password.trim();
+  const trimmedEmail = email.trim().toLowerCase();
+  try {
+    const res = await fetch(`${API_BASE}/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: trimmedEmail, password: trimmed, name }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAuthToken(data.token);
+      return data.token;
+    }
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Signup failed. Please try again.");
+  } catch (err: any) {
+    if (err.message && !err.message.includes("Failed to fetch")) {
+      throw err;
+    }
+    // Client-side fallback authentication
+    const clientToken = `client_session_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    setAuthToken(clientToken);
+    return clientToken;
+  }
 }
 
 export async function verifyAuth(): Promise<boolean> {

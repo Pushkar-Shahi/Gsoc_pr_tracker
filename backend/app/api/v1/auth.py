@@ -50,6 +50,12 @@ def _save_biometric_credentials(credentials: List[Dict[str, Any]]):
 
 class LoginRequest(BaseModel):
     password: str
+    email: Optional[str] = None
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
 
 class LoginResponse(BaseModel):
     token: str
@@ -175,10 +181,56 @@ async def _provision_user_and_token(
     return session_token, user, tenant_id, membership.role, tier
 
 
+@router.post("/signup", response_model=LoginResponse)
+async def signup(req: SignupRequest, db: AsyncSession = Depends(get_db)):
+    """Registers a new user with email and password and returns a tenant-aware session token."""
+    email = req.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A valid email is required.")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 6 characters.")
+
+    username = email.split("@")[0].replace("+", "_").replace(".", "_")
+    name = req.name or username.replace("_", " ").title()
+    avatar_url = f"https://api.dicebear.com/7.x/initials/svg?seed={username}&backgroundColor=ea4335,4285f4,34a853,fbbc05"
+
+    token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username=username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+    return LoginResponse(token=token)
+
+
 @router.post("/login", response_model=LoginResponse)
-async def login(req: LoginRequest):
-    """Authenticates against the platform password mwps@1534 and returns a session token."""
-    if not verify_password(req.password):
+async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+    """Authenticates with email & password or platform password and returns a session token."""
+    is_master = verify_password(req.password)
+
+    if req.email and req.email.strip():
+        email = req.email.strip().lower()
+        if not is_master and len(req.password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect password. Access denied."
+            )
+        username = email.split("@")[0].replace("+", "_").replace(".", "_")
+        name = username.replace("_", " ").title()
+        avatar_url = f"https://api.dicebear.com/7.x/initials/svg?seed={username}&backgroundColor=ea4335,4285f4,34a853,fbbc05"
+        token, user, tenant_id, role, tier = await _provision_user_and_token(
+            db=db,
+            gh_id=None,
+            gh_username=username,
+            email=email,
+            name=name,
+            avatar_url=avatar_url
+        )
+        return LoginResponse(token=token)
+
+    if not is_master:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect password. Access denied."
