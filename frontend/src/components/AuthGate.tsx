@@ -20,6 +20,7 @@ import {
   verifyGoogleCredential
 } from '../api';
 import { EnterpriseSSOModal } from './EnterpriseSSOModal';
+import { BrandIcon } from './BrandIcon';
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -248,12 +249,9 @@ export function AuthGate({ children }: AuthGateProps) {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#050505] text-slate-900 dark:text-neutral-100 flex flex-col items-center justify-center p-4">
-        <div className="flex items-center gap-1.5 mb-4 animate-pulse">
-          <div className="flex items-center gap-[3px]">
-            <span className="w-[3px] h-5 bg-slate-900 dark:bg-white rounded-sm"></span>
-            <span className="w-[3px] h-5 bg-slate-900 dark:bg-white rounded-sm"></span>
-          </div>
-          <span className="text-xl font-extrabold tracking-tight">IssueToPR</span>
+        <div className="flex items-center gap-2.5 mb-4 animate-pulse">
+          <BrandIcon size={36} className="shadow-lg shadow-emerald-500/20" />
+          <span className="text-xl font-black tracking-tight">IssueToPR</span>
         </div>
         <p className="text-xs text-slate-400 dark:text-neutral-500 font-mono">Verifying secure credentials...</p>
       </div>
@@ -268,13 +266,10 @@ export function AuthGate({ children }: AuthGateProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-[#070707] text-slate-900 dark:text-neutral-100 flex flex-col justify-center items-center px-4 py-12 selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-200">
       
-      {/* Brand Logo (Inspired by || ElevenLabs) */}
-      <div className="flex items-center justify-center gap-1.5 mb-7">
-        <div className="flex items-center gap-[3px] mr-1">
-          <span className="w-[3.5px] h-5 bg-slate-950 dark:bg-white rounded-sm"></span>
-          <span className="w-[3.5px] h-5 bg-slate-950 dark:bg-white rounded-sm"></span>
-        </div>
-        <h1 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">
+      {/* Brand Logo (Official Glowing Git PR Branch Icon) */}
+      <div className="flex items-center justify-center gap-2.5 mb-7">
+        <BrandIcon size={38} className="shadow-lg shadow-emerald-500/25 rounded-2xl active:scale-95 transition-transform" />
+        <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
           IssueToPR
         </h1>
       </div>
