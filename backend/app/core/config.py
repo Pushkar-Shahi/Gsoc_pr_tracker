@@ -84,7 +84,10 @@ class Settings:
     FRONTEND_AUTH_CALLBACK_URL: str = os.getenv("FRONTEND_AUTH_CALLBACK_URL", "http://localhost:5173/auth/callback")
 
     # Google OAuth Integration
-    GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_ID: Optional[str] = os.getenv(
+        "GOOGLE_CLIENT_ID",
+        "842489213804-lnvakm6obbd26vj8qsdi8s3ri3fq1aev.apps.googleusercontent.com"
+    )
     GOOGLE_CLIENT_SECRET: Optional[str] = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/google/callback")
 

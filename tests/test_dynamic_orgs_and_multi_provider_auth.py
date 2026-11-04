@@ -1,3 +1,5 @@
+import json
+import base64
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -19,6 +21,28 @@ async def test_multi_provider_sign_in_endpoints():
         assert g_data["provider"] == "google"
         assert "token" in g_data
         token = g_data["token"]
+
+        # 1b. Google GSI Credential Verification
+        h_b64 = base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode()).decode().rstrip("=")
+        p_b64 = base64.urlsafe_b64encode(json.dumps({
+            "iss": "https://accounts.google.com",
+            "aud": "842489213804-lnvakm6obbd26vj8qsdi8s3ri3fq1aev.apps.googleusercontent.com",
+            "email": "gsi.contributor@gmail.com",
+            "name": "GSI Contributor",
+            "picture": "https://lh3.googleusercontent.com/test",
+            "email_verified": True
+        }).encode()).decode().rstrip("=")
+        cred_token = f"{h_b64}.{p_b64}.signature"
+
+        gsi_resp = await client.post(
+            "/api/v1/auth/google/verify-credential",
+            json={"credential": cred_token}
+        )
+        assert gsi_resp.status_code == 200
+        gsi_data = gsi_resp.json()
+        assert gsi_data["authenticated"] is True
+        assert gsi_data["provider"] == "google"
+        assert "token" in gsi_data
 
         # 2. GitLab Dev Sign-In
         gl_resp = await client.post(

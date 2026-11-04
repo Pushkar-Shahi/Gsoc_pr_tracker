@@ -2471,6 +2471,23 @@ export async function devGoogleLogin(email: string = 'pushkar.shahi@gmail.com', 
   return data;
 }
 
+export async function verifyGoogleCredential(credential: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/auth/google/verify-credential`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Google credential verification failed');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
 export async function devGitLabLogin(username: string = 'Pushkar-Shahi', name: string = 'Pushkar Shahi'): Promise<any> {
   const res = await fetch(`${API_BASE}/auth/gitlab/dev-login`, {
     method: 'POST',

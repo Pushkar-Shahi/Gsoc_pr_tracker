@@ -17,6 +17,7 @@ import {
   getWebsiteInternalSchedule,
   devGitHubLogin,
   devGoogleLogin,
+  verifyGoogleCredential,
   devGitLabLogin,
   requestEmailCode,
   verifyEmailCode
@@ -111,6 +112,63 @@ export function AuthGate({ children }: AuthGateProps) {
       mounted = false;
     };
   }, []);
+
+  // Initialize Google Identity Services (GIS) with user-provided Client ID
+  useEffect(() => {
+    const googleClientId = "842489213804-lnvakm6obbd26vj8qsdi8s3ri3fq1aev.apps.googleusercontent.com";
+    if (typeof window === 'undefined') return;
+
+    const setupGoogleGsi = () => {
+      const g = (window as any).google;
+      if (!g || !g.accounts || !g.accounts.id) return;
+
+      try {
+        g.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: any) => {
+            if (response && response.credential) {
+              setAuthProviderLoading(true);
+              setError(null);
+              try {
+                await verifyGoogleCredential(response.credential);
+                setIsAuthenticated(true);
+              } catch (err: any) {
+                setError(err.message || 'Google authentication failed');
+                triggerShake();
+              } finally {
+                setAuthProviderLoading(false);
+              }
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const container = document.getElementById('google-signin-btn-container');
+        if (container) {
+          container.innerHTML = '';
+          g.accounts.id.renderButton(container, {
+            theme: 'outline',
+            size: 'large',
+            width: 280,
+            text: 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+          });
+        }
+      } catch (e) {
+        console.warn('Google Identity Services setup:', e);
+      }
+    };
+
+    setupGoogleGsi();
+    const t1 = setTimeout(setupGoogleGsi, 400);
+    const t2 = setTimeout(setupGoogleGsi, 1200);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [activeProviderTab]);
 
   // Quick unlock using device fingerprint / Touch ID
   const handleBiometricUnlock = async () => {
@@ -456,9 +514,12 @@ export function AuthGate({ children }: AuthGateProps) {
               </button>
 
               {activeProviderTab === 'google' && (
-                <form onSubmit={handleQuickGoogleLogin} className="p-3 rounded-2xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/10 space-y-2 animate-fade-in shadow-inner">
+                <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/10 space-y-3 animate-fade-in shadow-inner">
                   <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
-                    <span>Google One-Click Sign In</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Google Official Sign-In
+                    </span>
                     <button
                       type="button"
                       onClick={() => { window.location.href = '/api/v1/auth/google/login'; }}
@@ -467,23 +528,37 @@ export function AuthGate({ children }: AuthGateProps) {
                       OAuth Redirect &rarr;
                     </button>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="email"
-                      value={googleEmail}
-                      onChange={(e) => setGoogleEmail(e.target.value)}
-                      placeholder="Google account email"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#030303] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      type="submit"
-                      disabled={authProviderLoading || !googleEmail.trim()}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow shrink-0 disabled:opacity-50"
-                    >
-                      {authProviderLoading ? 'Signing in...' : 'Sign In'}
-                    </button>
+
+                  {/* Official Google Identity Services (GSI) Button */}
+                  <div className="w-full flex justify-center py-0.5">
+                    <div id="google-signin-btn-container" className="flex justify-center w-full" />
                   </div>
-                </form>
+
+                  <div className="relative flex py-0.5 items-center">
+                    <div className="flex-grow border-t border-slate-300 dark:border-white/10"></div>
+                    <span className="flex-shrink mx-2 text-[10px] text-slate-400 dark:text-neutral-500 uppercase tracking-wider">or dev login</span>
+                    <div className="flex-grow border-t border-slate-300 dark:border-white/10"></div>
+                  </div>
+
+                  <form onSubmit={handleQuickGoogleLogin} className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="email"
+                        value={googleEmail}
+                        onChange={(e) => setGoogleEmail(e.target.value)}
+                        placeholder="Google account email"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#030303] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={authProviderLoading || !googleEmail.trim()}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow shrink-0 disabled:opacity-50"
+                      >
+                        {authProviderLoading ? 'Signing in...' : 'Sign In'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               )}
             </div>
 
