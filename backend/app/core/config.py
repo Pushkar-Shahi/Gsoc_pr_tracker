@@ -83,6 +83,16 @@ class Settings:
     GITHUB_WEBHOOK_SECRET: str = os.getenv("GITHUB_WEBHOOK_SECRET", "test_github_webhook_secret_hmac_2026")
     FRONTEND_AUTH_CALLBACK_URL: str = os.getenv("FRONTEND_AUTH_CALLBACK_URL", "http://localhost:5173/auth/callback")
 
+    # Google OAuth Integration
+    GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: Optional[str] = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/google/callback")
+
+    # GitLab OAuth Integration
+    GITLAB_CLIENT_ID: Optional[str] = os.getenv("GITLAB_CLIENT_ID", "")
+    GITLAB_CLIENT_SECRET: Optional[str] = os.getenv("GITLAB_CLIENT_SECRET", "")
+    GITLAB_REDIRECT_URI: str = os.getenv("GITLAB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/gitlab/callback")
+
     # Stripe & Monetization Settings
     STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock_stripe_key_2026")
     STRIPE_PUBLISHABLE_KEY: Optional[str] = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_mock_stripe_key_2026")

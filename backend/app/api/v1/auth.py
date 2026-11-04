@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import secrets
 import time
 import uuid
@@ -323,6 +324,330 @@ async def dev_github_login(
         "role": role,
         "tier": tier,
         "avatar_url": user.avatar_url
+    }
+
+
+# ==============================================================================
+# Google OAuth & Developer Quick Sign-In
+# ==============================================================================
+
+class DevGoogleLoginRequest(BaseModel):
+    email: str = "pushkar.shahi@gmail.com"
+    name: Optional[str] = "Pushkar Shahi"
+
+
+@router.get("/google/login")
+async def google_login(format: Optional[str] = None):
+    """Initiates Google OAuth 2.0 authorization code flow."""
+    now = time.time()
+    for s in [k for k, exp in _oauth_states.items() if exp < now]:
+        _oauth_states.pop(s, None)
+
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = now + 600
+
+    client_id = settings.GOOGLE_CLIENT_ID or "mock_google_client_id.apps.googleusercontent.com"
+    redirect_uri = settings.GOOGLE_REDIRECT_URI
+    auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&"
+        f"scope=openid%20email%20profile&state={state}&access_type=offline&prompt=consent"
+    )
+
+    if format == "json":
+        return {"authorization_url": auth_url, "state": state}
+    return RedirectResponse(url=auth_url, status_code=302)
+
+
+@router.get("/google/callback")
+async def google_callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Exchanges Google authorization code for token, fetches user info, and issues session token."""
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing authorization code")
+    if not state or state not in _oauth_states or _oauth_states[state] < time.time():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state parameter")
+
+    _oauth_states.pop(state, None)
+
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": settings.GOOGLE_REDIRECT_URI
+            }
+        )
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to retrieve access token from Google")
+
+        user_resp = await client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        google_user = user_resp.json()
+
+    email = google_user.get("email")
+    name = google_user.get("name") or (email.split("@")[0] if email else "Google User")
+    username = email.split("@")[0] if email else f"google_user_{secrets.token_hex(4)}"
+    avatar_url = google_user.get("picture") or f"https://api.dicebear.com/7.x/initials/svg?seed={username}&backgroundColor=ea4335,4285f4,34a853,fbbc05"
+
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username=username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+
+    redirect_target = f"{settings.FRONTEND_AUTH_CALLBACK_URL}?token={session_token}"
+    return RedirectResponse(url=redirect_target, status_code=302)
+
+
+@router.post("/google/dev-login")
+async def dev_google_login(
+    req: DevGoogleLoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Developer Quick Google Sign-in:
+    Allows instant one-click sign in with Google account profile without requiring live Cloud console keys.
+    """
+    email = (req.email or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A valid Google email is required.")
+
+    username = email.split("@")[0].replace("+", "_")
+    name = req.name or username.replace(".", " ").replace("_", " ").title()
+    avatar_url = f"https://api.dicebear.com/7.x/initials/svg?seed={username}&backgroundColor=ea4335,4285f4,34a853,fbbc05"
+
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username=username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+
+    return {
+        "token": session_token,
+        "token_type": "bearer",
+        "authenticated": True,
+        "user": user.github_username,
+        "username": user.github_username,
+        "id": user.id,
+        "tenant_id": tenant_id,
+        "role": role,
+        "tier": tier,
+        "avatar_url": user.avatar_url,
+        "provider": "google"
+    }
+
+
+# ==============================================================================
+# GitLab OAuth & Developer Quick Sign-In
+# ==============================================================================
+
+class DevGitLabLoginRequest(BaseModel):
+    username: str = "Pushkar-Shahi"
+    name: Optional[str] = "Pushkar Shahi"
+
+
+@router.get("/gitlab/login")
+async def gitlab_login(format: Optional[str] = None):
+    """Initiates GitLab OAuth 2.0 flow."""
+    now = time.time()
+    for s in [k for k, exp in _oauth_states.items() if exp < now]:
+        _oauth_states.pop(s, None)
+
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = now + 600
+
+    client_id = settings.GITLAB_CLIENT_ID or "mock_gitlab_client_id"
+    redirect_uri = settings.GITLAB_REDIRECT_URI
+    auth_url = (
+        f"https://gitlab.com/oauth/authorize?"
+        f"client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&"
+        f"scope=read_user%20openid%20profile%20email&state={state}"
+    )
+
+    if format == "json":
+        return {"authorization_url": auth_url, "state": state}
+    return RedirectResponse(url=auth_url, status_code=302)
+
+
+@router.get("/gitlab/callback")
+async def gitlab_callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Exchanges GitLab authorization code for user data."""
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing authorization code")
+    if not state or state not in _oauth_states or _oauth_states[state] < time.time():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state parameter")
+
+    _oauth_states.pop(state, None)
+
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(
+            "https://gitlab.com/oauth/token",
+            data={
+                "client_id": settings.GITLAB_CLIENT_ID,
+                "client_secret": settings.GITLAB_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": settings.GITLAB_REDIRECT_URI
+            }
+        )
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to retrieve access token from GitLab")
+
+        user_resp = await client.get(
+            "https://gitlab.com/api/v4/user",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        gl_user = user_resp.json()
+
+    gl_username = gl_user.get("username") or f"gitlab_{gl_user.get('id', 'user')}"
+    email = gl_user.get("email") or f"{gl_username}@users.noreply.gitlab.com"
+    name = gl_user.get("name") or gl_username
+    avatar_url = gl_user.get("avatar_url") or f"https://gitlab.com/uploads/-/system/user/avatar/{gl_user.get('id')}/avatar.png"
+
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username=f"gl_{gl_username}",
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+
+    redirect_target = f"{settings.FRONTEND_AUTH_CALLBACK_URL}?token={session_token}"
+    return RedirectResponse(url=redirect_target, status_code=302)
+
+
+@router.post("/gitlab/dev-login")
+async def dev_gitlab_login(
+    req: DevGitLabLoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Developer Quick GitLab Sign-in."""
+    username = (req.username or "").strip()
+    if not username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="GitLab username is required.")
+
+    clean_uname = re.sub(r'[^a-zA-Z0-9_\-]', '', username)
+    email = f"{clean_uname.lower()}@gitlab.com"
+    name = req.name or clean_uname
+    avatar_url = f"https://api.dicebear.com/7.x/bottts/svg?seed={clean_uname}&backgroundColor=fc6d26,e24329"
+
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username=f"gl_{clean_uname}",
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+
+    return {
+        "token": session_token,
+        "token_type": "bearer",
+        "authenticated": True,
+        "user": user.github_username,
+        "username": user.github_username,
+        "id": user.id,
+        "tenant_id": tenant_id,
+        "role": role,
+        "tier": tier,
+        "avatar_url": user.avatar_url,
+        "provider": "gitlab"
+    }
+
+
+# ==============================================================================
+# Passwordless Email & Magic Link Sign-In
+# ==============================================================================
+
+_email_verification_codes: Dict[str, Tuple[str, float]] = {}
+
+class EmailCodeRequest(BaseModel):
+    email: str
+
+class EmailVerifyRequest(BaseModel):
+    email: str
+    code: str
+
+@router.post("/email/request-code")
+async def request_email_code(req: EmailCodeRequest):
+    """Sends / generates a one-time login verification code for passwordless email sign-in."""
+    email = (req.email or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A valid email address is required.")
+
+    code = f"{secrets.randbelow(900000) + 100000}"
+    _email_verification_codes[email] = (code, time.time() + 600)
+
+    logger.info(f"Generated passwordless email sign-in code for {email}: {code}")
+    return {
+        "success": True,
+        "message": f"Verification code sent to {email}",
+        "dev_code": code
+    }
+
+
+@router.post("/email/verify-code")
+async def verify_email_code(
+    req: EmailVerifyRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Verifies the email one-time code and issues a JWT session token."""
+    email = (req.email or "").strip().lower()
+    entry = _email_verification_codes.get(email)
+    if not entry or entry[1] < time.time() or entry[0] != req.code.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification code.")
+
+    _email_verification_codes.pop(email, None)
+
+    username = email.split("@")[0].replace(".", "_")
+    name = username.replace("_", " ").title()
+    avatar_url = f"https://api.dicebear.com/7.x/thumbs/svg?seed={username}"
+
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username=username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+
+    return {
+        "token": session_token,
+        "token_type": "bearer",
+        "authenticated": True,
+        "user": user.github_username,
+        "username": user.github_username,
+        "id": user.id,
+        "tenant_id": tenant_id,
+        "role": role,
+        "tier": tier,
+        "avatar_url": user.avatar_url,
+        "provider": "email"
     }
 
 @router.get("/me")

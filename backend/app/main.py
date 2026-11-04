@@ -104,19 +104,17 @@ async def enforce_auth_middleware(request: Request, call_next):
     path = request.url.path
     # Protect all /api/v1/* endpoints except auth login, biometric authentication, and health checks
     PUBLIC_AUTH_PATHS = {
-        "/api/v1/auth/login",
-        "/api/v1/auth/github/login",
-        "/api/v1/auth/github/callback",
-        "/api/v1/auth/github/dev-login",
-        "/api/v1/auth/biometric/challenge",
-        "/api/v1/auth/biometric/status",
-        "/api/v1/auth/biometric/verify",
-        "/api/v1/auth/biometric/register",
         "/api/v1/billing/webhook",
         "/api/v1/billing/plans",
     }
     if path.startswith("/api/v1"):
-        if path in PUBLIC_AUTH_PATHS or path.startswith("/api/v1/webhooks") or path.startswith("/api/v1/runners"):
+        is_public_auth = path.startswith("/api/v1/auth/") and path != "/api/v1/auth/me"
+        if (
+            is_public_auth
+            or path in PUBLIC_AUTH_PATHS
+            or path.startswith("/api/v1/webhooks")
+            or path.startswith("/api/v1/runners")
+        ):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")

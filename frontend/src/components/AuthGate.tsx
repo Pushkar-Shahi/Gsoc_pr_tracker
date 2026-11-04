@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Fingerprint, KeyRound, ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, CheckCircle2, ShieldCheck, AlertCircle, Clock } from 'lucide-react';
+import { 
+  Lock, Fingerprint, KeyRound, ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, 
+  CheckCircle2, ShieldCheck, AlertCircle, Clock, Mail, Globe, Building2, Check, Loader2 
+} from 'lucide-react';
 import { 
   loginWithPassword, 
   verifyAuth, 
@@ -12,8 +15,13 @@ import {
   getBiometricStatus,
   isSecureContextAvailable,
   getWebsiteInternalSchedule,
-  devGitHubLogin
+  devGitHubLogin,
+  devGoogleLogin,
+  devGitLabLogin,
+  requestEmailCode,
+  verifyEmailCode
 } from '../api';
+import { EnterpriseSSOModal } from './EnterpriseSSOModal';
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -32,9 +40,17 @@ export function AuthGate({ children }: AuthGateProps) {
   const [hasEnrolledBiometrics, setHasEnrolledBiometrics] = useState(false);
   const [rememberBiometrics, setRememberBiometrics] = useState(true);
   const [isSecure, setIsSecure] = useState(true);
-  const [showQuickGitHub, setShowQuickGitHub] = useState(false);
+
+  // Multi-Provider Sign-In State
+  const [activeProviderTab, setActiveProviderTab] = useState<'google' | 'github' | 'gitlab' | 'email' | 'sso' | null>(null);
   const [quickUsername, setQuickUsername] = useState('Pushkar-Shahi');
-  const [quickLoading, setQuickLoading] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState('pushkar.shahi@gmail.com');
+  const [gitlabUsername, setGitLabUsername] = useState('Pushkar-Shahi');
+  const [emailInput, setEmailInput] = useState('pushkar.shahi@dev.local');
+  const [emailCode, setEmailCode] = useState('');
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
+  const [isSsoOpen, setIsSsoOpen] = useState(false);
+  const [authProviderLoading, setAuthProviderLoading] = useState(false);
 
   // Live 2-Hour Website Internal Timer State (runs independently before & across login)
   const [internalSchedule, setInternalSchedule] = useState(() => getWebsiteInternalSchedule());
@@ -178,7 +194,7 @@ export function AuthGate({ children }: AuthGateProps) {
   const handleQuickGitHubLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickUsername.trim()) return;
-    setQuickLoading(true);
+    setAuthProviderLoading(true);
     setError(null);
     try {
       await devGitHubLogin(quickUsername.trim());
@@ -187,7 +203,77 @@ export function AuthGate({ children }: AuthGateProps) {
       setError(err.message || 'Quick GitHub login failed');
       triggerShake();
     } finally {
-      setQuickLoading(false);
+      setAuthProviderLoading(false);
+    }
+  };
+
+  const handleQuickGoogleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleEmail.trim()) return;
+    setAuthProviderLoading(true);
+    setError(null);
+    try {
+      await devGoogleLogin(googleEmail.trim());
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      setError(err.message || 'Quick Google login failed');
+      triggerShake();
+    } finally {
+      setAuthProviderLoading(false);
+    }
+  };
+
+  const handleQuickGitLabLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gitlabUsername.trim()) return;
+    setAuthProviderLoading(true);
+    setError(null);
+    try {
+      await devGitLabLogin(gitlabUsername.trim());
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      setError(err.message || 'Quick GitLab login failed');
+      triggerShake();
+    } finally {
+      setAuthProviderLoading(false);
+    }
+  };
+
+  const handleRequestEmailCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+    setAuthProviderLoading(true);
+    setError(null);
+    try {
+      const res = await requestEmailCode(emailInput.trim());
+      setEmailCodeSent(true);
+      if (res.dev_code) {
+        setEmailCode(res.dev_code);
+        setInfoMessage(`Code sent! Auto-filled dev code: ${res.dev_code}`);
+      } else {
+        setInfoMessage(`Verification code sent to ${emailInput.trim()}`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to request email code');
+      triggerShake();
+    } finally {
+      setAuthProviderLoading(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailCode.trim()) return;
+    setAuthProviderLoading(true);
+    setError(null);
+    try {
+      await verifyEmailCode(emailInput.trim(), emailCode.trim());
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      setError(err.message || 'Invalid verification code');
+      triggerShake();
+    } finally {
+      setAuthProviderLoading(false);
     }
   };
 
@@ -346,69 +432,237 @@ export function AuthGate({ children }: AuthGateProps) {
             </div>
           )}
 
-          {/* GitHub Sign-In Section */}
+          {/* Multi-Provider Sign-In Options */}
           <div className="mb-5 space-y-2.5">
-            {!showQuickGitHub ? (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShowQuickGitHub(true)}
-                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#24292f] via-[#1f2428] to-[#161b22] hover:from-[#2c3238] hover:to-[#1c2128] text-white font-semibold text-xs border border-white/20 shadow-lg hover:border-indigo-400/50 transition active:scale-[0.98]"
-                >
+            {/* Google Sign-In */}
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveProviderTab(activeProviderTab === 'google' ? null : 'google')}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/90 hover:bg-white text-slate-800 font-semibold text-xs border border-slate-300 dark:border-white/20 shadow-md transition active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.43 7.34 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                  <span>Continue with Google</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-normal">
+                  {activeProviderTab === 'google' ? 'Hide' : 'Options'}
+                </span>
+              </button>
+
+              {activeProviderTab === 'google' && (
+                <form onSubmit={handleQuickGoogleLogin} className="p-3 rounded-2xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/10 space-y-2 animate-fade-in shadow-inner">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
+                    <span>Google One-Click Sign In</span>
+                    <button
+                      type="button"
+                      onClick={() => { window.location.href = '/api/v1/auth/google/login'; }}
+                      className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      OAuth Redirect &rarr;
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="email"
+                      value={googleEmail}
+                      onChange={(e) => setGoogleEmail(e.target.value)}
+                      placeholder="Google account email"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#030303] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={authProviderLoading || !googleEmail.trim()}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow shrink-0 disabled:opacity-50"
+                    >
+                      {authProviderLoading ? 'Signing in...' : 'Sign In'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* GitHub Sign-In */}
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveProviderTab(activeProviderTab === 'github' ? null : 'github')}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#24292f] hover:bg-[#2c3238] text-white font-semibold text-xs border border-white/20 shadow-md transition active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-2.5">
                   <svg className="w-4 h-4 fill-current text-white shrink-0" viewBox="0 0 24 24">
                     <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                   </svg>
-                  <span>Quick Sign-in with GitHub (@Pushkar-Shahi)</span>
-                </button>
-
-                <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
-                  <button
-                    type="button"
-                    onClick={() => { window.location.href = '/api/v1/auth/github/login'; }}
-                    className="hover:text-indigo-300 underline underline-offset-2 transition"
-                  >
-                    Use standard OAuth flow &rarr;
-                  </button>
+                  <span>Continue with GitHub</span>
                 </div>
-              </div>
-            ) : (
-              <form onSubmit={handleQuickGitHubLogin} className="p-3.5 rounded-2xl bg-neutral-900/95 border border-indigo-500/40 space-y-2.5 animate-fade-in shadow-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 fill-current text-white shrink-0" viewBox="0 0 24 24">
-                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                    </svg>
-                    GitHub Quick Sign-in
-                  </span>
+                <span className="text-[10px] text-neutral-400 font-normal">
+                  {activeProviderTab === 'github' ? 'Hide' : 'Options'}
+                </span>
+              </button>
+
+              {activeProviderTab === 'github' && (
+                <form onSubmit={handleQuickGitHubLogin} className="p-3 rounded-2xl bg-neutral-900 border border-white/10 space-y-2 animate-fade-in shadow-inner">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-300">
+                    <span>GitHub Quick Sign In</span>
+                    <button
+                      type="button"
+                      onClick={() => { window.location.href = '/api/v1/auth/github/login'; }}
+                      className="text-[10px] text-indigo-400 hover:underline"
+                    >
+                      OAuth Redirect &rarr;
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-mono text-neutral-400">@</span>
+                    <input
+                      type="text"
+                      value={quickUsername}
+                      onChange={(e) => setQuickUsername(e.target.value)}
+                      placeholder="GitHub username"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#030303] border border-white/20 text-white text-xs font-mono focus:outline-none focus:border-indigo-400"
+                    />
+                    <button
+                      type="submit"
+                      disabled={authProviderLoading || !quickUsername.trim()}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow shrink-0 disabled:opacity-50"
+                    >
+                      {authProviderLoading ? 'Signing in...' : 'Sign In'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Additional Providers Row: GitLab & Email Magic Code & Enterprise SSO */}
+            <div className="grid grid-cols-3 gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setActiveProviderTab(activeProviderTab === 'gitlab' ? null : 'gitlab')}
+                className={`py-2 px-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                  activeProviderTab === 'gitlab'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/25'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5 fill-current text-[#fc6d26] shrink-0" viewBox="0 0 24 24">
+                  <path d="M23.6 9.89l-2.07-6.36a.9.9 0 00-1.72 0l-2.07 6.36H6.26L4.19 3.53a.9.9 0 00-1.72 0L.4 9.89a.88.88 0 00.32.99l11.08 8.05a.4.4 0 00.48 0l11.08-8.05a.88.88 0 00.24-.99z"/>
+                </svg>
+                <span>GitLab</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveProviderTab(activeProviderTab === 'email' ? null : 'email')}
+                className={`py-2 px-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                  activeProviderTab === 'email'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/25'
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span>Email</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSsoOpen(true)}
+                className="py-2 px-2.5 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:border-slate-400 dark:hover:border-white/25 text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <Building2 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                <span>SSO</span>
+              </button>
+            </div>
+
+            {/* GitLab Expanded Tab */}
+            {activeProviderTab === 'gitlab' && (
+              <form onSubmit={handleQuickGitLabLogin} className="p-3 rounded-2xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/10 space-y-2 animate-fade-in shadow-inner">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
+                  <span>GitLab Quick Sign In</span>
                   <button
                     type="button"
-                    onClick={() => setShowQuickGitHub(false)}
-                    className="text-[10px] text-neutral-400 hover:text-white"
+                    onClick={() => { window.location.href = '/api/v1/auth/gitlab/login'; }}
+                    className="text-[10px] text-orange-500 hover:underline"
                   >
-                    Cancel
+                    OAuth Redirect &rarr;
                   </button>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-mono text-neutral-400">@</span>
                   <input
                     type="text"
-                    value={quickUsername}
-                    onChange={(e) => setQuickUsername(e.target.value)}
-                    placeholder="GitHub username"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#030303] border border-white/20 text-white text-xs font-mono focus:outline-none focus:border-indigo-400"
+                    value={gitlabUsername}
+                    onChange={(e) => setGitLabUsername(e.target.value)}
+                    placeholder="GitLab username"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#030303] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-orange-500"
                   />
                   <button
                     type="submit"
-                    disabled={quickLoading || !quickUsername.trim()}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow shrink-0 disabled:opacity-50"
+                    disabled={authProviderLoading || !gitlabUsername.trim()}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#fc6d26] hover:bg-[#e24329] text-white shadow shrink-0 disabled:opacity-50"
                   >
-                    {quickLoading ? 'Verifying...' : 'Sign In'}
+                    {authProviderLoading ? 'Signing in...' : 'Sign In'}
                   </button>
                 </div>
-                <p className="text-[10px] text-neutral-400">
-                  Fetches your real GitHub profile, avatar, and personal organization workspace.
-                </p>
               </form>
+            )}
+
+            {/* Email Magic Code Expanded Tab */}
+            {activeProviderTab === 'email' && (
+              <div className="p-3 rounded-2xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/10 space-y-2.5 animate-fade-in shadow-inner">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-neutral-300">
+                  <span>Passwordless Email Sign In</span>
+                  <span className="text-[10px] text-slate-500">6-digit verification code</span>
+                </div>
+                {!emailCodeSent ? (
+                  <form onSubmit={handleRequestEmailCode} className="flex items-center gap-1.5">
+                    <input
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="name@company.com"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#030303] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={authProviderLoading || !emailInput.trim()}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow shrink-0 disabled:opacity-50"
+                    >
+                      {authProviderLoading ? 'Sending...' : 'Send Code'}
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyEmailCode} className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={emailCode}
+                        onChange={(e) => setEmailCode(e.target.value)}
+                        placeholder="6-digit code"
+                        maxLength={6}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#030303] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs font-mono tracking-widest text-center focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={authProviderLoading || emailCode.length < 6}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow shrink-0 disabled:opacity-50"
+                      >
+                        {authProviderLoading ? 'Verifying...' : 'Verify'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEmailCodeSent(false)}
+                      className="text-[10px] text-indigo-500 hover:underline"
+                    >
+                      Change email address
+                    </button>
+                  </form>
+                )}
+              </div>
             )}
 
             <div className="relative my-4">
@@ -490,6 +744,9 @@ export function AuthGate({ children }: AuthGateProps) {
           </div>
         </div>
       </div>
+
+      {/* Enterprise SSO Modal */}
+      <EnterpriseSSOModal isOpen={isSsoOpen} onClose={() => setIsSsoOpen(false)} />
 
       {/* Footer */}
       <div className="max-w-md w-full mx-auto text-center pb-4 text-[11px] text-neutral-500">

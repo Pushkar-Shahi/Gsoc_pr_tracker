@@ -2394,6 +2394,131 @@ export async function addOrganizationMember(orgId: string, usernameOrEmail: stri
   return await res.json();
 }
 
+// ==============================================================================
+// Dynamic Tracked Organizations & URL Ingestion
+// ==============================================================================
+
+export interface TrackedOrganization {
+  id: string;
+  label: string;
+  icon: string;
+  is_default: boolean;
+  issue_count: number;
+  owner?: string;
+  repo?: string;
+  stars?: number;
+  language?: string;
+}
+
+export interface TrackedOrganizationsResponse {
+  total_orgs: number;
+  total_issues: number;
+  organizations: TrackedOrganization[];
+}
+
+export async function fetchTrackedOrganizations(): Promise<TrackedOrganizationsResponse> {
+  const res = await authedFetch(`${API_BASE}/issues/organizations`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch tracked organizations');
+  }
+  return await res.json();
+}
+
+export interface AddOrgByUrlResponse {
+  success: boolean;
+  owner: string;
+  repo: string | null;
+  full_name: string;
+  org_name: string;
+  stars?: number;
+  language?: string;
+  open_issues_count?: number;
+  issues_imported: number;
+  message: string;
+}
+
+export async function addOrganizationByUrl(url: string, custom_name?: string): Promise<AddOrgByUrlResponse> {
+  const res = await authedFetch(`${API_BASE}/issues/add-org-by-url`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, custom_name })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to add organization from GitHub URL');
+  }
+  return await res.json();
+}
+
+// ==============================================================================
+// Multi-Provider Sign-In APIs (Google, GitLab, Passwordless Email)
+// ==============================================================================
+
+export async function devGoogleLogin(email: string = 'pushkar.shahi@gmail.com', name: string = 'Pushkar Shahi'): Promise<any> {
+  const res = await fetch(`${API_BASE}/auth/google/dev-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Google sign-in failed');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
+export async function devGitLabLogin(username: string = 'Pushkar-Shahi', name: string = 'Pushkar Shahi'): Promise<any> {
+  const res = await fetch(`${API_BASE}/auth/gitlab/dev-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, name })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'GitLab sign-in failed');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
+export async function requestEmailCode(email: string): Promise<{ success: boolean; message: string; dev_code?: string }> {
+  const res = await fetch(`${API_BASE}/auth/email/request-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to request email code');
+  }
+  return await res.json();
+}
+
+export async function verifyEmailCode(email: string, code: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/auth/email/verify-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Invalid or expired email code');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
+
 
 
 

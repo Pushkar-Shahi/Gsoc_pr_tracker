@@ -1,7 +1,9 @@
+import logging
 import re
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any, Tuple
 from fastapi import APIRouter, Depends, Query, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select, func, desc, asc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -11,10 +13,13 @@ from app.models.models import Issue, Repository, Task, PlatformSettings
 from app.schemas.schemas import IssueRead, IssueListResponse, IssueImportRequest, IssueImportResponse
 from app.services.github_client import GitHubClient
 from app.services.ranking_service import RankingService
+from app.services.discovery_service import DiscoveryService
 from app.services.policy_inspector import PolicyInspector
 from app.core.config import settings
 from app.core.gsoc_orgs import ALL_GSOC_OWNERS, FOCUS_GSOC_OWNERS, FOCUS_GSOC_ORGS, get_gsoc_info, is_gsoc_org, is_focus_gsoc_org
 from app.core.tenant import TenantContext, get_current_tenant
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/issues", tags=["Issues"])
 
@@ -55,7 +60,7 @@ async def list_issues(
     if eligible_only or unassigned_only:
         filters.append(Issue.is_eligible.is_(True))
 
-    # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR issues linked to user tasks/PRs
+    # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
     focus_owners = list(FOCUS_GSOC_OWNERS)
     if gsoc_org and gsoc_org.strip() and gsoc_org.strip().lower() != "all":
         org_filter = gsoc_org.strip().lower()
@@ -73,15 +78,23 @@ async def list_issues(
             target_owners = ["kornia"]
         else:
             target_owners = [org_filter]
-        filters.append(func.lower(Repository.owner).in_(target_owners))
-    else:
-        # Default: Show the 4 focus orgs OR issues that have user tasks/PRs
         filters.append(
             or_(
-                func.lower(Repository.owner).in_(focus_owners),
-                Issue.id.in_(select(Task.issue_id))
+                func.lower(Repository.owner).in_(target_owners),
+                func.lower(Repository.name).in_(target_owners),
+                func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
             )
         )
+    else:
+        # Default ("All Orgs"): Show open issues from focus owners, tracked GSoC/custom repos, or user tasks
+        if gsoc_only:
+            filters.append(
+                or_(
+                    func.lower(Repository.owner).in_(focus_owners),
+                    Repository.is_gsoc.is_(True),
+                    Issue.id.in_(select(Task.issue_id))
+                )
+            )
 
     if query and query.strip():
         q_term = f"%{query.strip()}%"
@@ -178,6 +191,237 @@ async def list_issues(
             "hidden_count": 0
         }
     )
+
+
+class AddOrganizationByUrlRequest(BaseModel):
+    url: str
+    custom_name: Optional[str] = None
+
+
+@router.get("/organizations")
+async def get_tracked_organizations(db: AsyncSession = Depends(get_db)):
+    """
+    Returns all organizations available for filtering, combining the 4 focus showcase orgs
+    with all dynamically added custom organizations in the database.
+    """
+    default_orgs = [
+        {"id": "numfocus", "label": "NumFOCUS", "icon": "🧮", "is_default": True},
+        {"id": "psf", "label": "Python (PSF)", "icon": "🐍", "is_default": True},
+        {"id": "deepchem", "label": "DeepChem", "icon": "🧪", "is_default": True},
+        {"id": "kornia", "label": "Kornia", "icon": "👁️", "is_default": True},
+    ]
+
+    stmt = (
+        select(
+            Repository.owner,
+            Repository.name,
+            Repository.gsoc_org_name,
+            Repository.stars_count,
+            Repository.primary_language,
+            func.count(Issue.id).label("issue_count")
+        )
+        .outerjoin(Issue, (Issue.repository_id == Repository.id) & (Issue.state == "open"))
+        .group_by(Repository.owner, Repository.name, Repository.gsoc_org_name, Repository.stars_count, Repository.primary_language)
+    )
+    res = await db.execute(stmt)
+    rows = res.all()
+
+    counts: Dict[str, int] = {"numfocus": 0, "psf": 0, "deepchem": 0, "kornia": 0}
+    custom_orgs_map: Dict[str, Dict[str, Any]] = {}
+
+    for row in rows:
+        owner_lower = (row.owner or "").lower()
+        iss_count = row.issue_count or 0
+
+        if owner_lower in (
+            "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
+            "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
+            "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels"
+        ):
+            counts["numfocus"] += iss_count
+        elif owner_lower in ("psf", "python", "pallets", "pypa", "celery", "pylint-dev"):
+            counts["psf"] += iss_count
+        elif owner_lower == "deepchem":
+            counts["deepchem"] += iss_count
+        elif owner_lower == "kornia":
+            counts["kornia"] += iss_count
+        else:
+            org_key = owner_lower
+            if org_key not in custom_orgs_map:
+                label = row.gsoc_org_name or row.owner
+                if row.name and row.name.lower() != row.owner.lower():
+                    label = f"{row.owner}/{row.name}"
+                custom_orgs_map[org_key] = {
+                    "id": org_key,
+                    "label": label,
+                    "icon": "📦",
+                    "is_default": False,
+                    "owner": row.owner,
+                    "repo": row.name,
+                    "stars": row.stars_count or 0,
+                    "language": row.primary_language or "Code",
+                    "issue_count": iss_count
+                }
+            else:
+                custom_orgs_map[org_key]["issue_count"] += iss_count
+
+    for d in default_orgs:
+        d["issue_count"] = counts.get(d["id"], 0)
+
+    all_orgs = default_orgs + list(custom_orgs_map.values())
+    total_issues = sum(o.get("issue_count", 0) for o in all_orgs)
+
+    return {
+        "total_orgs": len(all_orgs),
+        "total_issues": total_issues,
+        "organizations": all_orgs
+    }
+
+
+@router.post("/add-org-by-url")
+async def add_org_by_url(
+    payload: AddOrganizationByUrlRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Adds a new organization to track by parsing a GitHub issue tab URL,
+    e.g. 'https://github.com/facebook/react/issues' or 'https://github.com/fastapi/fastapi'.
+    Fetches repo metadata and open unassigned issues from GitHub, computes AI rankings,
+    and adds the organization to the database.
+    """
+    raw_url = payload.url.strip()
+    if not raw_url:
+        raise HTTPException(status_code=400, detail="Please enter a valid GitHub issue tab URL.")
+
+    # Strip out protocol and github domain
+    clean = re.sub(r'^https?://(?:www\.)?github\.com/', '', raw_url)
+    clean = clean.split('?')[0].split('#')[0].strip('/')
+
+    owner = None
+    repo = None
+
+    if clean.startswith("orgs/"):
+        parts = clean.split('/')
+        if len(parts) >= 2:
+            owner = parts[1]
+    else:
+        parts = clean.split('/')
+        if len(parts) >= 2:
+            owner = parts[0]
+            if parts[1].lower() not in ("issues", "pulls", "discussions", "projects"):
+                repo = parts[1]
+        elif len(parts) == 1 and parts[0]:
+            owner = parts[0]
+
+    if not owner:
+        raise HTTPException(status_code=400, detail=f"Could not extract GitHub organization or repository from '{payload.url}'.")
+
+    gh = GitHubClient(token=settings.GITHUB_TOKEN)
+    discovery = DiscoveryService(db=db, github_client=gh)
+
+    imported_count = 0
+    display_label = payload.custom_name or owner
+
+    if repo:
+        repo_data = await gh.get_repository(owner, repo) or {}
+        repo_owner = repo_data.get("owner", {}).get("login", owner)
+        repo_name = repo_data.get("name", repo)
+        full_name = repo_data.get("full_name", f"{owner}/{repo}")
+        language = repo_data.get("language") or "Python"
+        stars = repo_data.get("stargazers_count", 0)
+        open_issues = repo_data.get("open_issues_count", 0)
+
+        # Upsert Repository record
+        repo_stmt = select(Repository).where(Repository.full_name == full_name)
+        r_res = await db.execute(repo_stmt)
+        repository = r_res.scalar_one_or_none()
+
+        display_label = payload.custom_name or f"{repo_owner}/{repo_name}"
+
+        if not repository:
+            repository = Repository(
+                owner=repo_owner,
+                name=repo_name,
+                full_name=full_name,
+                html_url=repo_data.get("html_url", f"https://github.com/{full_name}"),
+                default_branch=repo_data.get("default_branch", "main"),
+                primary_language=language,
+                license_spdx=(repo_data.get("license") or {}).get("spdx_id"),
+                license_name=(repo_data.get("license") or {}).get("name"),
+                stars_count=stars,
+                open_issues_count=open_issues,
+                is_gsoc=True,
+                gsoc_org_name=display_label,
+                last_inspected_at=datetime.utcnow()
+            )
+            db.add(repository)
+            await db.flush()
+        else:
+            repository.is_gsoc = True
+            repository.gsoc_org_name = display_label
+            repository.stars_count = stars
+            await db.flush()
+
+        # Fetch open unassigned issues
+        repo_issues = await gh.get_repo_issues(owner=repo_owner, repo=repo_name, state="open", assignee="none", per_page=20)
+        if len(repo_issues) < 5:
+            search_res = await gh.search_issues(f"repo:{full_name} is:issue is:open no:assignee", per_page=15)
+            search_items = search_res.get("items", [])
+            existing_ids = {it.get("id") for it in repo_issues if isinstance(it, dict)}
+            for s_item in search_items:
+                if s_item.get("id") not in existing_ids:
+                    repo_issues.append(s_item)
+
+        for item in repo_issues:
+            if not isinstance(item, dict):
+                continue
+            if not item.get("repository_url"):
+                item["repository_url"] = f"https://api.github.com/repos/{full_name}"
+            try:
+                await discovery._ingest_issue_item(item, language)
+                imported_count += 1
+            except Exception as e:
+                logger.warning(f"Error ingesting issue {item.get('number')}: {e}")
+
+        await db.commit()
+
+        return {
+            "success": True,
+            "owner": repo_owner,
+            "repo": repo_name,
+            "full_name": full_name,
+            "org_name": display_label,
+            "stars": stars,
+            "language": language,
+            "open_issues_count": open_issues,
+            "issues_imported": imported_count,
+            "message": f"Successfully added '{display_label}' and imported {imported_count} open unassigned issues."
+        }
+    else:
+        # Search issues across the entire organization
+        search_res = await gh.search_issues(f"org:{owner} is:issue is:open no:assignee archived:false", per_page=20)
+        search_items = search_res.get("items", [])
+        for item in search_items:
+            if not isinstance(item, dict):
+                continue
+            try:
+                await discovery._ingest_issue_item(item, "Python")
+                imported_count += 1
+            except Exception as e:
+                logger.warning(f"Error ingesting org issue: {e}")
+
+        await db.commit()
+
+        return {
+            "success": True,
+            "owner": owner,
+            "repo": None,
+            "full_name": owner,
+            "org_name": display_label,
+            "issues_imported": imported_count,
+            "message": f"Successfully added organization '{display_label}' and imported {imported_count} open unassigned issues."
+        }
+
 
 @router.get("/{issue_id}", response_model=IssueRead)
 async def get_issue(
