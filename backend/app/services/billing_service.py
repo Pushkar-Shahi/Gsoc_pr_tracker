@@ -44,8 +44,8 @@ PLANS_CATALOG = [
         "id": "pro",
         "name": "Pro Developer",
         "description": "Unconstrained task automation, priority discovery, and bounty tracking for high-velocity builders.",
-        "price_monthly": 29,
-        "price_annual": 290,
+        "price_monthly": 100,
+        "price_annual": 1000,
         "price_id_monthly": settings.STRIPE_PRO_MONTHLY_PRICE_ID,
         "price_id_annual": settings.STRIPE_PRO_ANNUAL_PRICE_ID,
         "quota_tasks": None,  # Unlimited
@@ -65,8 +65,8 @@ PLANS_CATALOG = [
         "id": "team",
         "name": "Engineering Team",
         "description": "Complete codebase triage, private org management, shared BYOK secrets, and centralized velocity metrics.",
-        "price_monthly": 79,
-        "price_annual": 790,
+        "price_monthly": 300,
+        "price_annual": 3000,
         "price_id_monthly": settings.STRIPE_TEAM_SEAT_PRICE_ID,
         "price_id_annual": settings.STRIPE_TEAM_SEAT_PRICE_ID,
         "quota_tasks": None,  # Unlimited

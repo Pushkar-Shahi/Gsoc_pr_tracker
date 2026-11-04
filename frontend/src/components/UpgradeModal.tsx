@@ -105,7 +105,7 @@ export function UpgradeModal({
               </>
             ) : (
               <>
-                <span>Upgrade to Pro ($29/mo)</span>
+                <span>Upgrade to Pro ($100/mo)</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
