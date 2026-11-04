@@ -33,8 +33,8 @@ async def list_issues(
     difficulty: Optional[str] = None,
     license_status: Optional[str] = None,
     state: str = Query("open", pattern="^(open|closed|all)$"),
-    eligible_only: bool = Query(True),
-    unassigned_only: bool = Query(True),
+    eligible_only: bool = Query(False),
+    unassigned_only: bool = Query(False),
     gsoc_only: bool = Query(True),
     gsoc_org: Optional[str] = None,
     sort_by: str = Query("created", pattern="^(rank|created|stars|effort)$"),
@@ -56,8 +56,8 @@ async def list_issues(
     if state != "all":
         filters.append(Issue.state == state)
 
-    # Exclude ineligible or already-assigned issues when unassigned_only / eligible_only is requested
-    if eligible_only or unassigned_only:
+    # Exclude ineligible or already-assigned issues only when unassigned_only is requested
+    if unassigned_only or eligible_only:
         filters.append(Issue.is_eligible.is_(True))
 
     # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
@@ -362,10 +362,10 @@ async def add_org_by_url(
             repository.stars_count = stars
             await db.flush()
 
-        # Fetch open unassigned issues
-        repo_issues = await gh.get_repo_issues(owner=repo_owner, repo=repo_name, state="open", assignee="none", per_page=20)
+        # Fetch all open issues up to 100
+        repo_issues = await gh.get_repo_issues(owner=repo_owner, repo=repo_name, state="open", assignee=None, per_page=100)
         if len(repo_issues) < 5:
-            search_res = await gh.search_issues(f"repo:{full_name} is:issue is:open no:assignee", per_page=15)
+            search_res = await gh.search_issues(f"repo:{full_name} is:issue is:open", per_page=30)
             search_items = search_res.get("items", [])
             existing_ids = {it.get("id") for it in repo_issues if isinstance(it, dict)}
             for s_item in search_items:

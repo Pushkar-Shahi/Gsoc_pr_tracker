@@ -123,7 +123,7 @@ export function App() {
     if (issues.length >= totalIssues) return;
 
     setLoadingMoreIssues(true);
-    const nextPage = currentPage + 1;
+    const nextPage = Math.floor(issues.length / pageSize) + 1;
     try {
       const res = await api.fetchIssues({
         page: nextPage,
@@ -144,7 +144,7 @@ export function App() {
     } finally {
       setLoadingMoreIssues(false);
     }
-  }, [loadingIssues, loadingMoreIssues, issues.length, totalIssues, currentPage, pageSize, issueFilters]);
+  }, [loadingIssues, loadingMoreIssues, issues.length, totalIssues, pageSize, issueFilters]);
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);

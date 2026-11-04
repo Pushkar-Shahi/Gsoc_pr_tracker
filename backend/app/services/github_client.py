@@ -109,15 +109,18 @@ class GitHubClient:
         owner: str,
         repo: str,
         state: str = "open",
-        assignee: str = "none",
-        per_page: int = 15
+        assignee: Optional[str] = None,
+        per_page: int = 30
     ) -> List[Dict[str, Any]]:
-        """Fetch open, unassigned non-PR issues directly from a target repository."""
+        """Fetch open non-PR issues directly from a target repository."""
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
+                params = {"state": state, "per_page": per_page}
+                if assignee is not None:
+                    params["assignee"] = assignee
                 resp = await client.get(
                     f"{self.base_url}/repos/{owner}/{repo}/issues",
-                    params={"state": state, "assignee": assignee, "per_page": per_page},
+                    params=params,
                     headers=self._get_headers()
                 )
                 self._update_rate_limits(resp)

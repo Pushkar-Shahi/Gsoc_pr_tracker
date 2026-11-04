@@ -42,6 +42,7 @@ interface IssueInboxProps {
     sort_by?: string;
     gsoc_only?: boolean;
     gsoc_org?: string;
+    unassigned_only?: boolean;
   }) => void;
 }
 
@@ -62,28 +63,66 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
   const [autoLoad, setAutoLoad] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll position listener for floating Back-to-Top button
+  useEffect(() => {
+    const handleScrollPos = () => {
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      setShowBackToTop(scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScrollPos, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollPos);
+  }, []);
+
+  // Dual-trigger infinite auto-load (IntersectionObserver + window scroll fallback)
   useEffect(() => {
     if (!autoLoad || !hasMore || loadingMore || loading || !onLoadMore) return;
 
+    // 1. IntersectionObserver with prefetch rootMargin
     const observer = new IntersectionObserver((entries) => {
       const first = entries[0];
-      if (first.isIntersecting) {
+      if (first.isIntersecting && !loadingMore && hasMore) {
         onLoadMore();
       }
     }, {
-      rootMargin: '250px',
-      threshold: 0.1,
+      rootMargin: '800px 0px',
+      threshold: 0,
     });
 
     const current = sentinelRef.current;
     if (current) observer.observe(current);
 
+    // 2. Window Scroll and Resize event listener
+    const handleScrollOrResize = () => {
+      if (!autoLoad || !hasMore || loadingMore || loading) return;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const clientHeight = window.innerHeight;
+      if (scrollHeight - (scrollTop + clientHeight) < 800) {
+        onLoadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
+    window.addEventListener('resize', handleScrollOrResize, { passive: true });
+
+    // 3. Viewport fill check: If issues don't fill tall screen, trigger next page
+    const timer = setTimeout(() => {
+      if (document.documentElement.scrollHeight <= window.innerHeight + 200) {
+        handleScrollOrResize();
+      }
+    }, 300);
+
     return () => {
+      clearTimeout(timer);
       if (current) observer.unobserve(current);
+      window.removeEventListener('scroll', handleScrollOrResize);
+      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [autoLoad, hasMore, loadingMore, loading, onLoadMore]);
 
@@ -757,6 +796,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     license_status: selectedLicense,
                     sort_by: sortBy,
                     gsoc_org: '',
+                    unassigned_only: unassignedOnly,
                   });
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap shadow-sm active:scale-95 ${
@@ -766,7 +806,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 }`}
               >
                 <span>🌟</span>
-                <span>All {trackedOrgs.length > 0 ? trackedOrgs.length : 4} Orgs</span>
+                <span>All Orgs ({trackedOrgs.length})</span>
               </button>
 
               {/* Dynamic Organization Pills */}
@@ -785,6 +825,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                         license_status: selectedLicense,
                         sort_by: sortBy,
                         gsoc_org: org.id,
+                        unassigned_only: unassignedOnly,
                       });
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap shadow-sm active:scale-95 ${
@@ -812,54 +853,109 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddOrgModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white shadow-md active:scale-95 whitespace-nowrap border border-indigo-400/30 shrink-0"
-                title="Add any organization by its GitHub issue tab URL"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white shadow-md active:scale-95 whitespace-nowrap border border-indigo-400/30 shrink-0 cursor-pointer"
+                title="Add any organization or repo by its GitHub issue tab URL"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>Add Org</span>
+                <span>+ Add Org</span>
               </button>
             </div>
 
-            {/* Sorting controls */}
-            <div className="ml-auto flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 flex-wrap">
-              <ArrowUpDown className="w-3.5 h-3.5 mr-0.5 text-slate-700 dark:text-white" />
-              <span>Priority:</span>
-              <button
-                type="button"
-                onClick={() => handleSortChange('created')}
-                className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
-                  sortBy === 'created' 
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
-                    : 'hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300'
-                }`}
-                title="Priority order is strictly based on time (newest unassigned issues first)"
-              >
-                🕒 Time (Newest)
-              </button>
-              <span className="text-slate-300 dark:text-neutral-700">|</span>
-              <button
-                type="button"
-                onClick={() => handleSortChange('rank')}
-                className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
-                  sortBy === 'rank' 
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
-                    : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
-                }`}
-              >
-                Suitability Rank
-              </button>
-              <span className="text-slate-300 dark:text-neutral-700">|</span>
-              <button
-                type="button"
-                onClick={() => handleSortChange('stars')}
-                className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
-                  sortBy === 'stars' 
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
-                    : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
-                }`}
-              >
-                Stars
-              </button>
+            {/* Assignment & Sorting controls */}
+            <div className="ml-auto flex items-center gap-2 text-slate-500 dark:text-neutral-400 flex-wrap">
+              {/* Assignment Filter: All Open vs Unassigned Only */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10 rounded-xl p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnassignedOnly(false);
+                    onFilterChange({
+                      query: searchTerm,
+                      language: selectedLanguage,
+                      difficulty: selectedDifficulty,
+                      license_status: selectedLicense,
+                      sort_by: sortBy,
+                      gsoc_org: selectedGsocOrg,
+                      unassigned_only: false,
+                    });
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 ${
+                    !unassignedOnly
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm font-bold'
+                      : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Show all open issues regardless of assignment status"
+                >
+                  All Open Issues
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnassignedOnly(true);
+                    onFilterChange({
+                      query: searchTerm,
+                      language: selectedLanguage,
+                      difficulty: selectedDifficulty,
+                      license_status: selectedLicense,
+                      sort_by: sortBy,
+                      gsoc_org: selectedGsocOrg,
+                      unassigned_only: true,
+                    });
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 ${
+                    unassignedOnly
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm font-bold'
+                      : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Filter to unassigned issues eligible for contribution"
+                >
+                  🎯 Unassigned Only
+                </button>
+              </div>
+
+              <div className="hidden sm:block text-slate-300 dark:text-neutral-700">|</div>
+
+              {/* Priority Sorting */}
+              <div className="flex items-center gap-1 text-xs">
+                <ArrowUpDown className="w-3.5 h-3.5 mr-0.5 text-slate-700 dark:text-white" />
+                <span className="hidden md:inline">Sort:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSortChange('created')}
+                  className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
+                    sortBy === 'created' 
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
+                      : 'hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300'
+                  }`}
+                  title="Priority order is strictly based on time (newest issues first)"
+                >
+                  🕒 Newest
+                </button>
+                <span className="text-slate-300 dark:text-neutral-700">|</span>
+                <button
+                  type="button"
+                  onClick={() => handleSortChange('rank')}
+                  className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
+                    sortBy === 'rank' 
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
+                      : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
+                  }`}
+                >
+                  Suitability
+                </button>
+                <span className="text-slate-300 dark:text-neutral-700">|</span>
+                <button
+                  type="button"
+                  onClick={() => handleSortChange('stars')}
+                  className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
+                    sortBy === 'stars' 
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
+                      : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
+                  }`}
+                >
+                  Stars
+                </button>
+              </div>
             </div>
           </div>
         </form>
@@ -1204,6 +1300,16 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         })}
       </div>
 
+      {/* Infinite auto-load sentinel & loading indicator right beneath cards grid */}
+      <div ref={sentinelRef} className="w-full py-2 flex flex-col items-center justify-center min-h-[48px] pointer-events-none">
+        {loadingMore && (
+          <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-slate-900 text-white dark:bg-neutral-900 dark:text-white border border-slate-700 dark:border-white/20 shadow-2xl text-xs font-semibold animate-pulse my-2 pointer-events-auto">
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-400 dark:text-cyan-400" />
+            <span>Auto-loading next batch of issues...</span>
+          </div>
+        )}
+      </div>
+
       {/* Load More & Infinite Scroll Section */}
       {!loading && visibleIssues.length > 0 && (
         <div className="bg-[#000000] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-4">
@@ -1293,14 +1399,11 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
               </button>
             ) : (
               <div className="py-2 text-center text-xs text-neutral-300 flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                <span>All {totalIssues.toLocaleString()} open unassigned issues loaded cleanly.</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>All {totalIssues.toLocaleString()} {unassignedOnly ? 'open unassigned' : 'open'} issues loaded cleanly.</span>
               </div>
             )}
           </div>
-
-          {/* Invisible intersection sentinel for auto-load */}
-          {hasMore && <div ref={sentinelRef} className="h-6 w-full pointer-events-none" />}
         </div>
       )}
 
@@ -1437,15 +1540,15 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       )}
 
       {/* Floating Back-to-Top Button */}
-      {visibleIssues.length > 20 && (
+      {showBackToTop && (
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 left-6 z-40 px-4 py-2.5 rounded-2xl liquid-glass text-slate-800 dark:text-white border border-slate-300/80 dark:border-white/20 shadow-2xl backdrop-blur-xl text-xs font-semibold transition-all flex items-center gap-2 active:scale-95 hover:scale-105 group"
+          className="fixed bottom-8 right-8 z-50 px-4 py-2.5 rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950 border border-slate-800 dark:border-neutral-200 shadow-2xl text-xs font-bold transition-all flex items-center gap-2 active:scale-95 hover:scale-105 group cursor-pointer"
           title="Scroll back to top"
         >
-          <ArrowUp className="w-4 h-4 text-indigo-600 dark:text-cyan-400 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-          <span className="font-semibold text-slate-800 dark:text-white">Back to Top</span>
+          <ArrowUp className="w-4 h-4 text-cyan-400 dark:text-indigo-600 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+          <span className="font-bold">Back to Top</span>
         </button>
       )}
     </div>
