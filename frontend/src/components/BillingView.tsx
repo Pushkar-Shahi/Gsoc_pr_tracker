@@ -273,7 +273,7 @@ export function BillingView() {
                 </p>
 
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold text-white">${price}</span>
+                  <span className="text-3xl font-extrabold text-white">{plan.currency_symbol || '₹'}{price}</span>
                   <span className="text-xs text-neutral-400 font-medium">{billingSuffix}</span>
                 </div>
 

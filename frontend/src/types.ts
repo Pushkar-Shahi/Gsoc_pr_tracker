@@ -252,6 +252,8 @@ export interface BillingPlan {
   id: 'starter' | 'pro' | 'team';
   name: string;
   description: string;
+  currency?: string;
+  currency_symbol?: string;
   price_monthly: number;
   price_annual: number;
   price_id_monthly: string;

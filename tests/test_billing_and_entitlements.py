@@ -62,11 +62,15 @@ async def test_billing_plans_catalog():
         pro = next(p for p in plans if p["id"] == "pro")
         assert pro["price_monthly"] == 100
         assert pro["price_annual"] == 1000
+        assert pro["currency"] == "INR"
+        assert pro["currency_symbol"] == "₹"
         assert pro["quota_tasks"] is None  # Unlimited
 
         team = next(p for p in plans if p["id"] == "team")
         assert team["price_monthly"] == 300
         assert team["price_annual"] == 3000
+        assert team["currency"] == "INR"
+        assert team["currency_symbol"] == "₹"
 
 
 @pytest.mark.asyncio
