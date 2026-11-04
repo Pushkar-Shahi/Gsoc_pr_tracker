@@ -43,6 +43,11 @@ export function AuthGate({ children }: AuthGateProps) {
     // Handle OAuth callback token in URL query
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
+    const oauthError = urlParams.get('error') || urlParams.get('error_description');
+    if (oauthError) {
+      setError(`Authentication failed: ${decodeURIComponent(oauthError)}`);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
     if (oauthToken) {
       setAuthToken(oauthToken);
       window.history.replaceState({}, '', window.location.pathname);
@@ -127,19 +132,11 @@ export function AuthGate({ children }: AuthGateProps) {
     window.location.href = `/api/v1/auth/google/login`;
   };
 
-  // GitHub Sign-In Handler
-  const handleGitHubSignIn = async () => {
-    setAuthProviderLoading(true);
+  // GitHub Sign-In Handler (initiates real GitHub OAuth verification flow)
+  const handleGitHubSignIn = () => {
     setError(null);
-    try {
-      await devGitHubLogin('Pushkar-Shahi');
-      setIsAuthenticated(true);
-    } catch (err: any) {
-      setError(err.message || 'GitHub sign in failed');
-      triggerShake();
-    } finally {
-      setAuthProviderLoading(false);
-    }
+    setAuthProviderLoading(true);
+    window.location.href = `/api/v1/auth/github/login`;
   };
 
   // Email + Password Submit (Sign In or Sign Up)

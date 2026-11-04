@@ -248,7 +248,16 @@ async def github_login(format: Optional[str] = None):
     state = secrets.token_urlsafe(32)
     _oauth_states[state] = now + 600
 
-    client_id = settings.GITHUB_CLIENT_ID or "mock_client_id_12345"
+    if not settings.GITHUB_CLIENT_ID:
+        err_msg = "GitHub OAuth App is not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in your .env file."
+        if format == "json":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_AUTH_CALLBACK_URL}?error={err_msg.replace(' ', '%20')}",
+            status_code=302
+        )
+
+    client_id = settings.GITHUB_CLIENT_ID
     redirect_uri = settings.GITHUB_REDIRECT_URI
     auth_url = (
         f"https://github.com/login/oauth/authorize?"
