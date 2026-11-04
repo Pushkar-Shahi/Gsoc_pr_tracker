@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 import httpx
-from fastapi import APIRouter, HTTPException, Header, Depends, status
+from fastapi import APIRouter, HTTPException, Header, Depends, status, Request
 from pydantic import BaseModel
 from starlette.responses import RedirectResponse
 from sqlalchemy import select
@@ -25,6 +25,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # OAuth In-Memory State Storage
 _oauth_states: Dict[str, float] = {}
+_oauth_meta: Dict[str, Dict[str, Any]] = {}
+
+def _extract_base_url(request: Request) -> str:
+    """Extract public or forwarded base URL from incoming request."""
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    if host:
+        return f"{proto}://{host}".rstrip("/")
+    return f"{request.url.scheme}://{request.url.netloc}".rstrip("/")
 
 # Biometric Credentials Storage
 BIOMETRIC_FILE = settings.DATA_DIR / "biometric_credentials.json"
@@ -239,26 +248,39 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     return LoginResponse(token=token)
 
 @router.get("/github/login")
-async def github_login(format: Optional[str] = None):
+async def github_login(request: Request, format: Optional[str] = None):
     """Initiates GitHub OAuth 2.0 authorization code flow."""
     now = time.time()
     for s in [k for k, exp in _oauth_states.items() if exp < now]:
         _oauth_states.pop(s, None)
+        _oauth_meta.pop(s, None)
 
     state = secrets.token_urlsafe(32)
     _oauth_states[state] = now + 600
+
+    base_url = _extract_base_url(request)
+    if "trycloudflare.com" in base_url or ("localhost" not in base_url and "127.0.0.1" not in base_url):
+        redirect_uri = f"{base_url}/api/v1/auth/github/callback"
+        frontend_callback = f"{base_url}/auth/callback"
+    else:
+        redirect_uri = settings.GITHUB_REDIRECT_URI
+        frontend_callback = settings.FRONTEND_AUTH_CALLBACK_URL
+
+    _oauth_meta[state] = {
+        "redirect_uri": redirect_uri,
+        "frontend_callback": frontend_callback
+    }
 
     if not settings.GITHUB_CLIENT_ID:
         err_msg = "GitHub OAuth App is not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in your .env file."
         if format == "json":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_AUTH_CALLBACK_URL}?error={err_msg.replace(' ', '%20')}",
+            url=f"{frontend_callback}?error={err_msg.replace(' ', '%20')}",
             status_code=302
         )
 
     client_id = settings.GITHUB_CLIENT_ID
-    redirect_uri = settings.GITHUB_REDIRECT_URI
     auth_url = (
         f"https://github.com/login/oauth/authorize?"
         f"client_id={client_id}&redirect_uri={redirect_uri}&scope=read:user,user:email,repo&state={state}"
@@ -270,6 +292,7 @@ async def github_login(format: Optional[str] = None):
 
 @router.get("/github/callback")
 async def github_callback(
+    request: Request,
     code: Optional[str] = None,
     state: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
@@ -281,6 +304,9 @@ async def github_callback(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state parameter")
 
     _oauth_states.pop(state, None)
+    meta = _oauth_meta.pop(state, {})
+    redirect_uri = meta.get("redirect_uri") or settings.GITHUB_REDIRECT_URI
+    frontend_callback = meta.get("frontend_callback") or settings.FRONTEND_AUTH_CALLBACK_URL
 
     token_url = "https://github.com/login/oauth/access_token"
     async with httpx.AsyncClient() as client:
@@ -290,14 +316,15 @@ async def github_callback(
                 "client_id": settings.GITHUB_CLIENT_ID,
                 "client_secret": settings.GITHUB_CLIENT_SECRET,
                 "code": code,
-                "redirect_uri": settings.GITHUB_REDIRECT_URI
+                "redirect_uri": redirect_uri
             },
             headers={"Accept": "application/json"}
         )
         token_data = token_resp.json()
         access_token = token_data.get("access_token")
         if not access_token:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to retrieve access token from GitHub")
+            error_msg = token_data.get("error_description") or token_data.get("error") or "Failed to retrieve access token from GitHub"
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
         user_resp = await client.get(
             "https://api.github.com/user",
@@ -320,7 +347,7 @@ async def github_callback(
         avatar_url=avatar_url
     )
 
-    redirect_target = f"{settings.FRONTEND_AUTH_CALLBACK_URL}?token={session_token}"
+    redirect_target = f"{frontend_callback}?token={session_token}"
     return RedirectResponse(url=redirect_target, status_code=302)
 
 
