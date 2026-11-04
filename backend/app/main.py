@@ -106,6 +106,7 @@ async def enforce_auth_middleware(request: Request, call_next):
     PUBLIC_AUTH_PATHS = {
         "/api/v1/billing/webhook",
         "/api/v1/billing/plans",
+        "/api/v1/health",
     }
     if path.startswith("/api/v1"):
         is_public_auth = path.startswith("/api/v1/auth/") and path != "/api/v1/auth/me"
@@ -148,7 +149,9 @@ app.include_router(bounties_router, prefix=settings.API_V1_STR)
 app.include_router(enterprise_router, prefix=settings.API_V1_STR)
 app.include_router(organizations_router, prefix=settings.API_V1_STR)
 
+@app.get("/health")
 @app.get("/api/health")
+@app.get("/api/v1/health")
 async def health_check():
     return {
         "status": "healthy",
