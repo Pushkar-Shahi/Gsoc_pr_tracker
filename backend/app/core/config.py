@@ -9,6 +9,14 @@ DEFAULT_DATA_DIR = HOME_DIR / ".issue_to_pr"
 DEFAULT_WORKSPACE_DIR = DEFAULT_DATA_DIR / "workspaces"
 DEFAULT_REPOS_CACHE_DIR = DEFAULT_DATA_DIR / "cache" / "repos"
 
+# Load local environment configuration (.env)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR.parent / ".env")
+    load_dotenv(BASE_DIR / ".env")
+except Exception:
+    pass
+
 def _get_github_token() -> Optional[str]:
     token = os.getenv("GITHUB_TOKEN")
     if token and token.strip():
