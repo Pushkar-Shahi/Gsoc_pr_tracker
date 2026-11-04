@@ -181,3 +181,4 @@ class QueueService:
 
 # Default global queue instance
 queue_service = QueueService.get_instance()
+

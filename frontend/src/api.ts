@@ -1,7 +1,7 @@
 import { 
   Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob,
   BillingPlan, SubscriptionInfo, CheckoutSessionResponse, PortalSessionResponse,
-  BountyStats, SSOConfig, SSOTestResult
+  BountyStats, SSOConfig, SSOTestResult, Organization, OrganizationMember
 } from './types';
 import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
 
@@ -2316,6 +2316,80 @@ export async function testSSOConnection(payload: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || 'Failed to test SSO connection');
+  }
+  return await res.json();
+}
+
+export async function devGitHubLogin(username: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/auth/github/dev-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Developer GitHub login failed');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
+export async function fetchOrganizations(): Promise<Organization[]> {
+  const res = await authedFetch(`${API_BASE}/organizations`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch user organizations');
+  }
+  return await res.json();
+}
+
+export async function createOrganization(name: string, slug?: string): Promise<Organization> {
+  const res = await authedFetch(`${API_BASE}/organizations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, slug })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to create organization');
+  }
+  return await res.json();
+}
+
+export async function switchOrganization(orgId: string): Promise<{ token: string; organization: any; role: string }> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/switch`, {
+    method: 'POST'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to switch organization');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
+export async function fetchOrganizationMembers(orgId: string): Promise<OrganizationMember[]> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/members`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch organization members');
+  }
+  return await res.json();
+}
+
+export async function addOrganizationMember(orgId: string, usernameOrEmail: string, role: string = 'member'): Promise<OrganizationMember> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/members`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username_or_email: usernameOrEmail, role })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to add member to organization');
   }
   return await res.json();
 }

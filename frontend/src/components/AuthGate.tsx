@@ -11,7 +11,8 @@ import {
   getStoredBiometricCredentialId,
   getBiometricStatus,
   isSecureContextAvailable,
-  getWebsiteInternalSchedule
+  getWebsiteInternalSchedule,
+  devGitHubLogin
 } from '../api';
 
 interface AuthGateProps {
@@ -31,6 +32,9 @@ export function AuthGate({ children }: AuthGateProps) {
   const [hasEnrolledBiometrics, setHasEnrolledBiometrics] = useState(false);
   const [rememberBiometrics, setRememberBiometrics] = useState(true);
   const [isSecure, setIsSecure] = useState(true);
+  const [showQuickGitHub, setShowQuickGitHub] = useState(false);
+  const [quickUsername, setQuickUsername] = useState('Pushkar-Shahi');
+  const [quickLoading, setQuickLoading] = useState(false);
 
   // Live 2-Hour Website Internal Timer State (runs independently before & across login)
   const [internalSchedule, setInternalSchedule] = useState(() => getWebsiteInternalSchedule());
@@ -171,6 +175,22 @@ export function AuthGate({ children }: AuthGateProps) {
     setTimeout(() => setIsShaking(false), 500);
   };
 
+  const handleQuickGitHubLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickUsername.trim()) return;
+    setQuickLoading(true);
+    setError(null);
+    try {
+      await devGitHubLogin(quickUsername.trim());
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      setError(err.message || 'Quick GitHub login failed');
+      triggerShake();
+    } finally {
+      setQuickLoading(false);
+    }
+  };
+
   // Initial loading state while verifying existing token
   if (isAuthenticated === null) {
     return (
@@ -242,13 +262,13 @@ export function AuthGate({ children }: AuthGateProps) {
       {/* Main Lock Modal */}
       <div className="max-w-md w-full mx-auto my-auto py-6">
         <div 
-          className={`relative bg-[#080808] border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black transition-transform ${
+          className={`relative liquid-glass rounded-3xl p-6 sm:p-8 shadow-2xl transition-transform ${
             isShaking ? 'translate-x-[-8px] transition-none' : ''
           }`}
         >
-          {/* Subtle Monochrome Glow Backdrop */}
-          <div className="absolute -top-16 -right-16 w-36 h-36 bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
+          {/* Subtle Ambient Liquid Glow Backdrop */}
+          <div className="absolute -top-16 -right-16 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-44 h-44 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
           {/* Insecure Origin Notice (if testing on phone via plain HTTP) */}
           {!isSecure && (
@@ -326,26 +346,77 @@ export function AuthGate({ children }: AuthGateProps) {
             </div>
           )}
 
-          {/* GitHub OAuth 2.0 Sign In Button */}
-          <div className="mb-5">
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = '/api/v1/auth/github/login';
-              }}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-[#1f2328] hover:bg-[#2d333b] text-white font-semibold text-sm border border-white/20 shadow-lg hover:border-white/40 transition active:scale-[0.98]"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-              </svg>
-              <span>Sign in with GitHub</span>
-            </button>
+          {/* GitHub Sign-In Section */}
+          <div className="mb-5 space-y-2.5">
+            {!showQuickGitHub ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickGitHub(true)}
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#24292f] via-[#1f2428] to-[#161b22] hover:from-[#2c3238] hover:to-[#1c2128] text-white font-semibold text-xs border border-white/20 shadow-lg hover:border-indigo-400/50 transition active:scale-[0.98]"
+                >
+                  <svg className="w-4 h-4 fill-current text-white shrink-0" viewBox="0 0 24 24">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                  </svg>
+                  <span>Quick Sign-in with GitHub (@Pushkar-Shahi)</span>
+                </button>
+
+                <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = '/api/v1/auth/github/login'; }}
+                    className="hover:text-indigo-300 underline underline-offset-2 transition"
+                  >
+                    Use standard OAuth flow &rarr;
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleQuickGitHubLogin} className="p-3.5 rounded-2xl bg-neutral-900/95 border border-indigo-500/40 space-y-2.5 animate-fade-in shadow-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 fill-current text-white shrink-0" viewBox="0 0 24 24">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                    </svg>
+                    GitHub Quick Sign-in
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickGitHub(false)}
+                    className="text-[10px] text-neutral-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-mono text-neutral-400">@</span>
+                  <input
+                    type="text"
+                    value={quickUsername}
+                    onChange={(e) => setQuickUsername(e.target.value)}
+                    placeholder="GitHub username"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#030303] border border-white/20 text-white text-xs font-mono focus:outline-none focus:border-indigo-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={quickLoading || !quickUsername.trim()}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow shrink-0 disabled:opacity-50"
+                  >
+                    {quickLoading ? 'Verifying...' : 'Sign In'}
+                  </button>
+                </div>
+                <p className="text-[10px] text-neutral-400">
+                  Fetches your real GitHub profile, avatar, and personal organization workspace.
+                </p>
+              </form>
+            )}
+
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center text-[10px] uppercase">
-                <span className="bg-[#080808] px-2 text-neutral-500 font-mono">Or use password / biometrics</span>
+                <span className="bg-[#09090e] px-2 text-neutral-500 font-mono">Or use password / biometrics</span>
               </div>
             </div>
           </div>

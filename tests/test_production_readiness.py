@@ -174,3 +174,4 @@ def test_workspace_provider_factory_routing():
 
     local_prov = WorkspaceProviderFactory.get_provider("local")
     assert isinstance(local_prov, LocalWorktreeProvider)
+

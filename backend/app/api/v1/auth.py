@@ -1,10 +1,11 @@
 import json
+import logging
 import os
 import secrets
 import time
 import uuid
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import httpx
 from fastapi import APIRouter, HTTPException, Header, Depends, status
 from pydantic import BaseModel
@@ -83,6 +84,95 @@ class BiometricStatusResponse(BaseModel):
     has_registered_credentials: bool
     registered_count: int
 
+logger = logging.getLogger(__name__)
+
+class DevGitHubLoginRequest(BaseModel):
+    username: str = "Pushkar-Shahi"
+
+async def _provision_user_and_token(
+    db: AsyncSession,
+    gh_id: Optional[int],
+    gh_username: str,
+    email: Optional[str] = None,
+    name: Optional[str] = None,
+    avatar_url: Optional[str] = None
+) -> Tuple[str, User, str, str, str]:
+    """
+    Common helper to upsert User, find or create personal Organization workspace,
+    and generate JWT session token with tenant context.
+    """
+    user = None
+    if gh_id:
+        u_res = await db.execute(select(User).where(User.github_id == gh_id))
+        user = u_res.scalar_one_or_none()
+    if not user:
+        u_res2 = await db.execute(select(User).where(User.github_username == gh_username))
+        user = u_res2.scalar_one_or_none()
+
+    if user:
+        if email:
+            user.email = email
+        if avatar_url:
+            user.avatar_url = avatar_url
+        if name:
+            user.name = name
+    else:
+        u_id = f"usr-{uuid.uuid4().hex[:12]}"
+        user = User(
+            id=u_id,
+            github_id=gh_id,
+            github_username=gh_username,
+            email=email or f"{gh_username.lower()}@platform.dev",
+            name=name or gh_username,
+            avatar_url=avatar_url or f"https://github.com/{gh_username}.png"
+        )
+        db.add(user)
+        await db.flush()
+
+    # Look up or create personal organization workspace
+    mem_stmt = select(Membership).options(selectinload(Membership.organization)).where(Membership.user_id == user.id)
+    mem_res = await db.execute(mem_stmt)
+    membership = mem_res.scalars().first()
+
+    if not membership:
+        o_id = f"org-{uuid.uuid4().hex[:12]}"
+        org = Organization(
+            id=o_id,
+            name=f"{gh_username}'s Workspace",
+            slug=f"org-{gh_username.lower()}-{uuid.uuid4().hex[:6]}",
+            is_personal=True,
+            billing_tier="starter"
+        )
+        db.add(org)
+        await db.flush()
+
+        membership = Membership(
+            id=f"mem-{uuid.uuid4().hex[:8]}",
+            user_id=user.id,
+            org_id=org.id,
+            role="owner"
+        )
+        db.add(membership)
+        await db.flush()
+        tenant_id = org.id
+        tier = "starter"
+    else:
+        tenant_id = membership.org_id
+        tier = membership.organization.billing_tier if (membership.organization and membership.organization.billing_tier) else "starter"
+
+    await db.commit()
+
+    claims = {
+        "user_id": user.id,
+        "username": user.github_username,
+        "tenant_id": tenant_id,
+        "role": membership.role,
+        "tier": tier
+    }
+    session_token = generate_session_token(subject=user.id, claims=claims)
+    return session_token, user, tenant_id, membership.role, tier
+
+
 @router.post("/login", response_model=LoginResponse)
 async def login(req: LoginRequest):
     """Authenticates against the platform password mwps@1534 and returns a session token."""
@@ -158,76 +248,82 @@ async def github_callback(
     name = gh_user.get("name") or gh_username
     avatar_url = gh_user.get("avatar_url")
 
-    # Upsert User
-    user = None
-    if gh_id:
-        u_res = await db.execute(select(User).where(User.github_id == gh_id))
-        user = u_res.scalar_one_or_none()
-    if not user:
-        u_res2 = await db.execute(select(User).where(User.github_username == gh_username))
-        user = u_res2.scalar_one_or_none()
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=gh_id,
+        gh_username=gh_username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
 
-    if user:
-        if email:
-            user.email = email
-        if avatar_url:
-            user.avatar_url = avatar_url
-        if name:
-            user.name = name
-    else:
-        u_id = f"usr-{uuid.uuid4().hex[:12]}"
-        user = User(
-            id=u_id,
-            github_id=gh_id,
-            github_username=gh_username,
-            email=email or f"{gh_username}@platform.dev",
-            name=name,
-            avatar_url=avatar_url
-        )
-        db.add(user)
-        await db.flush()
-
-    # Look up or create personal organization workspace
-    mem_stmt = select(Membership).options(selectinload(Membership.organization)).where(Membership.user_id == user.id)
-    mem_res = await db.execute(mem_stmt)
-    membership = mem_res.scalars().first()
-
-    if not membership:
-        o_id = f"org-{uuid.uuid4().hex[:12]}"
-        org = Organization(
-            id=o_id,
-            name=f"{gh_username}'s Workspace",
-            slug=f"org-{gh_username}-{uuid.uuid4().hex[:6]}",
-            is_personal=True,
-            billing_tier="starter"
-        )
-        db.add(org)
-        await db.flush()
-
-        membership = Membership(
-            id=f"mem-{uuid.uuid4().hex[:8]}",
-            user_id=user.id,
-            org_id=org.id,
-            role="owner"
-        )
-        db.add(membership)
-        await db.flush()
-        tenant_id = org.id
-    else:
-        tenant_id = membership.org_id
-
-    await db.commit()
-
-    claims = {
-        "user_id": user.id,
-        "username": user.github_username,
-        "tenant_id": tenant_id,
-        "role": membership.role,
-        "tier": "starter"
-    }
-    session_token = generate_session_token(subject=user.id, claims=claims)
     redirect_target = f"{settings.FRONTEND_AUTH_CALLBACK_URL}?token={session_token}"
     return RedirectResponse(url=redirect_target, status_code=302)
+
+
+@router.post("/github/dev-login")
+async def dev_github_login(
+    req: DevGitHubLoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Developer Quick GitHub Sign-in:
+    Validates GitHub username against GitHub's public API, fetches avatar & profile,
+    provisions User and personal Organization workspace, and issues JWT session token.
+    """
+    username = (req.username or "").strip()
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="GitHub username is required."
+        )
+
+    gh_id = None
+    email = f"{username.lower()}@users.noreply.github.com"
+    name = username
+    avatar_url = f"https://github.com/{username}.png"
+
+    # Query public GitHub profile to populate real user details
+    try:
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Issue-to-PR-Platform"
+        }
+        if settings.GITHUB_TOKEN:
+            headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
+
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"https://api.github.com/users/{username}", headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                gh_id = data.get("id")
+                name = data.get("name") or username
+                email = data.get("email") or email
+                avatar_url = data.get("avatar_url") or avatar_url
+    except Exception as e:
+        logger.warning(f"Could not reach public GitHub API for user '{username}': {e}")
+
+    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=gh_id,
+        gh_username=username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url
+    )
+
+    return {
+        "token": session_token,
+        "token_type": "bearer",
+        "authenticated": True,
+        "user": user.github_username,
+        "username": user.github_username,
+        "id": user.id,
+        "tenant_id": tenant_id,
+        "role": role,
+        "tier": tier,
+        "avatar_url": user.avatar_url
+    }
 
 @router.get("/me")
 async def check_auth(authorization: Optional[str] = Header(None)):

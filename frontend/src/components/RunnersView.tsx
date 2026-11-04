@@ -68,6 +68,9 @@ export function RunnersView() {
   };
 
   const onlineCount = runners.filter(r => r.status === 'online').length;
+  const runnerBaseUrl = typeof window !== 'undefined' && window.location.port === '5173'
+    ? 'http://127.0.0.1:8000'
+    : (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -331,7 +334,7 @@ export function RunnersView() {
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-mono uppercase text-neutral-400">Launch Command</span>
                     <button
-                      onClick={() => copyToClipboard(`python3 -m runner.agent --url ${window.location.origin} --token "${createdToken}"`)}
+                      onClick={() => copyToClipboard(`python3 -m runner.agent --url ${runnerBaseUrl} --token "${createdToken}"`)}
                       className="text-[11px] text-neutral-400 hover:text-white flex items-center gap-1 transition"
                     >
                       <Copy className="w-3 h-3" />
@@ -340,7 +343,7 @@ export function RunnersView() {
                   </div>
                   <div className="p-3 rounded-xl bg-[#030303] border border-white/10 text-[11px] font-mono text-neutral-300 overflow-x-auto">
                     <code>
-                      python3 -m runner.agent --url {window.location.origin} --token "{createdToken}"
+                      python3 -m runner.agent --url {runnerBaseUrl} --token "{createdToken}"
                     </code>
                   </div>
                   <p className="text-[10px] text-neutral-500 font-mono">

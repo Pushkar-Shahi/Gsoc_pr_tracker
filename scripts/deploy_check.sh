@@ -24,3 +24,4 @@ fi
 "${PYTHON_BIN}" "${ROOT_DIR}/backend/app/core/preflight.py"
 
 echo "==> Preflight check completed successfully!"
+

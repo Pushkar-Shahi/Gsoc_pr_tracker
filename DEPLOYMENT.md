@@ -220,3 +220,4 @@ When updating the platform:
    docker compose -f docker-compose.prod.yml up -d --no-deps --build web
    ```
    *FastAPI and the preflight script handle database column migrations automatically on boot.*
+

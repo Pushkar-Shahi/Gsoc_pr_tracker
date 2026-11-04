@@ -282,3 +282,24 @@ export interface PortalSessionResponse {
   portal_url: string;
   is_simulated: boolean;
 }
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  is_personal: boolean;
+  billing_tier: string;
+  role: 'owner' | 'admin' | 'member';
+  is_active: boolean;
+  member_count: number;
+}
+
+export interface OrganizationMember {
+  id: string;
+  user_id: string;
+  username: string;
+  name?: string;
+  email?: string;
+  avatar_url?: string;
+  role: 'owner' | 'admin' | 'member';
+}

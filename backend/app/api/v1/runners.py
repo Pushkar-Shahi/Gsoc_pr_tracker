@@ -144,7 +144,7 @@ async def runner_heartbeat(
     return {"status": "ok"}
 
 
-@router.get("/jobs/poll", response_model=Optional[RunnerJobRead])
+@router.api_route("/jobs/poll", methods=["GET", "POST"], response_model=Optional[RunnerJobRead])
 async def poll_runner_jobs(
     request: Request,
     db: AsyncSession = Depends(get_db)

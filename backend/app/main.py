@@ -24,6 +24,7 @@ from app.api.v1.billing import router as billing_router
 from app.api.v1.streaming import router as streaming_router
 from app.api.v1.bounties import router as bounties_router
 from app.api.v1.enterprise import router as enterprise_router
+from app.api.v1.organizations import router as organizations_router
 from app.services.ranking_service import RankingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -106,6 +107,7 @@ async def enforce_auth_middleware(request: Request, call_next):
         "/api/v1/auth/login",
         "/api/v1/auth/github/login",
         "/api/v1/auth/github/callback",
+        "/api/v1/auth/github/dev-login",
         "/api/v1/auth/biometric/challenge",
         "/api/v1/auth/biometric/status",
         "/api/v1/auth/biometric/verify",
@@ -146,6 +148,7 @@ app.include_router(billing_router, prefix=settings.API_V1_STR)
 app.include_router(streaming_router, prefix=settings.API_V1_STR)
 app.include_router(bounties_router, prefix=settings.API_V1_STR)
 app.include_router(enterprise_router, prefix=settings.API_V1_STR)
+app.include_router(organizations_router, prefix=settings.API_V1_STR)
 
 @app.get("/api/health")
 async def health_check():

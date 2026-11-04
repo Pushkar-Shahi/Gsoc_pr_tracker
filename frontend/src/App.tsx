@@ -355,11 +355,19 @@ export function App() {
   const unreadNotificationsCount = auditLogs.filter(l => !readLogIds.has(l.id)).length;
 
   return (
-    <div className="min-h-screen bg-[#000000] text-neutral-100 flex flex-col font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#030305] text-neutral-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+        {/* Atmospheric Liquid Ambient Glow Orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="ambient-orb-indigo -top-32 -left-32 opacity-40" />
+          <div className="ambient-orb-cyan top-1/4 -right-32 opacity-35" />
+          <div className="ambient-orb-emerald -bottom-32 left-1/3 opacity-25" />
+          <div className="ambient-orb-rose top-2/3 -left-32 opacity-20" />
+        </div>
+
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 bg-[#080808] border border-white/20 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-2.5 animate-bounce">
-            <ShieldCheck className="w-4 h-4 text-white shrink-0" />
+          <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 liquid-glass border border-white/20 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-2.5 animate-bounce">
+            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -379,7 +387,7 @@ export function App() {
         />
 
         {/* Desktop Top Navigation Bar (Hidden on Mobile) */}
-        <nav className="hidden sm:block bg-[#000000] border-b border-white/10 sticky top-16 z-30 backdrop-blur-md">
+        <nav className="hidden sm:block liquid-glass-header sticky top-16 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-2.5 text-xs font-medium no-scrollbar">
               {/* 1. Issue Finder */}
@@ -387,15 +395,15 @@ export function App() {
                 onClick={() => setActiveTab('issues')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'issues'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/30'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <Search className="w-4 h-4" />
                 <span>Find Issues</span>
                 {totalIssues > 0 && (
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === 'issues' ? 'bg-black text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
+                    activeTab === 'issues' ? 'bg-black/40 text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
                   }`}>
                     {totalIssues}
                   </span>
@@ -407,7 +415,7 @@ export function App() {
                 onClick={() => setActiveTab('bounties')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'bounties'
-                    ? 'bg-amber-400 text-black font-extrabold shadow-sm'
+                    ? 'bg-gradient-to-r from-amber-500 to-emerald-500 text-black font-extrabold shadow-lg shadow-emerald-500/30'
                     : 'text-amber-400 hover:text-amber-300 hover:bg-amber-950/20'
                 }`}
               >
@@ -425,85 +433,85 @@ export function App() {
                 onClick={() => setActiveTab('tracker')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'tracker'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow-lg shadow-purple-500/30'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <Layers className="w-4 h-4" />
                 <span>Tracked Items</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  activeTab === 'tracker' ? 'bg-black text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
+                  activeTab === 'tracker' ? 'bg-black/40 text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
                 }`}>
                   {tasks.length}
                 </span>
               </button>
 
-              {/* 3. Pull Requests */}
+              {/* 4. Pull Requests */}
               <button
                 onClick={() => setActiveTab('prs')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'prs'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/30'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <GitPullRequest className="w-4 h-4" />
                 <span>Pull Requests</span>
                 {totalPRs > 0 && (
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === 'prs' ? 'bg-black text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
+                    activeTab === 'prs' ? 'bg-black/40 text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
                   }`}>
                     {totalPRs}
                   </span>
                 )}
               </button>
 
-              {/* 4. Activity History */}
+              {/* 5. Activity History */}
               <button
                 onClick={() => setActiveTab('history')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'history'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/30'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <History className="w-4 h-4" />
-                <span>Activity Timeline</span>
+                <span>Timeline</span>
               </button>
 
-              {/* 5. Hybrid Runners */}
+              {/* 6. Hybrid Runners */}
               <button
                 onClick={() => setActiveTab('runners')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'runners'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/30'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <Cpu className="w-4 h-4" />
                 <span>Runners</span>
               </button>
 
-              {/* 6. Billing & Plans */}
+              {/* 7. Billing & Plans */}
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'billing'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold shadow-lg shadow-rose-500/30'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
                 <span>Billing</span>
               </button>
 
-              {/* 7. Settings */}
+              {/* 8. Settings */}
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 ml-auto active:scale-95 ${
                   activeTab === 'settings'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-neutral-800 text-white font-bold border border-white/30 shadow-md'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
                 }`}
               >
                 <SettingsIcon className="w-4 h-4" />
