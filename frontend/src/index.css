@@ -24,7 +24,7 @@
   }
 
   body {
-    @apply bg-[#edf2f7] text-slate-900 dark:bg-[#080c14] dark:text-neutral-100 font-sans antialiased min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200;
+    @apply bg-[#edf2f7] text-slate-900 dark:bg-[#080c14] dark:text-neutral-100 font-sans antialiased min-h-screen selection:bg-indigo-500 selection:text-white;
   }
 }
 
@@ -109,7 +109,7 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1.25rem;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
     0 10px 30px -10px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -185,7 +185,7 @@ html:not(.dark) .liquid-glass-card:hover {
   background: #0d1320;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .amoled-card:hover {
@@ -251,6 +251,9 @@ html:not(.dark) .amoled-card:hover {
   background: radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0) 70%);
   filter: blur(60px);
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  contain: strict;
   animation: orb-float-1 18s ease-in-out infinite;
 }
 
@@ -262,6 +265,9 @@ html:not(.dark) .amoled-card:hover {
   background: radial-gradient(circle, rgba(6, 182, 212, 0.14) 0%, rgba(6, 182, 212, 0) 70%);
   filter: blur(50px);
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  contain: strict;
   animation: orb-float-2 22s ease-in-out infinite;
 }
 
@@ -273,6 +279,9 @@ html:not(.dark) .amoled-card:hover {
   background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0) 70%);
   filter: blur(55px);
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  contain: strict;
 }
 
 .ambient-orb-rose {
@@ -283,6 +292,9 @@ html:not(.dark) .amoled-card:hover {
   background: radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(244, 63, 94, 0) 70%);
   filter: blur(60px);
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  contain: strict;
 }
 
 /* Light mode ambient orbs (soft pastel glow on clean canvas) */
