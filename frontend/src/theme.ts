@@ -13,6 +13,17 @@ export function getInitialTheme(): ThemeMode {
   }
 }
 
+export const THEME_COLORS = {
+  dark: {
+    bg: '#080c14',
+    text: '#f1f5f9'
+  },
+  light: {
+    bg: '#edf2f7',
+    text: '#0f172a'
+  }
+};
+
 export function applyTheme(theme: ThemeMode) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
@@ -22,18 +33,18 @@ export function applyTheme(theme: ThemeMode) {
     root.classList.add('dark');
     root.classList.remove('light');
     root.style.colorScheme = 'dark';
-    root.style.backgroundColor = '#030305';
+    root.style.backgroundColor = THEME_COLORS.dark.bg;
   } else {
     root.classList.remove('dark');
     root.classList.add('light');
     root.style.colorScheme = 'light';
-    root.style.backgroundColor = '#f8fafc';
+    root.style.backgroundColor = THEME_COLORS.light.bg;
   }
 
   // Update meta theme-color for iOS/Android status bar
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) {
-    metaTheme.setAttribute('content', isDark ? '#030305' : '#f8fafc');
+    metaTheme.setAttribute('content', isDark ? THEME_COLORS.dark.bg : THEME_COLORS.light.bg);
   }
 }
 

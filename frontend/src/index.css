@@ -4,28 +4,47 @@
 
 @layer base {
   :root {
-    --app-bg: #f8fafc;
+    --app-bg: #edf2f7;
     --app-text: #0f172a;
     --app-text-muted: #64748b;
     --app-border: rgba(226, 232, 240, 0.9);
-    --app-glass-bg: rgba(255, 255, 255, 0.85);
-    --app-glass-border: rgba(226, 232, 240, 0.85);
+    --app-glass-bg: rgba(255, 255, 255, 0.88);
+    --app-glass-border: rgba(255, 255, 255, 0.9);
     color-scheme: light;
   }
 
   .dark {
-    --app-bg: #030305;
+    --app-bg: #080c14;
     --app-text: #f1f5f9;
     --app-text-muted: #94a3b8;
     --app-border: rgba(255, 255, 255, 0.12);
-    --app-glass-bg: rgba(10, 10, 16, 0.75);
+    --app-glass-bg: rgba(14, 20, 33, 0.75);
     --app-glass-border: rgba(255, 255, 255, 0.12);
     color-scheme: dark;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 dark:bg-[#030305] dark:text-neutral-100 font-sans antialiased min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200;
+    @apply bg-[#edf2f7] text-slate-900 dark:bg-[#080c14] dark:text-neutral-100 font-sans antialiased min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200;
   }
+}
+
+/* Atmospheric Full Canvas Mesh Background */
+.bg-canvas-mesh {
+  background-color: #edf2f7;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(244, 63, 94, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 75% 60%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+}
+
+.dark .bg-canvas-mesh {
+  background-color: #080c14;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 75% 60%, rgba(244, 63, 94, 0.06) 0%, transparent 40%);
 }
 
 /* Custom Sleek Scrollbars */
@@ -55,13 +74,13 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
    Liquid Glass & Glassmorphism 2.0 Design System (Dark & Light)
    ============================================================================== */
 
-/* Dark Mode Liquid Glass */
+/* Dark Mode Liquid Glass (Midnight Obsidian with Spectral Reflections) */
 .liquid-glass {
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.05) 0%,
     rgba(255, 255, 255, 0.01) 100%
-  ), rgba(10, 10, 16, 0.75);
+  ), rgba(14, 20, 33, 0.78);
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -72,7 +91,7 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
 }
 
 .liquid-glass-header {
-  background: rgba(4, 4, 8, 0.75);
+  background: rgba(11, 15, 25, 0.82);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -85,7 +104,7 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
     135deg,
     rgba(255, 255, 255, 0.04) 0%,
     rgba(255, 255, 255, 0.005) 100%
-  ), rgba(9, 9, 14, 0.8);
+  ), rgba(13, 19, 32, 0.82);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -105,65 +124,65 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Light Mode Liquid Glass */
+/* Light Mode Liquid Glass (Frosted Alabaster Crystalline) */
 html:not(.dark) .liquid-glass {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 255, 255, 0.75) 100%
-  ), rgba(248, 250, 252, 0.85);
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.8) 100%
+  ), rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(24px) saturate(170%);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 
     0 20px 45px -15px rgba(15, 23, 42, 0.08),
-    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 0 0 1px rgba(226, 232, 240, 0.8),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 html:not(.dark) .liquid-glass-header {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 4px 25px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
 }
 
 html:not(.dark) .liquid-glass-card {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(255, 255, 255, 0.8) 100%
-  ), rgba(255, 255, 255, 0.9);
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 255, 255, 0.85) 100%
+  ), rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 1.25rem;
   box-shadow: 
-    0 10px 30px -10px rgba(15, 23, 42, 0.06),
-    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 10px 30px -10px rgba(15, 23, 42, 0.07),
+    0 0 0 1px rgba(226, 232, 240, 0.7),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 html:not(.dark) .liquid-glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(99, 102, 241, 0.4);
   transform: translateY(-2px);
   box-shadow: 
-    0 20px 40px -15px rgba(15, 23, 42, 0.1),
-    0 0 25px -5px rgba(99, 102, 241, 0.15),
+    0 20px 40px -15px rgba(15, 23, 42, 0.12),
+    0 0 25px -5px rgba(99, 102, 241, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 /* Legacy compatibility classes */
 .glass-panel {
-  background: rgba(10, 10, 16, 0.85);
+  background: rgba(14, 20, 33, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .amoled-card {
-  background: #09090e;
+  background: #0d1320;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -266,7 +285,7 @@ html:not(.dark) .amoled-card:hover {
   pointer-events: none;
 }
 
-/* Light mode ambient orbs (brighter pastel glow on crisp slate canvas) */
+/* Light mode ambient orbs (soft pastel glow on clean canvas) */
 html:not(.dark) .ambient-orb-indigo {
   background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0) 70%);
   filter: blur(80px);
@@ -306,7 +325,7 @@ html:not(.dark) [class*="bg-[#030303]"],
 html:not(.dark) [class*="bg-[#020202]"],
 html:not(.dark) [class*="bg-[#050505]"],
 html:not(.dark) [class*="bg-[#08080d]"] {
-  background-color: #f8fafc !important;
+  background-color: #f1f5f9 !important;
   border-color: rgba(226, 232, 240, 0.9) !important;
 }
 

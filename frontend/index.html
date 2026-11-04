@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#030305" />
+    <meta name="theme-color" content="#080c14" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -20,14 +20,14 @@
           var isDark = saved === 'dark' || (!saved && prefersDark);
           if (isDark) {
             document.documentElement.classList.add('dark');
-            document.documentElement.style.backgroundColor = '#030305';
+            document.documentElement.style.backgroundColor = '#080c14';
             document.documentElement.style.colorScheme = 'dark';
           } else {
             document.documentElement.classList.remove('dark');
-            document.documentElement.style.backgroundColor = '#f8fafc';
+            document.documentElement.style.backgroundColor = '#edf2f7';
             document.documentElement.style.colorScheme = 'light';
             var meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.setAttribute('content', '#f8fafc');
+            if (meta) meta.setAttribute('content', '#edf2f7');
           }
         } catch (e) {}
       })();

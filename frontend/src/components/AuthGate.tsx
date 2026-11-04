@@ -194,7 +194,7 @@ export function AuthGate({ children }: AuthGateProps) {
   // Initial loading state while verifying existing token
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#030305] text-slate-900 dark:text-neutral-100 flex flex-col items-center justify-center p-4 transition-colors duration-200">
+      <div className="min-h-screen bg-canvas-mesh text-slate-900 dark:text-neutral-100 flex flex-col items-center justify-center p-4 transition-colors duration-200">
         <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-neutral-900 border border-slate-300 dark:border-white/20 p-0.5 animate-pulse">
           <div className="w-full h-full bg-white dark:bg-[#050505] rounded-2xl flex items-center justify-center">
             <Lock className="w-5 h-5 text-slate-700 dark:text-white animate-spin" />
@@ -212,7 +212,7 @@ export function AuthGate({ children }: AuthGateProps) {
 
   // Pure AMOLED Lock Screen view
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#030305] flex flex-col justify-between p-4 sm:p-6 text-slate-900 dark:text-neutral-100 select-none transition-colors duration-200">
+    <div className="min-h-screen bg-canvas-mesh flex flex-col justify-between p-4 sm:p-6 text-slate-900 dark:text-neutral-100 select-none transition-colors duration-200">
       {/* Top Brand Header */}
       <div className="flex items-center justify-between max-w-md w-full mx-auto pt-4">
         <div className="flex items-center gap-2.5">

@@ -355,7 +355,7 @@ export function App() {
   const unreadNotificationsCount = auditLogs.filter(l => !readLogIds.has(l.id)).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#030305] dark:text-neutral-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-canvas-mesh text-slate-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden transition-colors duration-200">
         {/* Atmospheric Liquid Ambient Glow Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
           <div className="ambient-orb-indigo -top-32 -left-32 opacity-40" />
