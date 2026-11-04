@@ -144,3 +144,4 @@ async def start_bounty_work(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to claim bounty and prepare workspace: {str(e)}"
         )
+

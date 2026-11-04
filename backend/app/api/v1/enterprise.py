@@ -108,3 +108,4 @@ async def test_sso_connection(
             provider=req.provider or "unknown",
             endpoints_detected={}
         )
+

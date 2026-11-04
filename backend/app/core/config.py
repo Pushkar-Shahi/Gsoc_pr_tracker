@@ -25,6 +25,17 @@ def _get_github_token() -> Optional[str]:
 def _get_secret_key_default() -> str:
     return os.getenv("SECRET_KEY", "issuetopr_secure_jwt_secret_mwps_2026")
 
+def _normalize_database_url() -> str:
+    raw_url = os.getenv(
+        "DATABASE_URL",
+        f"postgresql+asyncpg://{os.getenv('USER', 'shahi')}@localhost:5432/issuetopr"
+    )
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if raw_url.startswith("postgresql://") and not raw_url.startswith("postgresql+asyncpg://"):
+        return raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return raw_url
+
 class _SecretKeyDescriptor:
     def __init__(self, default_factory):
         self.default_factory = default_factory
@@ -58,11 +69,9 @@ class Settings:
     SECRET_KEY: str = Field(default_factory=lambda: os.getenv("SECRET_KEY", "issuetopr_secure_jwt_secret_mwps_2026"))
     
     # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        f"postgresql+asyncpg://{os.getenv('USER', 'shahi')}@localhost:5432/issuetopr"
-    )
+    DATABASE_URL: str = Field(default_factory=_normalize_database_url)
     SQLITE_FALLBACK_URL: str = f"sqlite+aiosqlite:///{DEFAULT_DATA_DIR}/issuetopr.db"
+    PORT: int = int(os.getenv("PORT", "8000"))
     
     # GitHub Integration
     GITHUB_TOKEN: Optional[str] = _get_github_token()

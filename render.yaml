@@ -1,0 +1,36 @@
+# Render Blueprint Specification for Issue-to-PR Platform
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: issuetopr-platform
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: issuetopr-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: PORT
+        value: 8000
+
+databases:
+  - name: issuetopr-db
+    databaseName: issuetopr
+    user: issuetopr
+    plan: starter
+    region: oregon

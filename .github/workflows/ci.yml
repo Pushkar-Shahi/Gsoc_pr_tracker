@@ -1,0 +1,123 @@
+name: Continuous Integration & Automated Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend Test Suite (143 Tests)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: issuetopr
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements*.txt'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-dev.txt
+
+      - name: Run full regression test suite (143 tests)
+        env:
+          DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/issuetopr
+          SECRET_KEY: ci_test_secret_mwps_2026
+          STRIPE_SECRET_KEY: sk_test_mock_stripe_key_2026
+          STRIPE_WEBHOOK_SECRET: whsec_mock_stripe_webhook_secret_2026
+          GITHUB_TOKEN: ghp_mock_ci_token_12345
+          GITHUB_WEBHOOK_SECRET: test_github_webhook_secret_hmac_2026
+          PYTHONPATH: backend:.
+        run: |
+          pytest tests -v
+
+  frontend-check:
+    name: Frontend TypeScript & Bundle Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: TypeScript typecheck & production build
+        run: |
+          cd frontend
+          npm run build
+
+  docker-build-smoke-test:
+    name: Multi-Stage Docker Image & Smoke Test
+    needs: [backend-tests, frontend-check]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: issuetopr-platform:ci
+
+      - name: Container boot & healthcheck smoke test
+        run: |
+          docker run -d --name test-app -p 8000:8000 \
+            -e DATABASE_URL="sqlite+aiosqlite:///app/test.db" \
+            issuetopr-platform:ci
+
+          echo "Waiting for container startup..."
+          sleep 5
+
+          # Verify /api/health
+          curl --retry 5 --retry-delay 2 --retry-connrefused -f http://127.0.0.1:8000/api/health
+          
+          # Verify Frontend SPA index.html is served
+          curl -s http://127.0.0.1:8000/ | grep "<title>"
+
+          echo "✓ Container smoke test passed cleanly!"
+          docker logs test-app
+          docker stop test-app

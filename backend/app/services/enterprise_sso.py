@@ -116,3 +116,4 @@ class EnterpriseSSOService:
                 "cert_fingerprint": meta["cert_fingerprint"]
             }
         }
+

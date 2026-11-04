@@ -1,0 +1,64 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: issuetopr-platform:latest
+    container_name: issuetopr-web
+    restart: always
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://issuetopr:secure_prod_password_2026@db:5432/issuetopr
+      - SECRET_KEY=${SECRET_KEY:-issuetopr_production_jwt_secret_mwps_2026}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - PORT=8000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - issuetopr-net
+
+  db:
+    image: postgres:16-alpine
+    container_name: issuetopr-db
+    restart: always
+    environment:
+      - POSTGRES_DB=issuetopr
+      - POSTGRES_USER=issuetopr
+      - POSTGRES_PASSWORD=secure_prod_password_2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U issuetopr -d issuetopr"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - issuetopr-net
+
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: issuetopr-runner
+    restart: on-failure
+    entrypoint: ["python", "-m", "runner.agent", "--url", "http://web:8000", "--token", "rnt_prod_auto_runner_token"]
+    environment:
+      - PYTHONPATH=/app/backend:/app
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - issuetopr-net
+
+networks:
+  issuetopr-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
