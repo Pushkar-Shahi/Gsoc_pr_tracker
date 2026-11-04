@@ -355,7 +355,7 @@ export function App() {
   const unreadNotificationsCount = auditLogs.filter(l => !readLogIds.has(l.id)).length;
 
   return (
-    <div className="min-h-screen bg-[#030305] text-neutral-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#030305] dark:text-neutral-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden transition-colors duration-200">
         {/* Atmospheric Liquid Ambient Glow Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
           <div className="ambient-orb-indigo -top-32 -left-32 opacity-40" />
@@ -366,8 +366,8 @@ export function App() {
 
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 liquid-glass border border-white/20 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-2.5 animate-bounce">
-            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+          <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 liquid-glass border border-slate-200 dark:border-white/20 text-slate-900 dark:text-white px-4 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-2.5 animate-bounce">
+            <ShieldCheck className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -396,14 +396,14 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'issues'
                     ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/30'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <Search className="w-4 h-4" />
                 <span>Find Issues</span>
                 {totalIssues > 0 && (
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === 'issues' ? 'bg-black/40 text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
+                    activeTab === 'issues' ? 'bg-black/40 text-white' : 'bg-slate-200 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-300 dark:border-white/20'
                   }`}>
                     {totalIssues}
                   </span>
@@ -416,13 +416,13 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'bounties'
                     ? 'bg-gradient-to-r from-amber-500 to-emerald-500 text-black font-extrabold shadow-lg shadow-emerald-500/30'
-                    : 'text-amber-400 hover:text-amber-300 hover:bg-amber-950/20'
+                    : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-950/20'
                 }`}
               >
                 <Coins className="w-4 h-4" />
                 <span>Bounties</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  activeTab === 'bounties' ? 'bg-black text-amber-300' : 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
+                  activeTab === 'bounties' ? 'bg-black text-amber-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30'
                 }`}>
                   $$$
                 </span>
@@ -434,13 +434,13 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'tracker'
                     ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow-lg shadow-purple-500/30'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <Layers className="w-4 h-4" />
                 <span>Tracked Items</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  activeTab === 'tracker' ? 'bg-black/40 text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
+                  activeTab === 'tracker' ? 'bg-black/40 text-white' : 'bg-slate-200 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-300 dark:border-white/20'
                 }`}>
                   {tasks.length}
                 </span>
@@ -452,14 +452,14 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'prs'
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/30'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <GitPullRequest className="w-4 h-4" />
                 <span>Pull Requests</span>
                 {totalPRs > 0 && (
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === 'prs' ? 'bg-black/40 text-white' : 'bg-neutral-900 text-neutral-300 border border-white/20'
+                    activeTab === 'prs' ? 'bg-black/40 text-white' : 'bg-slate-200 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-300 dark:border-white/20'
                   }`}>
                     {totalPRs}
                   </span>
@@ -472,7 +472,7 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'history'
                     ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/30'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <History className="w-4 h-4" />
@@ -485,7 +485,7 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'runners'
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/30'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <Cpu className="w-4 h-4" />
@@ -498,7 +498,7 @@ export function App() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
                   activeTab === 'billing'
                     ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold shadow-lg shadow-rose-500/30'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
@@ -510,8 +510,8 @@ export function App() {
                 onClick={() => setActiveTab('settings')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 ml-auto active:scale-95 ${
                   activeTab === 'settings'
-                    ? 'bg-neutral-800 text-white font-bold border border-white/30 shadow-md'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                    ? 'bg-slate-900 text-white dark:bg-neutral-800 dark:text-white font-bold border border-slate-700 dark:border-white/30 shadow-md'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
                 }`}
               >
                 <SettingsIcon className="w-4 h-4" />
@@ -594,21 +594,21 @@ export function App() {
         </main>
 
         {/* Mobile Bottom Navigation Bar (iOS / Android Style) */}
-        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#030303]/95 backdrop-blur-2xl border-t border-white/10 px-2 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black">
+        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#030303]/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 px-2 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-slate-900/10 dark:shadow-black">
           <div className="grid grid-cols-7 gap-1 text-[10px] font-medium text-center">
             {/* 1. Find Issues */}
             <button
               onClick={() => setActiveTab('issues')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'issues'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-indigo-600 bg-indigo-50 border border-indigo-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <div className="relative">
                 <Search className="w-5 h-5 mb-0.5" />
                 {totalIssues > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-white text-black text-[9px] font-bold">
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-black text-[9px] font-bold">
                     {totalIssues > 99 ? '99+' : totalIssues}
                   </span>
                 )}
@@ -621,12 +621,12 @@ export function App() {
               onClick={() => setActiveTab('bounties')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'bounties'
-                  ? 'text-amber-400 bg-amber-950/40 border border-amber-500/30 font-bold'
-                  : 'text-neutral-400 hover:text-amber-300'
+                  ? 'text-amber-600 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-500/30 font-bold'
+                  : 'text-slate-500 hover:text-amber-600 dark:text-neutral-400 dark:hover:text-amber-300'
               }`}
             >
               <div className="relative">
-                <Coins className="w-5 h-5 mb-0.5 text-amber-400" />
+                <Coins className="w-5 h-5 mb-0.5 text-amber-500 dark:text-amber-400" />
               </div>
               <span>Bounties</span>
             </button>
@@ -636,14 +636,14 @@ export function App() {
               onClick={() => setActiveTab('tracker')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'tracker'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-purple-600 bg-purple-50 border border-purple-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <div className="relative">
                 <Layers className="w-5 h-5 mb-0.5" />
                 {tasks.length > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-white text-black text-[9px] font-bold">
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-black text-[9px] font-bold">
                     {tasks.length}
                   </span>
                 )}
@@ -656,14 +656,14 @@ export function App() {
               onClick={() => setActiveTab('prs')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'prs'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-teal-600 bg-teal-50 border border-teal-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <div className="relative">
                 <GitPullRequest className="w-5 h-5 mb-0.5" />
                 {totalPRs > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-white text-black text-[9px] font-bold">
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-black text-[9px] font-bold">
                     {totalPRs}
                   </span>
                 )}
@@ -676,8 +676,8 @@ export function App() {
               onClick={() => setActiveTab('history')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'history'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-amber-600 bg-amber-50 border border-amber-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <History className="w-5 h-5 mb-0.5" />
@@ -689,8 +689,8 @@ export function App() {
               onClick={() => setActiveTab('runners')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'runners'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-cyan-600 bg-cyan-50 border border-cyan-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <Cpu className="w-5 h-5 mb-0.5" />
@@ -702,8 +702,8 @@ export function App() {
               onClick={() => setActiveTab('billing')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'billing'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-rose-600 bg-rose-50 border border-rose-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <CreditCard className="w-5 h-5 mb-0.5" />
@@ -715,8 +715,8 @@ export function App() {
               onClick={() => setActiveTab('settings')}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'settings'
-                  ? 'text-white bg-neutral-900 border border-white/20 font-bold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-slate-900 bg-slate-200 border border-slate-300 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               <SettingsIcon className="w-5 h-5 mb-0.5" />

@@ -194,13 +194,13 @@ export function AuthGate({ children }: AuthGateProps) {
   // Initial loading state while verifying existing token
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 rounded-2xl bg-neutral-900 border border-white/20 p-0.5 animate-pulse">
-          <div className="w-full h-full bg-[#050505] rounded-2xl flex items-center justify-center">
-            <Lock className="w-5 h-5 text-white animate-spin" />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#030305] text-slate-900 dark:text-neutral-100 flex flex-col items-center justify-center p-4 transition-colors duration-200">
+        <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-neutral-900 border border-slate-300 dark:border-white/20 p-0.5 animate-pulse">
+          <div className="w-full h-full bg-white dark:bg-[#050505] rounded-2xl flex items-center justify-center">
+            <Lock className="w-5 h-5 text-slate-700 dark:text-white animate-spin" />
           </div>
         </div>
-        <p className="mt-4 text-xs font-mono text-neutral-400">Verifying security credentials...</p>
+        <p className="mt-4 text-xs font-mono text-slate-500 dark:text-neutral-400">Verifying security credentials...</p>
       </div>
     );
   }
@@ -212,48 +212,48 @@ export function AuthGate({ children }: AuthGateProps) {
 
   // Pure AMOLED Lock Screen view
   return (
-    <div className="min-h-screen bg-[#000000] flex flex-col justify-between p-4 sm:p-6 text-neutral-100 select-none">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#030305] flex flex-col justify-between p-4 sm:p-6 text-slate-900 dark:text-neutral-100 select-none transition-colors duration-200">
       {/* Top Brand Header */}
       <div className="flex items-center justify-between max-w-md w-full mx-auto pt-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/10">
-            <Sparkles className="w-4 h-4 text-black" />
+          <div className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black flex items-center justify-center shadow-lg shadow-indigo-500/10">
+            <Sparkles className="w-4 h-4 text-white dark:text-black" />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-tight text-white">
+            <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
               Issue-to-PR
             </h1>
-            <p className="text-[10px] text-neutral-400 font-mono">Autonomous GSoC Platform</p>
+            <p className="text-[10px] text-slate-500 dark:text-neutral-400 font-mono">Autonomous GSoC Platform</p>
           </div>
         </div>
-        <span className="text-[10px] px-2.5 py-1 rounded-full bg-neutral-900 border border-white/20 text-neutral-300 font-mono flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-          AMOLED SECURE
+        <span className="text-[10px] px-2.5 py-1 rounded-full bg-slate-200 dark:bg-neutral-900 border border-slate-300 dark:border-white/20 text-slate-700 dark:text-neutral-300 font-mono flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-white animate-ping" />
+          SECURE SHIELD
         </span>
       </div>
 
       {/* 2-Hour Autonomous Online Scanner Live Banner (Website Internal Timer) */}
-      <div className="max-w-md w-full mx-auto mt-4 p-3.5 rounded-2xl bg-[#090909] border border-white/15 shadow-xl flex items-center justify-between gap-3 text-xs">
+      <div className="max-w-md w-full mx-auto mt-4 p-3.5 rounded-2xl bg-white dark:bg-[#090909] border border-slate-200 dark:border-white/15 shadow-xl flex items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-white text-black shrink-0 shadow-md">
-            <Clock className="w-4 h-4 text-black animate-pulse" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full animate-ping" />
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black shrink-0 shadow-md">
+            <Clock className="w-4 h-4 text-white dark:text-black animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 dark:bg-white rounded-full animate-ping" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-white font-bold text-xs">Autonomous 2H Scanner</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-white/20 font-mono">
+              <span className="text-slate-900 dark:text-white font-bold text-xs">Autonomous 2H Scanner</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-white/20 font-mono">
                 Website Engine Active
               </span>
             </div>
-            <p className="text-[10px] text-neutral-400 truncate">
+            <p className="text-[10px] text-slate-500 dark:text-neutral-400 truncate">
               Continuous scan &bull; NumFOCUS, PSF, DeepChem, Kornia
             </p>
           </div>
         </div>
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-[9px] uppercase font-semibold text-neutral-400 font-mono">Next Scan In</span>
-          <span className="text-xs font-mono font-extrabold text-white px-2 py-0.5 rounded-lg bg-neutral-900 border border-white/25 shadow-inner">
+          <span className="text-[9px] uppercase font-semibold text-slate-500 dark:text-neutral-400 font-mono">Next Scan In</span>
+          <span className="text-xs font-mono font-extrabold text-slate-900 dark:text-white px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/25 shadow-inner">
             {internalSchedule.formatted.digital}
           </span>
         </div>
@@ -413,10 +413,10 @@ export function AuthGate({ children }: AuthGateProps) {
 
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
+                <div className="w-full border-t border-slate-200 dark:border-white/10" />
               </div>
               <div className="relative flex justify-center text-[10px] uppercase">
-                <span className="bg-[#09090e] px-2 text-neutral-500 font-mono">Or use password / biometrics</span>
+                <span className="bg-white dark:bg-[#09090e] px-2 text-slate-500 dark:text-neutral-500 font-mono">Or use password / biometrics</span>
               </div>
             </div>
           </div>

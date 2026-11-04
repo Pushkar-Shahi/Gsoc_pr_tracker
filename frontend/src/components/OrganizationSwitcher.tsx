@@ -82,7 +82,7 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({ onOr
       {/* Switcher Pill Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-9 px-3 rounded-xl bg-neutral-900/80 hover:bg-neutral-800/90 border border-white/10 hover:border-indigo-500/30 text-neutral-200 transition active:scale-95 shadow-lg backdrop-blur-xl"
+        className="flex items-center gap-2 h-9 px-3 rounded-xl bg-slate-100 dark:bg-neutral-900/80 hover:bg-slate-200 dark:hover:bg-neutral-800/90 border border-slate-300 dark:border-white/10 hover:border-indigo-500/40 text-slate-800 dark:text-neutral-200 transition active:scale-95 shadow-md backdrop-blur-xl"
         title="Switch Organization / Team Workspace"
       >
         <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 p-0.5 shrink-0 shadow-sm">
@@ -90,21 +90,21 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({ onOr
             <Building2 className="w-3 h-3 text-cyan-300" />
           </div>
         </div>
-        <span className="text-xs font-semibold text-white max-w-[130px] truncate">
+        <span className="text-xs font-semibold text-slate-900 dark:text-white max-w-[130px] truncate">
           {activeOrg?.name || 'My Workspace'}
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 dark:text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Liquid Glass Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-[#090909]/95 border border-white/15 p-2 shadow-2xl shadow-indigo-950/50 backdrop-blur-2xl z-50 space-y-1 animate-fade-in">
+        <div className="absolute left-0 mt-2 w-72 rounded-2xl liquid-glass p-2 shadow-2xl z-50 space-y-1 animate-fade-in">
           {/* Header */}
-          <div className="px-3 py-2 flex items-center justify-between border-b border-white/10">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-mono">
+          <div className="px-3 py-2 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-400 font-mono">
               Workspaces & Orgs
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 font-mono">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-500/30 font-mono">
               {organizations.length} Total
             </span>
           </div>
@@ -120,50 +120,50 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({ onOr
                   disabled={loading}
                   className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition group ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-950/70 to-neutral-900 border border-indigo-500/40 text-white'
-                      : 'hover:bg-neutral-800/60 border border-transparent text-neutral-300'
+                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-950 dark:bg-gradient-to-r dark:from-indigo-950/70 dark:to-neutral-900 dark:border-indigo-500/40 dark:text-white'
+                      : 'hover:bg-slate-100 dark:hover:bg-neutral-800/60 border border-transparent text-slate-700 dark:text-neutral-300'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
                       isActive
                         ? 'bg-gradient-to-br from-indigo-500 to-cyan-500 text-white shadow-md shadow-indigo-500/30'
-                        : 'bg-neutral-800 text-neutral-300 group-hover:bg-neutral-700'
+                        : 'bg-slate-200 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300 group-hover:bg-slate-300 dark:group-hover:bg-neutral-700'
                     }`}>
                       {org.name.slice(0, 1).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold truncate text-white">{org.name}</span>
+                        <span className="text-xs font-bold truncate text-slate-900 dark:text-white">{org.name}</span>
                         {org.is_personal && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-600 dark:bg-neutral-800 dark:text-neutral-400 font-mono">
                             Personal
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-neutral-400">
-                        <span className="capitalize text-indigo-300">{org.role}</span>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-neutral-400">
+                        <span className="capitalize text-indigo-600 dark:text-indigo-300">{org.role}</span>
                         <span>&bull;</span>
                         <span>{org.member_count} {org.member_count === 1 ? 'member' : 'members'}</span>
                       </div>
                     </div>
                   </div>
-                  {isActive && <Check className="w-4 h-4 text-cyan-400 shrink-0" />}
+                  {isActive && <Check className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />}
                 </button>
               );
             })}
           </div>
 
           {/* Create Organization Action */}
-          <div className="pt-1 border-t border-white/10">
+          <div className="pt-1 border-t border-slate-200 dark:border-white/10">
             <button
               onClick={() => {
                 setIsOpen(false);
                 setShowCreateModal(true);
               }}
-              className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-semibold text-indigo-300 hover:text-white hover:bg-indigo-950/40 border border-transparent hover:border-indigo-500/30 transition"
+              className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-500/30 transition"
             >
-              <Plus className="w-3.5 h-3.5 text-cyan-400" />
+              <Plus className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span>Create New Organization</span>
             </button>
           </div>
@@ -179,3 +179,4 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({ onOr
     </div>
   );
 };
+
