@@ -61,3 +61,4 @@ export const BrandIcon: React.FC<BrandIconProps> = ({
     </svg>
   );
 };
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Lock, Fingerprint, Eye, EyeOff, CheckCircle2, ShieldCheck, 
+  Lock, Eye, EyeOff, CheckCircle2, ShieldCheck, 
   AlertCircle, Building2, Loader2, Sparkles, X, HelpCircle, ArrowRight
 } from 'lucide-react';
 import { 
@@ -9,12 +9,6 @@ import {
   verifyAuth, 
   setAuthToken,
   setOnUnauthorized, 
-  isBiometricsSupported, 
-  loginWithBiometrics, 
-  registerDeviceBiometrics, 
-  getStoredBiometricCredentialId,
-  getBiometricStatus,
-  isSecureContextAvailable,
   devGitHubLogin,
   devGoogleLogin,
   verifyGoogleCredential
@@ -37,8 +31,6 @@ export function AuthGate({ children }: AuthGateProps) {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const [biometricsAvailable, setBiometricsAvailable] = useState(false);
-  const [isBiometricScanning, setIsBiometricScanning] = useState(false);
   const [isSsoOpen, setIsSsoOpen] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [googleOriginMismatch, setGoogleOriginMismatch] = useState(false);
@@ -63,13 +55,6 @@ export function AuthGate({ children }: AuthGateProps) {
     verifyAuth().then((valid) => {
       if (mounted) {
         setIsAuthenticated(valid);
-      }
-    });
-
-    // Check biometric hardware support
-    isBiometricsSupported().then((supported) => {
-      if (mounted) {
-        setBiometricsAvailable(supported);
       }
     });
 
@@ -183,27 +168,6 @@ export function AuthGate({ children }: AuthGateProps) {
       triggerShake();
     } finally {
       setAuthProviderLoading(false);
-    }
-  };
-
-  // Biometric Unlock
-  const handleBiometricUnlock = async () => {
-    setIsBiometricScanning(true);
-    setError(null);
-    setInfoMessage(null);
-    try {
-      const success = await loginWithBiometrics();
-      if (success) {
-        setIsAuthenticated(true);
-      } else {
-        setError('Biometric verification failed.');
-        triggerShake();
-      }
-    } catch (err: any) {
-      setError(err.message || 'Biometric authentication error');
-      triggerShake();
-    } finally {
-      setIsBiometricScanning(false);
     }
   };
 
@@ -358,30 +322,16 @@ export function AuthGate({ children }: AuthGateProps) {
             <span>{authMode === 'signin' ? 'Sign in with GitHub' : 'Sign up with GitHub'}</span>
           </button>
 
-          {/* SSO & Biometric Options (Sign In only) */}
+          {/* SSO Option (Sign In only) */}
           {authMode === 'signin' && (
-            <>
-              <button
-                type="button"
-                onClick={() => setIsSsoOpen(true)}
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2.5 transition shadow-sm active:scale-[0.99] cursor-pointer"
-              >
-                <Building2 className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
-                <span>Sign in with SSO</span>
-              </button>
-
-              {biometricsAvailable && (
-                <button
-                  type="button"
-                  onClick={handleBiometricUnlock}
-                  disabled={isBiometricScanning}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2.5 transition shadow-sm active:scale-[0.99] cursor-pointer"
-                >
-                  <Fingerprint className="w-4 h-4 text-indigo-500" />
-                  <span>{isBiometricScanning ? 'Scanning...' : 'Sign in with Touch ID / Face ID'}</span>
-                </button>
-              )}
-            </>
+            <button
+              type="button"
+              onClick={() => setIsSsoOpen(true)}
+              className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2.5 transition shadow-sm active:scale-[0.99] cursor-pointer"
+            >
+              <Building2 className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
+              <span>Sign in with SSO</span>
+            </button>
           )}
         </div>
 
