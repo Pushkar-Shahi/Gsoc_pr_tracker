@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.models.models import Task, Issue, Repository, PlatformSettings, AuditLog
 from app.services.github_client import GitHubClient
 from app.services.discovery_service import DiscoveryService
+from app.services.queue_service import queue_service
 
 logger = logging.getLogger(__name__)
 
@@ -358,6 +359,14 @@ class BackgroundWorkerService:
             await asyncio.gather(*self._tasks, return_exceptions=True)
         self._tasks.clear()
         logger.info("Background workers stopped gracefully.")
+
+    async def enqueue_job(self, queue_name: str, payload: Dict[str, Any]) -> str:
+        """Enqueues a background job payload via the configured queue service."""
+        return await queue_service.enqueue(queue_name, payload)
+
+    async def dequeue_job(self, queue_name: str, timeout: float = 0.0) -> Optional[Dict[str, Any]]:
+        """Dequeues a background job payload via the configured queue service."""
+        return await queue_service.dequeue(queue_name, timeout)
 
     async def _pr_tracker_loop(self):
         """Periodically syncs all tracked tasks (pull requests and issues) with GitHub."""

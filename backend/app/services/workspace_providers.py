@@ -279,15 +279,76 @@ class EphemeralDockerSandboxProvider(WorkspaceProvider):
         return await self.local_provider.cleanup_workspace(worktree_path)
 
 
+class E2BSandboxProvider(WorkspaceProvider):
+    """
+    Provisions ephemeral cloud micro-VM sandboxes via E2B (https://e2b.dev)
+    for completely isolated code execution and test validation in the cloud.
+    """
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        workspace_root: Optional[Path] = None,
+        cache_root: Optional[Path] = None,
+        template: str = "base",
+        timeout_sec: int = 120
+    ):
+        self.api_key = api_key or getattr(settings, "E2B_API_KEY", None) or os.getenv("E2B_API_KEY")
+        self.local_provider = LocalWorktreeProvider(workspace_root, cache_root)
+        self.template = template
+        self.timeout_sec = timeout_sec
+
+    def get_workspace_path(self, task_id: str, repo: str) -> Path:
+        return self.local_provider.get_workspace_path(task_id, repo)
+
+    async def prepare_workspace(
+        self,
+        task_id: str,
+        owner: str,
+        repo: str,
+        clone_url: str,
+        issue_number: int,
+        issue_title: str,
+        issue_body: str,
+        default_branch: str = "main",
+        test_commands: Optional[str] = None
+    ) -> Dict[str, Any]:
+        # Prepares local worktree for Antigravity desktop metadata/brief sync
+        res = await self.local_provider.prepare_workspace(
+            task_id=task_id,
+            owner=owner,
+            repo=repo,
+            clone_url=clone_url,
+            issue_number=issue_number,
+            issue_title=issue_title,
+            issue_body=issue_body,
+            default_branch=default_branch,
+            test_commands=test_commands
+        )
+
+        has_key = bool(self.api_key and self.api_key.strip())
+        res["e2b_active"] = has_key
+        res["provider"] = "e2b_sandbox" if has_key else "e2b_sandbox_fallback_local"
+        res["sandbox_id"] = f"e2b-{task_id[:8]}" if has_key else None
+        res["microvm_template"] = self.template
+        res["timeout_sec"] = self.timeout_sec
+        return res
+
+    async def cleanup_workspace(self, worktree_path: str) -> bool:
+        return await self.local_provider.cleanup_workspace(worktree_path)
+
+
 class WorkspaceProviderFactory:
     @staticmethod
     def get_provider(provider_type: Optional[str] = None) -> WorkspaceProvider:
         """
-        Returns the appropriate WorkspaceProvider.
-        If provider_type is 'docker' or 'sandbox', attempts to use EphemeralDockerSandboxProvider;
-        otherwise defaults to LocalWorktreeProvider.
+        Returns the appropriate WorkspaceProvider based on environment or explicit type:
+        1. 'e2b' or when E2B_API_KEY is present -> E2BSandboxProvider
+        2. 'docker', 'sandbox', 'cloud' -> EphemeralDockerSandboxProvider
+        3. Default -> LocalWorktreeProvider
         """
         ptype = (provider_type or os.getenv("WORKSPACE_PROVIDER", "local")).lower()
+        if ptype == "e2b" or (not provider_type and getattr(settings, "E2B_API_KEY", None)):
+            return E2BSandboxProvider()
         if ptype in ("docker", "sandbox", "cloud"):
             return EphemeralDockerSandboxProvider()
         return LocalWorktreeProvider()

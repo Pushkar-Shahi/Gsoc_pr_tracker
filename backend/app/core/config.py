@@ -98,6 +98,12 @@ class Settings:
     DATA_DIR: Path = DEFAULT_DATA_DIR
     WORKSPACE_ROOT: Path = DEFAULT_WORKSPACE_DIR
     REPOS_CACHE_DIR: Path = DEFAULT_REPOS_CACHE_DIR
+    WORKSPACE_PROVIDER: str = os.getenv("WORKSPACE_PROVIDER", "local")
+    E2B_API_KEY: Optional[str] = os.getenv("E2B_API_KEY")
+
+    # Distributed Task Queue & Messaging
+    REDIS_URL: Optional[str] = os.getenv("REDIS_URL")
+    POLAR_ACCESS_TOKEN: Optional[str] = os.getenv("POLAR_ACCESS_TOKEN")
     
     # Antigravity Desktop App locations on macOS
     ANTIGRAVITY_APP_PATHS: List[str] = [
