@@ -10,7 +10,6 @@ import {
   setAuthToken,
   setOnUnauthorized, 
   devGitHubLogin,
-  devGoogleLogin,
   verifyGoogleCredential
 } from '../api';
 import { EnterpriseSSOModal } from './EnterpriseSSOModal';
@@ -33,7 +32,6 @@ export function AuthGate({ children }: AuthGateProps) {
   const [isShaking, setIsShaking] = useState(false);
   const [isSsoOpen, setIsSsoOpen] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [googleOriginMismatch, setGoogleOriginMismatch] = useState(false);
   const [authProviderLoading, setAuthProviderLoading] = useState(false);
 
   const googleClientId = "842489213804-lnvakm6obbd26vj8qsdi8s3ri3fq1aev.apps.googleusercontent.com";
@@ -83,7 +81,6 @@ export function AuthGate({ children }: AuthGateProps) {
             if (response && response.credential) {
               setAuthProviderLoading(true);
               setError(null);
-              setGoogleOriginMismatch(false);
               try {
                 await verifyGoogleCredential(response.credential);
                 setIsAuthenticated(true);
@@ -119,14 +116,7 @@ export function AuthGate({ children }: AuthGateProps) {
     const g = (window as any).google;
     if (g && g.accounts && g.accounts.id) {
       try {
-        g.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            const reason = notification.getNotDisplayedReason?.() || notification.getSkippedReason?.() || '';
-            if (reason.includes('origin') || reason.includes('unregistered') || reason.includes('opt_out')) {
-              setGoogleOriginMismatch(true);
-            }
-          }
-        });
+        g.accounts.id.prompt();
         return;
       } catch (err) {
         console.warn('Google prompt exception:', err);
@@ -134,26 +124,7 @@ export function AuthGate({ children }: AuthGateProps) {
     }
 
     // Direct OAuth redirect flow fallback
-    try {
-      window.location.href = `/api/v1/auth/google/login`;
-    } catch {
-      setGoogleOriginMismatch(true);
-    }
-  };
-
-  // Fast Dev Sign-in for riseinspirethrive2008@gmail.com
-  const handleFastGoogleDevLogin = async (targetEmail: string = 'riseinspirethrive2008@gmail.com') => {
-    setAuthProviderLoading(true);
-    setError(null);
-    try {
-      await devGoogleLogin(targetEmail, 'Pushkar Shahi');
-      setIsAuthenticated(true);
-    } catch (err: any) {
-      setError(err.message || 'Google sign in failed');
-      triggerShake();
-    } finally {
-      setAuthProviderLoading(false);
-    }
+    window.location.href = `/api/v1/auth/google/login`;
   };
 
   // GitHub Sign-In Handler
@@ -257,69 +228,23 @@ export function AuthGate({ children }: AuthGateProps) {
           </div>
         )}
 
-        {/* Google Origin Mismatch Guide & Instant 1-Click Login */}
-        {googleOriginMismatch && (
-          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs space-y-2.5 animate-fade-in shadow-sm">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2 font-bold text-amber-950 dark:text-amber-100">
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Google OAuth Origin Mismatch</span>
-              </div>
-              <button 
-                type="button"
-                onClick={() => setGoogleOriginMismatch(false)}
-                className="text-amber-700 dark:text-amber-400 hover:opacity-75"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
-              Google Cloud Console requires registering your localhost URL. In your Google Cloud Console under <strong>Credentials &rarr; OAuth Client ID</strong>, add:
-              <br />
-              <code className="inline-block mt-1 bg-amber-500/20 px-1.5 py-0.5 rounded font-mono text-[10px] text-amber-950 dark:text-amber-100">
-                http://localhost:5173
-              </code>
-            </p>
-            <button
-              type="button"
-              onClick={() => handleFastGoogleDevLogin('riseinspirethrive2008@gmail.com')}
-              className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
-            >
-              <span>Instant Sign in as riseinspirethrive2008@gmail.com</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
         {/* Stacked Provider Buttons */}
         <div className="space-y-3">
           {/* Sign in with Google Button */}
-          <div className="space-y-1.5">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={authProviderLoading}
-              className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-3 transition shadow-sm active:scale-[0.99] cursor-pointer"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.43 7.34 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span>{authMode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
-            </button>
-            <div className="flex items-center justify-between px-1 text-[11px] text-slate-500 dark:text-neutral-400">
-              <span className="truncate max-w-[200px]" title="riseinspirethrive2008@gmail.com">riseinspirethrive2008...</span>
-              <button
-                type="button"
-                onClick={() => handleFastGoogleDevLogin('riseinspirethrive2008@gmail.com')}
-                className="font-bold text-indigo-600 dark:text-cyan-400 hover:underline cursor-pointer active:scale-95 transition"
-              >
-                Instant 1-Click Login &rarr;
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={authProviderLoading}
+            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-3 transition shadow-sm active:scale-[0.99] cursor-pointer"
+          >
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.43 7.34 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span>{authMode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
+          </button>
 
           {/* Sign in with GitHub Button */}
           <button
@@ -444,7 +369,6 @@ export function AuthGate({ children }: AuthGateProps) {
                 onClick={() => {
                   setAuthMode('signup');
                   setError(null);
-                  setGoogleOriginMismatch(false);
                 }}
                 className="text-slate-950 dark:text-white font-medium underline underline-offset-4 hover:opacity-85 transition cursor-pointer"
               >
@@ -459,7 +383,6 @@ export function AuthGate({ children }: AuthGateProps) {
                 onClick={() => {
                   setAuthMode('signin');
                   setError(null);
-                  setGoogleOriginMismatch(false);
                 }}
                 className="text-slate-950 dark:text-white font-medium underline underline-offset-4 hover:opacity-85 transition cursor-pointer"
               >
