@@ -213,8 +213,8 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
                 onClick={() => setSelectedPlatform(plat)}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition ${
                   selectedPlatform === plat
-                    ? 'bg-white text-black shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {plat === 'all' ? 'All Platforms' : plat === 'polar' ? 'Polar.sh' : 'Algora'}
@@ -272,7 +272,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
             return (
               <div 
                 key={b.id}
-                className="p-5 rounded-2xl bg-[#080808] border border-white/10 hover:border-white/20 transition flex flex-col justify-between shadow-xl space-y-4 group"
+                className="p-5 rounded-2xl liquid-glass-card transition flex flex-col justify-between shadow-xl space-y-4 group"
               >
                 <div className="space-y-3">
                   {/* Top Bar: Reward Badge & Platform */}

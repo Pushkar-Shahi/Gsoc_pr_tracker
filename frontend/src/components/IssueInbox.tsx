@@ -600,7 +600,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             </div>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-sm transition shadow-md active:scale-95 flex items-center justify-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-bold text-sm transition shadow-md active:scale-95 flex items-center justify-center gap-2"
             >
               <Filter className="w-4 h-4" />
               <span>Apply Filters</span>
@@ -716,41 +716,41 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             </div>
 
             {/* Sorting controls */}
-            <div className="ml-auto flex items-center gap-1.5 text-neutral-400 flex-wrap">
-              <ArrowUpDown className="w-3.5 h-3.5 mr-0.5 text-white" />
+            <div className="ml-auto flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 flex-wrap">
+              <ArrowUpDown className="w-3.5 h-3.5 mr-0.5 text-slate-700 dark:text-white" />
               <span>Priority:</span>
               <button
                 type="button"
                 onClick={() => handleSortChange('created')}
                 className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
                   sortBy === 'created' 
-                    ? 'bg-white text-black font-bold shadow-sm' 
-                    : 'hover:text-white bg-neutral-900 border border-white/10 text-neutral-300'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
+                    : 'hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300'
                 }`}
                 title="Priority order is strictly based on time (newest unassigned issues first)"
               >
                 🕒 Time (Newest)
               </button>
-              <span className="text-neutral-700">|</span>
+              <span className="text-slate-300 dark:text-neutral-700">|</span>
               <button
                 type="button"
                 onClick={() => handleSortChange('rank')}
                 className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
                   sortBy === 'rank' 
-                    ? 'bg-white text-black font-bold shadow-sm' 
-                    : 'hover:text-white text-neutral-400'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
+                    : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
                 }`}
               >
                 Suitability Rank
               </button>
-              <span className="text-neutral-700">|</span>
+              <span className="text-slate-300 dark:text-neutral-700">|</span>
               <button
                 type="button"
                 onClick={() => handleSortChange('stars')}
                 className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
                   sortBy === 'stars' 
-                    ? 'bg-white text-black font-bold shadow-sm' 
-                    : 'hover:text-white text-neutral-400'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
+                    : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
                 }`}
               >
                 Stars
@@ -935,21 +935,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           return (
             <div
               key={issue.id}
-              className="bg-[#080808] border border-white/10 hover:border-white/25 rounded-2xl p-4 sm:p-5 transition-all duration-200 shadow-md hover:-translate-y-0.5 relative group"
+              className="liquid-glass-card p-4 sm:p-5 relative group"
             >
               <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 {/* Left content: repo, issue, badges, description */}
                 <div className="space-y-3 flex-1">
                   {/* Repo Pill, Stars, and State */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-neutral-900 border border-white/20 text-white">
+                    <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white">
                       {issue.repository?.full_name || 'public/repo'}
                     </span>
 
                     {/* GSoC Participating Organization Badge */}
                     {(issue.repository?.is_gsoc || issue.repository?.gsoc_org_name) && (
                       <span
-                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-200 border border-white/20 shadow-sm"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-neutral-900 text-slate-800 dark:text-neutral-200 border border-slate-300 dark:border-white/20 shadow-sm"
                         title={`Verified Google Summer of Code (GSoC) Participating Organization: ${issue.repository?.gsoc_org_name || 'GSoC'}`}
                       >
                         <span className="text-xs">🎓</span>
@@ -958,13 +958,13 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     )}
 
                     {issue.repository?.primary_language && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-neutral-900 text-neutral-300 border border-white/10">
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-white/10">
                         {issue.repository.primary_language}
                       </span>
                     )}
 
-                    <div className="flex items-center gap-1 text-[11px] text-neutral-400 px-2 py-0.5 rounded-lg bg-neutral-900 border border-white/10">
-                      <Star className="w-3 h-3 text-white fill-white/20" />
+                    <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-neutral-400 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10">
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-500/20" />
                       <span>{issue.repository?.stars_count?.toLocaleString() || 0}</span>
                     </div>
 
@@ -991,13 +991,13 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
                   {/* Title and Link */}
                   <div>
-                    <h2 className="text-base font-semibold text-white group-hover:text-neutral-200 transition flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-neutral-200 transition flex items-center gap-2">
                       <span>#{issue.issue_number} — {issue.title}</span>
                       <a
                         href={issue.html_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-neutral-500 hover:text-white transition inline-flex items-center"
+                        className="text-slate-400 dark:text-neutral-500 hover:text-slate-900 dark:hover:text-white transition inline-flex items-center"
                         title="View upstream GitHub issue"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -1007,7 +1007,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
                   {/* AI Summary Snippet */}
                   {issue.ai_summary && (
-                    <p className="text-xs text-neutral-300 line-clamp-2 leading-relaxed bg-[#020202] p-3 rounded-xl border border-white/10">
+                    <p className="text-xs text-slate-700 dark:text-neutral-300 line-clamp-2 leading-relaxed bg-slate-100/80 dark:bg-[#080c14] p-3 rounded-xl border border-slate-200 dark:border-white/10">
                       {issue.ai_summary}
                     </p>
                   )}
@@ -1015,7 +1015,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   {/* Badges: difficulty, hours, labels */}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     {getDifficultyBadge(issue.difficulty_estimate)}
-                    <span className="flex items-center gap-1 text-[11px] text-neutral-400 px-2 py-0.5 rounded-lg bg-neutral-900 border border-white/10">
+                    <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-neutral-400 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10">
                       <Clock className="w-3 h-3" />
                       <span>~{issue.estimated_effort_hours}h effort</span>
                     </span>
@@ -1023,7 +1023,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     {issue.labels?.slice(0, 3).map((lbl: any, idx: number) => {
                       const name = typeof lbl === 'object' ? lbl.name : lbl;
                       return (
-                        <span key={idx} className="text-[11px] text-neutral-400 px-2 py-0.5 rounded-lg bg-neutral-900 border border-white/10">
+                        <span key={idx} className="text-[11px] text-slate-600 dark:text-neutral-400 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10">
                           {name}
                         </span>
                       );
@@ -1058,23 +1058,23 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                         }}
                         disabled={completingIds.has(issue.id)}
                         title="Mark as completed & remove from inbox"
-                        className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/15 hover:border-white/30 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50 group/tick"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-white/15 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50 group/tick"
                       >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5] text-white group-hover/tick:scale-110 transition-transform" />
+                        <Check className="w-3.5 h-3.5 stroke-[2.5] text-slate-700 dark:text-white group-hover/tick:scale-110 transition-transform" />
                         <span className="hidden sm:inline">Done</span>
                       </button>
                     )}
 
                     <button
                       onClick={() => onOpenDetails(issue)}
-                      className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium border border-white/15 transition active:scale-95"
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white text-xs font-medium border border-slate-300 dark:border-white/15 transition active:scale-95"
                     >
                       Details & Rationale
                     </button>
 
                     <button
                       onClick={() => onSelectIssue(issue.id)}
-                      className="px-4 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
+                      className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
                     >
                       <span>{isTaskActive ? 'Resume Task' : 'Select Issue'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -1204,11 +1204,11 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 left-6 z-40 px-3.5 py-2 rounded-2xl bg-[#000000]/95 hover:bg-[#111111] text-white border border-white/20 shadow-2xl backdrop-blur-md text-xs font-semibold transition flex items-center gap-1.5 active:scale-95"
+          className="fixed bottom-6 left-6 z-40 px-4 py-2.5 rounded-2xl liquid-glass text-slate-800 dark:text-white border border-slate-300/80 dark:border-white/20 shadow-2xl backdrop-blur-xl text-xs font-semibold transition-all flex items-center gap-2 active:scale-95 hover:scale-105 group"
           title="Scroll back to top"
         >
-          <ArrowUp className="w-3.5 h-3.5 text-white" />
-          <span>Back to Top</span>
+          <ArrowUp className="w-4 h-4 text-indigo-600 dark:text-cyan-400 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+          <span className="font-semibold text-slate-800 dark:text-white">Back to Top</span>
         </button>
       )}
     </div>
