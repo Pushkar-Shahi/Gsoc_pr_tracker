@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Settings, Key, Terminal, Shield, Folder, Check, 
-  AlertTriangle, Save, Plus, X, ShieldAlert, Fingerprint, RefreshCw
+  AlertTriangle, Save, Plus, X, ShieldAlert, RefreshCw
 } from 'lucide-react';
 import { PlatformSettings } from '../types';
-import { 
-  isBiometricsSupported, 
-  getBiometricStatus, 
-  getStoredBiometricCredentialId, 
-  resetBiometrics,
-  registerDeviceBiometrics
-} from '../api';
 
 interface SettingsViewProps {
   settings: PlatformSettings | null;
@@ -29,20 +22,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [newSkill, setNewSkill] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-
-  // Biometric state in settings
-  const [bioSupported, setBioSupported] = useState<boolean>(false);
-  const [bioStatus, setBioStatus] = useState<{ has_registered_credentials: boolean; registered_count: number }>({
-    has_registered_credentials: false,
-    registered_count: 0
-  });
-  const [bioActionLoading, setBioActionLoading] = useState(false);
-  const [bioMessage, setBioMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    isBiometricsSupported().then(setBioSupported);
-    getBiometricStatus().then(setBioStatus);
-  }, []);
 
   const handleAddSkill = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,42 +55,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   };
 
-  const handleEnrollBiometrics = async () => {
-    setBioActionLoading(true);
-    setBioMessage(null);
-    try {
-      await registerDeviceBiometrics();
-      const status = await getBiometricStatus();
-      setBioStatus(status);
-      setBioMessage('✓ Device biometric (Touch ID / Fingerprint) enrolled successfully!');
-    } catch (err: any) {
-      setBioMessage(`Enrollment error: ${err.message}`);
-    } finally {
-      setBioActionLoading(false);
-    }
-  };
-
-  const handleResetBiometrics = async () => {
-    setBioActionLoading(true);
-    setBioMessage(null);
-    try {
-      await resetBiometrics();
-      const status = await getBiometricStatus();
-      setBioStatus(status);
-      setBioMessage('Biometric credentials cleared from device.');
-    } catch (err: any) {
-      setBioMessage(`Reset error: ${err.message}`);
-    } finally {
-      setBioActionLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up">
       <div>
         <h2 className="text-xl font-extrabold text-white">Platform Settings & Security Profile</h2>
         <p className="text-xs text-neutral-400 mt-1">
-          Configure GitHub API credentials, biometric authentication, automated pull request publication policies, and Antigravity workspace integration.
+          Configure GitHub API credentials, automated pull request publication policies, and Antigravity workspace integration.
         </p>
       </div>
 
@@ -121,69 +70,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <span>{saveMessage}</span>
         </div>
       )}
-
-      {/* AMOLED Device Biometrics & Fingerprint Card */}
-      <div className="bg-[#080808] border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
-          <Fingerprint className="w-4 h-4 text-white" />
-          <h3 className="text-sm font-semibold text-white">Hardware Biometric Authentication (Touch ID / Fingerprint)</h3>
-        </div>
-
-        <div className="space-y-3 text-xs">
-          <p className="text-neutral-400 leading-relaxed">
-            Use device-level biometrics (Mac Touch ID, Windows Hello, or Android fingerprint) for instantaneous passwordless access directly from the AMOLED lock screen.
-          </p>
-
-          <div className="bg-[#000000] border border-white/10 rounded-xl p-3 sm:p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-neutral-300 font-medium">Hardware Support:</span>
-              <span className={`font-mono text-xs px-2.5 py-0.5 rounded-full border ${
-                bioSupported 
-                  ? 'bg-white/10 text-white border-white/20' 
-                  : 'bg-neutral-900 text-neutral-400 border-white/10'
-              }`}>
-                {bioSupported ? 'Available on this device' : 'Platform Authenticator Not Detected'}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-neutral-300 font-medium">Registered Credentials:</span>
-              <span className="font-mono text-xs text-white">
-                {bioStatus.registered_count} key{bioStatus.registered_count === 1 ? '' : 's'} registered
-              </span>
-            </div>
-
-            {bioMessage && (
-              <div className="text-[11px] text-neutral-200 bg-[#111111] p-2.5 rounded-lg border border-white/10">
-                {bioMessage}
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={handleEnrollBiometrics}
-                disabled={bioActionLoading || !bioSupported}
-                className="min-h-[40px] px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-semibold transition flex items-center gap-2 active:scale-95 disabled:opacity-40"
-              >
-                <Fingerprint className="w-3.5 h-3.5" />
-                <span>{bioActionLoading ? 'Processing...' : 'Enroll / Sync Fingerprint'}</span>
-              </button>
-
-              {bioStatus.has_registered_credentials && (
-                <button
-                  type="button"
-                  onClick={handleResetBiometrics}
-                  disabled={bioActionLoading}
-                  className="min-h-[40px] px-3.5 py-2 rounded-xl bg-[#111111] hover:bg-[#1a1a1a] text-neutral-400 hover:text-white border border-white/10 text-xs transition"
-                >
-                  Reset Biometrics
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* GitHub Authentication Card */}
       <div className="bg-[#080808] border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
