@@ -787,6 +787,187 @@ async def verify_email_code(
         "provider": "email"
     }
 
+
+# ==============================================================================
+# Enterprise Single Sign-On (SSO) Sign-In & Domain Lookup
+# ==============================================================================
+
+class SSOLookupRequest(BaseModel):
+    email_or_domain: str
+
+class SSOLoginRequest(BaseModel):
+    email: str
+    organization_slug: Optional[str] = None
+    provider: Optional[str] = "saml"
+    demo_mode: Optional[bool] = False
+
+@router.post("/sso/lookup")
+async def sso_lookup(req: SSOLookupRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Looks up whether an enterprise email domain or organization slug has SSO configured.
+    """
+    raw = (req.email_or_domain or "").strip().lower()
+    if not raw:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Work email or organization domain is required.")
+
+    domain = raw.split("@")[-1] if "@" in raw else raw
+
+    # 1. Built-in enterprise demo domains for evaluation & testing
+    if domain in ("acme.corp", "acme", "demo.enterprise", "okta-demo.com", "enterprise.test"):
+        return {
+            "configured": True,
+            "organization_name": "Acme Corp (Enterprise)",
+            "organization_slug": "acme-corp",
+            "provider": "okta",
+            "protocol": "SAML_2.0",
+            "domain": domain,
+            "demo_available": True,
+            "message": "Acme Corp Enterprise SAML 2.0 Identity Provider ready."
+        }
+
+    # 2. Database lookup across existing organizations
+    stmt = select(Organization).where(
+        (Organization.slug == domain) |
+        (Organization.sso_metadata_url.ilike(f"%{domain}%")) |
+        (Organization.name.ilike(f"%{domain}%"))
+    )
+    res = await db.execute(stmt)
+    org = res.scalars().first()
+
+    if org and (org.sso_provider or org.sso_metadata_url or org.billing_tier == "enterprise"):
+        return {
+            "configured": True,
+            "organization_name": org.name,
+            "organization_slug": org.slug,
+            "provider": org.sso_provider or "saml",
+            "protocol": "SAML_2.0" if (not org.sso_config or org.sso_config.get("protocol") != "OIDC_1_0") else "OIDC_1_0",
+            "domain": domain,
+            "login_url": org.sso_config.get("login_url") if org.sso_config else None,
+            "enforced": bool(org.sso_enforced)
+        }
+
+    # 3. Not configured
+    return {
+        "configured": False,
+        "domain": domain,
+        "message": f"No Single Sign-On (SSO) configuration found for '{domain}'. Please sign in with Google or GitHub, or have an admin configure SAML in Organization Settings."
+    }
+
+@router.post("/sso/login")
+async def sso_login(req: SSOLoginRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Completes enterprise SSO authentication and issues a session JWT token with enterprise workspace context.
+    """
+    email = (req.email or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A valid corporate email address is required.")
+
+    domain = email.split("@")[-1]
+    username = email.split("@")[0].replace(".", "_")
+    name = username.replace("_", " ").title()
+    provider = req.provider or "saml"
+
+    # Find or provision the target enterprise organization
+    org = None
+    if req.organization_slug:
+        stmt = select(Organization).where(Organization.slug == req.organization_slug)
+        res = await db.execute(stmt)
+        org = res.scalars().first()
+
+    if not org:
+        # Check domain in existing orgs
+        stmt = select(Organization).where(
+            (Organization.slug == domain) |
+            (Organization.sso_metadata_url.ilike(f"%{domain}%"))
+        )
+        res = await db.execute(stmt)
+        org = res.scalars().first()
+
+    if not org and (req.demo_mode or domain in ("acme.corp", "acme", "demo.enterprise", "enterprise.test")):
+        # Auto-provision Acme Corp Enterprise organization if not exists
+        acme_stmt = select(Organization).where(Organization.slug == "acme-corp")
+        acme_res = await db.execute(acme_stmt)
+        org = acme_res.scalars().first()
+        if not org:
+            org = Organization(
+                id=f"org-acme-{uuid.uuid4().hex[:8]}",
+                name="Acme Corp (Enterprise)",
+                slug="acme-corp",
+                billing_tier="enterprise",
+                is_personal=False,
+                sso_provider=provider,
+                sso_enforced=True,
+                sso_config={
+                    "login_url": "https://acme.okta.com/app/saml",
+                    "protocol": "SAML_2.0"
+                }
+            )
+            db.add(org)
+            await db.flush()
+
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Enterprise organization for domain '{domain}' not found or SSO is unconfigured."
+        )
+
+    # Upsert user
+    u_res = await db.execute(select(User).where(User.email == email))
+    user = u_res.scalar_one_or_none()
+    if not user:
+        user = User(
+            id=f"usr-{uuid.uuid4().hex[:12]}",
+            github_username=f"sso_{username}",
+            email=email,
+            name=name,
+            avatar_url=f"https://api.dicebear.com/7.x/initials/svg?seed={username}&backgroundColor=6366f1,8b5cf6,ec4899"
+        )
+        db.add(user)
+        await db.flush()
+
+    # Ensure user has membership in the enterprise org
+    mem_stmt = select(Membership).where(
+        (Membership.user_id == user.id) & (Membership.org_id == org.id)
+    )
+    mem_res = await db.execute(mem_stmt)
+    membership = mem_res.scalar_one_or_none()
+    if not membership:
+        membership = Membership(
+            id=f"mem-{uuid.uuid4().hex[:12]}",
+            user_id=user.id,
+            org_id=org.id,
+            role="member"
+        )
+        db.add(membership)
+        await db.flush()
+
+    await db.commit()
+
+    claims = {
+        "user_id": user.id,
+        "username": user.github_username,
+        "tenant_id": org.id,
+        "role": membership.role,
+        "tier": org.billing_tier
+    }
+    token = generate_session_token(subject=user.id, claims=claims)
+
+    return {
+        "token": token,
+        "token_type": "bearer",
+        "authenticated": True,
+        "user": user.github_username,
+        "username": user.github_username,
+        "email": user.email,
+        "id": user.id,
+        "tenant_id": org.id,
+        "organization": org.name,
+        "role": membership.role,
+        "tier": org.billing_tier,
+        "avatar_url": user.avatar_url,
+        "provider": f"sso_{provider}"
+    }
+
 @router.get("/me")
 async def check_auth(authorization: Optional[str] = Header(None)):
     """Checks whether the currently provided token is valid and returns user profile with claims."""

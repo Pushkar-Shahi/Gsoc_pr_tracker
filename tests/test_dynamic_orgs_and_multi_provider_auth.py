@@ -119,3 +119,57 @@ async def test_add_organization_by_url():
         assert data["repo"] == "click"
         assert "issues_imported" in data
 
+
+@pytest.mark.asyncio
+async def test_enterprise_sso_lookup_and_login():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # 1. Unconfigured domain lookup
+        unconf_resp = await client.post(
+            "/api/v1/auth/sso/lookup",
+            json={"email_or_domain": "dev@unconfigured-startup.io"}
+        )
+        assert unconf_resp.status_code == 200
+        unconf_data = unconf_resp.json()
+        assert unconf_data["configured"] is False
+        assert "unconfigured-startup.io" in unconf_data["domain"]
+
+        # 2. Enterprise Demo / Configured domain lookup (Acme Corp)
+        demo_resp = await client.post(
+            "/api/v1/auth/sso/lookup",
+            json={"email_or_domain": "sarah.lead@acme.corp"}
+        )
+        assert demo_resp.status_code == 200
+        demo_data = demo_resp.json()
+        assert demo_data["configured"] is True
+        assert demo_data["provider"] == "okta"
+        assert "Acme Corp" in demo_data["organization_name"]
+
+        # 3. Enterprise SSO Login
+        login_resp = await client.post(
+            "/api/v1/auth/sso/login",
+            json={
+                "email": "sarah.lead@acme.corp",
+                "organization_slug": "acme-corp",
+                "provider": "okta",
+                "demo_mode": True
+            }
+        )
+        assert login_resp.status_code == 200
+        login_data = login_resp.json()
+        assert login_data["authenticated"] is True
+        assert "token" in login_data
+        assert login_data["tier"] == "enterprise"
+        assert "Acme Corp" in login_data["organization"]
+
+        # 4. Verify authenticated session token works on /me
+        me_resp = await client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {login_data['token']}"}
+        )
+        assert me_resp.status_code == 200
+        me_data = me_resp.json()
+        assert me_data["authenticated"] is True
+        assert me_data["tier"] == "enterprise"
+
+

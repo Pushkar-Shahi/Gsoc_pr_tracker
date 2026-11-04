@@ -12,7 +12,7 @@ import {
   devGitHubLogin,
   verifyGoogleCredential
 } from '../api';
-import { EnterpriseSSOModal } from './EnterpriseSSOModal';
+import { SSOLoginModal } from './SSOLoginModal';
 import { BrandIcon } from './BrandIcon';
 
 interface AuthGateProps {
@@ -430,10 +430,11 @@ export function AuthGate({ children }: AuthGateProps) {
         </div>
       )}
 
-      {/* Enterprise SSO Modal */}
-      <EnterpriseSSOModal
+      {/* Enterprise SSO Login Modal */}
+      <SSOLoginModal
         isOpen={isSsoOpen}
         onClose={() => setIsSsoOpen(false)}
+        onSuccess={() => setIsAuthenticated(true)}
       />
     </div>
   );

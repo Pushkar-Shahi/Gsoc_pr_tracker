@@ -2351,6 +2351,53 @@ export async function testSSOConnection(payload: {
   return await res.json();
 }
 
+export interface SSOLookupResult {
+  configured: boolean;
+  domain: string;
+  organization_name?: string;
+  organization_slug?: string;
+  provider?: string;
+  protocol?: string;
+  login_url?: string;
+  demo_available?: boolean;
+  message?: string;
+}
+
+export async function lookupSSODomain(emailOrDomain: string): Promise<SSOLookupResult> {
+  const res = await fetch(`${API_BASE}/auth/sso/lookup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email_or_domain: emailOrDomain })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'SSO domain lookup failed');
+  }
+  return await res.json();
+}
+
+export async function loginWithSSO(payload: {
+  email: string;
+  organization_slug?: string;
+  provider?: string;
+  demo_mode?: boolean;
+}): Promise<{ token: string; user: string; organization: string }> {
+  const res = await fetch(`${API_BASE}/auth/sso/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Enterprise SSO authentication failed');
+  }
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
 export async function devGitHubLogin(username: string): Promise<any> {
   const res = await fetch(`${API_BASE}/auth/github/dev-login`, {
     method: 'POST',
