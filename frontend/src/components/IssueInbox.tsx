@@ -3,7 +3,7 @@ import {
   Search, Filter, ArrowUpDown, Star, GitBranch, Shield, 
   Clock, Zap, CheckCircle, AlertTriangle, ArrowRight, ExternalLink,
   Tag, Info, HelpCircle, Link2, CheckCircle2, XCircle, Plus, Sparkles, ShieldCheck, RefreshCw, Check,
-  ArrowUp, Trash2, Calendar, Building2, Globe, X, Loader2, ChevronDown
+  ArrowUp, Trash2, Calendar, Building2, Globe, X, Loader2, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Issue } from '../types';
 import { 
@@ -385,10 +385,12 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
   // Dynamic Tracked Organizations & + Add Org State
   const [trackedOrgs, setTrackedOrgs] = useState<TrackedOrganization[]>([
-    { id: 'numfocus', label: 'NumFOCUS', icon: '🧮', is_default: true, issue_count: 0 },
-    { id: 'psf', label: 'Python (PSF)', icon: '🐍', is_default: true, issue_count: 0 },
-    { id: 'deepchem', label: 'DeepChem', icon: '🧪', is_default: true, issue_count: 0 },
-    { id: 'kornia', label: 'Kornia', icon: '👁️', is_default: true, issue_count: 0 },
+    { id: 'numfocus', label: 'NumFOCUS', icon: '🧮', is_default: true, issue_count: 372 },
+    { id: 'psf', label: 'Python (PSF)', icon: '🐍', is_default: true, issue_count: 244 },
+    { id: 'deepchem', label: 'DeepChem', icon: '🧪', is_default: true, issue_count: 37 },
+    { id: 'kornia', label: 'Kornia', icon: '👁️', is_default: true, issue_count: 69 },
+    { id: 'noruzzamans/gslider-blocks', label: 'noruzzamans/gslider-blocks', icon: '📦', is_default: false, issue_count: 0 },
+    { id: 'Pushkar-Shahi/Mirador', label: 'Pushkar-Shahi/Mira...', icon: '📦', is_default: false, issue_count: 0 },
   ]);
   const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
   const [addOrgUrl, setAddOrgUrl] = useState('');
@@ -401,7 +403,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     try {
       const data = await fetchTrackedOrganizations();
       if (data && data.organizations && data.organizations.length > 0) {
-        setTrackedOrgs(data.organizations);
+        setTrackedOrgs(prev => {
+          const apiMap = new Map<string, TrackedOrganization>(
+            data.organizations.map((o: TrackedOrganization) => [o.id.toLowerCase(), o])
+          );
+          const updated = prev.map(p => {
+            const match = apiMap.get(p.id.toLowerCase());
+            return match ? { ...p, issue_count: match.issue_count || p.issue_count } : p;
+          });
+          for (const org of data.organizations) {
+            if (!prev.some(p => p.id.toLowerCase() === org.id.toLowerCase())) {
+              updated.push(org);
+            }
+          }
+          return updated;
+        });
       }
     } catch (e) {
       console.warn('Failed to load tracked organizations', e);
@@ -480,19 +496,59 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Page Title & Subtitle */}
-      <div className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Issue-to-PR
-        </h1>
-        <p className="text-xs text-neutral-400">
-          Find issues, filter smartly, and turn them into pull requests.
-        </p>
+      {/* Top Header Row with Page Title on Left and 2H Countdown + Scan Button on Right */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Issue-to-PR
+          </h1>
+          <p className="text-xs text-neutral-400">
+            Find issues, filter smartly, and turn them into pull requests.
+          </p>
+        </div>
+
+        {/* Top Right Live Countdown + Run 2h Scan Now */}
+        <div className="flex items-center gap-3">
+          {/* Live Countdown Box */}
+          <div className="flex items-center gap-2.5 bg-[#0c101a] border border-white/10 px-3.5 py-2 rounded-2xl shadow-lg">
+            <Clock className="w-4 h-4 text-neutral-400" />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 font-bold">
+                NEXT 2H SCAN IN
+              </span>
+              <div className="font-mono text-xs font-bold text-white flex items-center gap-1">
+                <span className="bg-[#05080f] px-1.5 py-0.5 rounded border border-white/10">
+                  {formatCountdown(countdownSec).h}h
+                </span>
+                <span className="text-neutral-500">:</span>
+                <span className="bg-[#05080f] px-1.5 py-0.5 rounded border border-white/10">
+                  {formatCountdown(countdownSec).m}m
+                </span>
+                <span className="text-neutral-500">:</span>
+                <span className="bg-[#05080f] px-1.5 py-0.5 rounded border border-white/10">
+                  {formatCountdown(countdownSec).s}s
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Solid White Run 2h Scan Now Button */}
+          <button
+            type="button"
+            onClick={handleTriggerCronNow}
+            disabled={isTriggeringCron}
+            title="Run 2-Hour Autonomous Scan Now"
+            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-neutral-200 text-black font-bold text-xs flex items-center gap-2 shadow-md active:scale-95 transition disabled:opacity-50 shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isTriggeringCron ? 'animate-spin' : ''}`} />
+            <span>{isTriggeringCron ? 'Scanning...' : 'Run 2h Scan Now'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Targeted Issue Verification & Import Card */}
       <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
               <Link2 className="w-5 h-5 text-neutral-300" />
@@ -509,10 +565,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           <button
             type="button"
             onClick={() => setShowImportBar(!showImportBar)}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white transition shrink-0 flex items-center gap-1.5 self-start sm:self-auto active:scale-95"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white transition shrink-0 flex items-center gap-1.5 self-start sm:self-auto active:scale-95"
           >
             <span>{showImportBar ? 'Collapse' : 'Expand'}</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showImportBar ? 'rotate-180' : ''}`} />
+            {showImportBar ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />}
           </button>
         </div>
 
@@ -527,21 +583,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   value={importUrl}
                   onChange={(e) => setImportUrl(e.target.value)}
                   placeholder="Enter GitHub issue URL (e.g. https://github.com/pylint-dev/pylint/issues/11713)"
-                  className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-mono transition"
+                  className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 font-mono transition"
                 />
               </div>
               <button
                 type="submit"
-                disabled={isImporting || !importUrl.trim()}
+                disabled={isImporting}
                 className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 shrink-0 ${
-                  isImporting || !importUrl.trim()
-                    ? 'bg-neutral-900 text-neutral-500 cursor-not-allowed border border-white/10'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'
+                  importUrl.trim()
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'
+                    : 'bg-[#182030] hover:bg-[#1f283c] text-neutral-400 border border-white/10'
                 }`}
               >
                 {isImporting ? (
                   <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Verifying...</span>
                   </>
                 ) : (
@@ -698,7 +754,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
       {/* Search and Filters Bar */}
       <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5">
-        <form onSubmit={handleSearchSubmit} className="space-y-3">
+        <form onSubmit={handleSearchSubmit} className="space-y-3.5">
           <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -707,169 +763,183 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search issues by keyword, title, repository..."
-                className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition"
+                className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0"
+              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0"
             >
-              <Filter className="w-3.5 h-3.5" />
+              <Filter className="w-3.5 h-3.5 text-neutral-400" />
               <span>Apply Filters</span>
             </button>
           </div>
 
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-2.5 text-xs">
-            <select
-              value={selectedLanguage}
-              onChange={(e) => {
-                setSelectedLanguage(e.target.value);
-                onFilterChange({
-                  query: searchTerm,
-                  language: e.target.value,
-                  difficulty: selectedDifficulty,
-                  license_status: selectedLicense,
-                  sort_by: sortBy,
-                  gsoc_org: selectedGsocOrg,
-                  unassigned_only: unassignedOnly,
-                });
-              }}
-              className="bg-[#05080f] border border-white/10 rounded-xl px-3 py-1.5 text-neutral-300 focus:outline-none focus:border-white"
-            >
-              <option value="">All Languages</option>
-              <option value="Python">Python</option>
-              <option value="TypeScript">TypeScript</option>
-              <option value="JavaScript">JavaScript</option>
-              <option value="Go">Go</option>
-              <option value="Rust">Rust</option>
-            </select>
+            <div className="relative">
+              <select
+                value={selectedLanguage}
+                onChange={(e) => {
+                  setSelectedLanguage(e.target.value);
+                  onFilterChange({
+                    query: searchTerm,
+                    language: e.target.value,
+                    difficulty: selectedDifficulty,
+                    license_status: selectedLicense,
+                    sort_by: sortBy,
+                    gsoc_org: selectedGsocOrg,
+                    unassigned_only: unassignedOnly,
+                  });
+                }}
+                className="appearance-none bg-[#05080f] border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-neutral-300 focus:outline-none focus:border-white/30 cursor-pointer"
+              >
+                <option value="">All Languages</option>
+                <option value="Python">Python</option>
+                <option value="TypeScript">TypeScript</option>
+                <option value="JavaScript">JavaScript</option>
+                <option value="Go">Go</option>
+                <option value="Rust">Rust</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => {
-                setSelectedDifficulty(e.target.value);
-                onFilterChange({
-                  query: searchTerm,
-                  language: selectedLanguage,
-                  difficulty: e.target.value,
-                  license_status: selectedLicense,
-                  sort_by: sortBy,
-                  gsoc_org: selectedGsocOrg,
-                  unassigned_only: unassignedOnly,
-                });
-              }}
-              className="bg-[#05080f] border border-white/10 rounded-xl px-3 py-1.5 text-neutral-300 focus:outline-none focus:border-white"
-            >
-              <option value="">All Difficulties</option>
-              <option value="beginner">Beginner Friendly</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
+            <div className="relative">
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => {
+                  setSelectedDifficulty(e.target.value);
+                  onFilterChange({
+                    query: searchTerm,
+                    language: selectedLanguage,
+                    difficulty: e.target.value,
+                    license_status: selectedLicense,
+                    sort_by: sortBy,
+                    gsoc_org: selectedGsocOrg,
+                    unassigned_only: unassignedOnly,
+                  });
+                }}
+                className="appearance-none bg-[#05080f] border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-neutral-300 focus:outline-none focus:border-white/30 cursor-pointer"
+              >
+                <option value="">All Difficulties</option>
+                <option value="beginner">Beginner Friendly</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-            <select
-              value={selectedLicense}
-              onChange={(e) => {
-                setSelectedLicense(e.target.value);
-                onFilterChange({
-                  query: searchTerm,
-                  language: selectedLanguage,
-                  difficulty: selectedDifficulty,
-                  license_status: e.target.value,
-                  sort_by: sortBy,
-                  gsoc_org: selectedGsocOrg,
-                  unassigned_only: unassignedOnly,
-                });
-              }}
-              className="bg-[#05080f] border border-white/10 rounded-xl px-3 py-1.5 text-neutral-300 focus:outline-none focus:border-white"
-            >
-              <option value="">All Licenses</option>
-              <option value="VERIFIED_OSI">Verified OSI</option>
-              <option value="UNKNOWN">Needs Review / Unknown</option>
-              <option value="NO_LICENSE">No License Detected</option>
-            </select>
+            <div className="relative">
+              <select
+                value={selectedLicense}
+                onChange={(e) => {
+                  setSelectedLicense(e.target.value);
+                  onFilterChange({
+                    query: searchTerm,
+                    language: selectedLanguage,
+                    difficulty: selectedDifficulty,
+                    license_status: e.target.value,
+                    sort_by: sortBy,
+                    gsoc_org: selectedGsocOrg,
+                    unassigned_only: unassignedOnly,
+                  });
+                }}
+                className="appearance-none bg-[#05080f] border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-neutral-300 focus:outline-none focus:border-white/30 cursor-pointer"
+              >
+                <option value="">All Licenses</option>
+                <option value="VERIFIED_OSI">Verified OSI</option>
+                <option value="UNKNOWN">Needs Review / Unknown</option>
+                <option value="NO_LICENSE">No License Detected</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
 
-          {/* Org Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedGsocOrg('');
-                onFilterChange({
-                  query: searchTerm,
-                  language: selectedLanguage,
-                  difficulty: selectedDifficulty,
-                  license_status: selectedLicense,
-                  sort_by: sortBy,
-                  gsoc_org: '',
-                  unassigned_only: unassignedOnly,
-                });
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
-                selectedGsocOrg === ''
-                  ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
-                  : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>All Orgs ({trackedOrgs.length > 0 ? trackedOrgs.length : 25})</span>
-            </button>
+          {/* Org Pills with horizontal scrollbar */}
+          <div className="overflow-x-auto pb-2 pt-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="flex items-center gap-2 min-w-max">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedGsocOrg('');
+                  onFilterChange({
+                    query: searchTerm,
+                    language: selectedLanguage,
+                    difficulty: selectedDifficulty,
+                    license_status: selectedLicense,
+                    sort_by: sortBy,
+                    gsoc_org: '',
+                    unassigned_only: unassignedOnly,
+                  });
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+                  selectedGsocOrg === ''
+                    ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                    : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>All Orgs (25)</span>
+              </button>
 
-            {trackedOrgs.map((org) => {
-              const isSelected = selectedGsocOrg === org.id;
-              return (
-                <button
-                  key={org.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedGsocOrg(org.id);
-                    onFilterChange({
-                      query: searchTerm,
-                      language: selectedLanguage,
-                      difficulty: selectedDifficulty,
-                      license_status: selectedLicense,
-                      sort_by: sortBy,
-                      gsoc_org: org.id,
-                      unassigned_only: unassignedOnly,
-                    });
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
-                    isSelected
-                      ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
-                      : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  <span>{org.icon}</span>
-                  <span>{org.label}</span>
-                  {org.issue_count > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-white/10 text-neutral-300">
-                      {org.issue_count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+              {trackedOrgs.map((org) => {
+                const isSelected = selectedGsocOrg === org.id;
+                return (
+                  <button
+                    key={org.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedGsocOrg(org.id);
+                      onFilterChange({
+                        query: searchTerm,
+                        language: selectedLanguage,
+                        difficulty: selectedDifficulty,
+                        license_status: selectedLicense,
+                        sort_by: sortBy,
+                        gsoc_org: org.id,
+                        unassigned_only: unassignedOnly,
+                      });
+                    }}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+                      isSelected
+                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                        : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <span>{org.icon}</span>
+                    <span>{org.label}</span>
+                    {org.issue_count > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-white/10 text-neutral-300 ml-0.5">
+                        {org.issue_count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
 
-            <button
-              type="button"
-              onClick={() => setIsAddOrgModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Org</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsAddOrgModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Org</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
 
-      {/* Row Above Issues List */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
-        <div className="flex items-center gap-2">
-          <select className="bg-[#0c101a] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-neutral-300 focus:outline-none">
-            <option value="all">All Open Issues</option>
-            <option value="assigned">Assigned Issues</option>
-          </select>
+      {/* Row Above Issues List: All Open Issues, Unassigned Only, Sort */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <select className="appearance-none bg-[#0c101a] border border-white/10 rounded-xl pl-3 pr-8 py-1.5 text-xs text-neutral-300 focus:outline-none cursor-pointer">
+              <option value="all">All Open Issues</option>
+              <option value="assigned">Assigned Issues</option>
+            </select>
+            <ChevronDown className="w-3 h-3 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
 
           <button
             type="button"
@@ -889,10 +959,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
               unassignedOnly
                 ? 'bg-amber-400/10 text-amber-300 border-amber-400/30 font-bold'
-                : 'bg-[#0c101a] border-white/10 text-neutral-400 hover:text-white'
+                : 'bg-[#0c101a] border-white/10 text-neutral-300 hover:text-white'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
             <span>Unassigned Only</span>
           </button>
         </div>
@@ -900,17 +970,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         <div className="flex items-center gap-2 text-xs text-neutral-400">
           <ArrowUpDown className="w-3.5 h-3.5 text-neutral-400" />
           <span>Sort:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="bg-[#0c101a] border border-white/10 rounded-xl px-2.5 py-1 text-xs text-neutral-200 focus:outline-none"
-          >
-            <option value="created">Newest</option>
-            <option value="rank">Suitability</option>
-            <option value="stars">Stars</option>
-          </select>
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="appearance-none bg-[#0c101a] border border-white/10 rounded-xl pl-2.5 pr-7 py-1 text-xs text-neutral-200 focus:outline-none cursor-pointer"
+            >
+              <option value="created">Newest</option>
+              <option value="rank">Suitability</option>
+              <option value="stars">Stars</option>
+            </select>
+            <ChevronDown className="w-3 h-3 text-neutral-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
           <span className="text-neutral-600">|</span>
           <button
+            type="button"
             onClick={() => handleSortChange('rank')}
             className={`hover:text-white transition ${sortBy === 'rank' ? 'text-white font-bold' : ''}`}
           >
@@ -918,6 +992,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           </button>
           <span className="text-neutral-600">|</span>
           <button
+            type="button"
             onClick={() => handleSortChange('stars')}
             className={`hover:text-white transition ${sortBy === 'stars' ? 'text-white font-bold' : ''}`}
           >
@@ -926,150 +1001,23 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         </div>
       </div>
 
-      {/* 2-Hour Autonomous Online Scanner Banner with Live Countdown Timer */}
-      <div className="bg-[#080808] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-white text-black shrink-0 shadow-md">
-              <Clock className="w-5 h-5 animate-pulse text-black" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white rounded-full animate-ping" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white rounded-full" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-white font-bold text-sm">2-Hour Autonomous Online Scanner</span>
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-neutral-900 text-white border border-white/20 font-mono font-bold flex items-center gap-1.5 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                  {cronStatus?.is_running ? 'SCANNING ONLINE NOW...' : `2H TIMER: ${formatCountdown(countdownSec).digital}`}
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-white/15 font-mono">
-                  Priority: Time-Based
-                </span>
-              </div>
-              <p className="text-neutral-400 text-[11px] pt-1">
-                Automatically scans NumFOCUS, Python Software Foundation, DeepChem, and Kornia every 2 hours, ingesting fresh unassigned issues and pruning closed tickets.
-              </p>
-            </div>
-          </div>
-
-          {/* Right section: Live 2-Hour Digital Countdown Display & Controls */}
-          <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-            {/* Live Countdown Box */}
-            <div className="flex items-center gap-2.5 bg-[#000000] border border-white/20 px-3.5 py-1.5 rounded-xl shadow-inner">
-              <Clock className="w-4 h-4 text-white animate-pulse" />
-              <div className="flex flex-col">
-                <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold leading-tight">Next 2h Scan In</span>
-                <div className="font-mono text-sm font-extrabold text-white tracking-wider flex items-center gap-1 leading-tight">
-                  <span className="bg-neutral-900 px-1.5 py-0.5 rounded border border-white/20">{formatCountdown(countdownSec).h}h</span>
-                  <span className="text-neutral-500">:</span>
-                  <span className="bg-neutral-900 px-1.5 py-0.5 rounded border border-white/20">{formatCountdown(countdownSec).m}m</span>
-                  <span className="text-neutral-500">:</span>
-                  <span className="bg-neutral-900 px-1.5 py-0.5 rounded border border-white/20">{formatCountdown(countdownSec).s}s</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleTriggerCronNow}
-              disabled={isTriggeringCron}
-              title="Trigger the 2-Hour scan cycle immediately"
-              className="h-10 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isTriggeringCron ? 'animate-spin' : ''}`} />
-              <span>{isTriggeringCron ? 'Running 2h Scan...' : 'Run 2h Scan Now'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleClearInbox}
-              disabled={isClearingInbox}
-              title="Purge all unassigned issues from the database inbox"
-              className="h-10 px-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-rose-400 border border-white/15 hover:border-rose-500/40 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition disabled:opacity-50"
-            >
-              <Trash2 className={`w-3.5 h-3.5 text-neutral-400 ${isClearingInbox ? 'animate-spin' : ''}`} />
-              <span>{isClearingInbox ? 'Purging Issues...' : 'Clear Inbox'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Cron Metadata Footer with Live Countdown */}
-        {cronStatus && (
-          <div className="pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400 font-mono">
-            <div className="flex flex-wrap items-center gap-4">
-              <span>
-                Last Scan: <strong className="text-white">{cronStatus.last_run_at ? new Date(cronStatus.last_run_at.endsWith('Z') || cronStatus.last_run_at.includes('+') ? cronStatus.last_run_at : `${cronStatus.last_run_at}Z`).toLocaleTimeString() : 'Just now'}</strong>
-              </span>
-              <span>
-                Next Scan: <strong className="text-white">in {formatCountdown(countdownSec).human}</strong>
-                <span className="text-neutral-500 text-[10px] ml-1">
-                  ({cronStatus.next_run_at ? new Date(cronStatus.next_run_at.endsWith('Z') || cronStatus.next_run_at.includes('+') ? cronStatus.next_run_at : `${cronStatus.next_run_at}Z`).toLocaleTimeString() : 'In 2 hours'})
-                </span>
-              </span>
-              <span>
-                Ingested: <strong className="text-white">{cronStatus.last_issues_synced || visibleIssues.length}</strong>
-              </span>
-              <span>
-                Status: <strong className="text-white">{cronStatus.is_running ? 'Scanning online...' : 'Every 2 Hours Active'}</strong>
-              </span>
-            </div>
-            <div className="text-neutral-500 text-[10px]">
-              Orgs: NumFOCUS • Python (PSF) • DeepChem • Kornia
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Discovery Counter Notice & Live Upstream Verification */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-400 px-1 py-1 bg-gray-900/40 rounded-xl border border-gray-800/60 p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span>
-            Showing <span className="font-semibold text-emerald-400">{visibleIssues.length}</span> of <span className="font-semibold text-white">{totalIssues.toLocaleString()}</span> issues across <span className="font-semibold text-amber-300">4 Target Orgs</span>
-          </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-semibold">
-            <span>🎯</span>
-            NumFOCUS • PSF • DeepChem • Kornia
-          </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            Unassigned & Open Verified
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {gsocSyncFeedback && (
-            <span className="text-[11px] text-amber-300 font-medium px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
-              {gsocSyncFeedback}
-            </span>
-          )}
-          {reconcileFeedback && (
-            <span className="text-[11px] text-white font-mono bg-neutral-900 px-2.5 py-0.5 rounded-full border border-white/20">
-              {reconcileFeedback}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={handleSyncGsoc}
-            disabled={isSyncingGsoc}
-            title="Scan NumFOCUS, PSF, DeepChem, and Kornia for fresh open unassigned issues"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 text-amber-300 border border-amber-500/30 hover:border-amber-500/60 text-xs font-semibold transition disabled:opacity-50 shadow-sm"
-          >
-            <Sparkles className={`w-3.5 h-3.5 text-amber-400 ${isSyncingGsoc ? 'animate-spin' : ''}`} />
-            <span>{isSyncingGsoc ? 'Scanning Orgs...' : 'Scan Target Orgs'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCleanUpstream}
-            disabled={isReconciling}
-            title="Scan live GitHub API and remove any issues that have closed or been assigned upstream"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 hover:border-emerald-500/50 text-xs font-medium transition disabled:opacity-50 shadow-sm"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isReconciling ? 'animate-spin' : ''}`} />
-            <span>{isReconciling ? 'Verifying Upstream...' : 'Clean Stale / Verify Upstream'}</span>
+      {/* Notification Toast if Cron / Reconcile Feedback active */}
+      {gsocSyncFeedback && (
+        <div className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between">
+          <span>{gsocSyncFeedback}</span>
+          <button onClick={() => setGsocSyncFeedback(null)} className="text-neutral-400 hover:text-white">
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
-      </div>
+      )}
+      {reconcileFeedback && (
+        <div className="bg-neutral-900 border border-white/15 text-neutral-200 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between">
+          <span>{reconcileFeedback}</span>
+          <button onClick={() => setReconcileFeedback(null)} className="text-neutral-400 hover:text-white">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Loading state */}
       {loading && (
