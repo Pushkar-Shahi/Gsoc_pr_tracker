@@ -187,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
             <button
               onClick={onOpenUpgrade}
-              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-slate-800 dark:border-white/10 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm"
+              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-blue-600 dark:border-white/10 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
             >
               <span>Upgrade</span>
               <ArrowRight className="w-3 h-3 text-white" />

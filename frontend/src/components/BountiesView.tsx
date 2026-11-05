@@ -135,10 +135,10 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
       {/* 4 Financial Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. Total Available */}
-        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 font-bold">Total Available</span>
-            <div className="text-2xl font-black text-white mt-0.5 font-mono">
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5 font-mono">
               {stats ? formatCurrency(stats.total_available_usd) : '$4,050'}
             </div>
             <span className="text-[11px] text-neutral-500">Unclaimed cash rewards</span>
@@ -149,10 +149,10 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
         </div>
 
         {/* 2. Average Payout */}
-        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 font-bold">Average Payout</span>
-            <div className="text-2xl font-black text-white mt-0.5 font-mono">
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5 font-mono">
               {stats ? formatCurrency(stats.average_bounty_usd) : '$694'}
             </div>
             <span className="text-[11px] text-neutral-500">Per verified ticket</span>
@@ -163,10 +163,10 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
         </div>
 
         {/* 3. My Claimed Payouts */}
-        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 font-bold">My Claimed Payouts</span>
-            <div className="text-2xl font-black text-white mt-0.5 font-mono">
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5 font-mono">
               {stats ? formatCurrency(stats.potential_earnings_usd) : '$1,500'}
             </div>
             <span className="text-[11px] text-neutral-500">{stats?.claimed_bounties_count ?? 1} tasks in-flight</span>
@@ -177,10 +177,10 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
         </div>
 
         {/* 4. Total Bounties */}
-        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 font-bold">Total Bounties</span>
-            <div className="text-2xl font-black text-white mt-0.5 font-mono">
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5 font-mono">
               {stats?.total_bounties_count ?? 8}
             </div>
             <span className="text-[11px] text-neutral-500">Leading: POLAR</span>
@@ -192,7 +192,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-3 sm:p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between shadow-xl">
+      <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between shadow-sm dark:shadow-xl">
         <div className="flex-1 relative">
           <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -200,7 +200,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search bounties by keyword, repository, or language..."
-            className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition"
+            className="w-full bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition"
           />
         </div>
 
@@ -349,7 +349,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
                   <button
                     onClick={() => handleClaim(bounty)}
                     disabled={isClaiming}
-                    className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/20 transition active:scale-95 disabled:opacity-50"
                   >
                     <span>{isClaiming ? 'Preparing Worktree...' : 'Claim & Prepare Worktree'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />

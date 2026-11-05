@@ -203,13 +203,13 @@ export function BillingView() {
 
       {/* Pricing Toggle (Monthly vs Annual) */}
       <div className="flex flex-col items-center justify-center gap-2 pt-2">
-        <div className="inline-flex items-center bg-[#0c101a] p-1 rounded-xl border border-white/10 shadow-md">
+        <div className="inline-flex items-center bg-slate-100 dark:bg-[#0c101a] p-1 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
               billingCycle === 'monthly'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-neutral-400 hover:text-white'
+                ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80 dark:bg-white dark:text-black dark:border-transparent font-semibold'
+                : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
             }`}
           >
             Monthly Billing
@@ -218,8 +218,8 @@ export function BillingView() {
             onClick={() => setBillingCycle('annual')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
               billingCycle === 'annual'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-neutral-400 hover:text-white'
+                ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80 dark:bg-white dark:text-black dark:border-transparent font-semibold'
+                : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
             }`}
           >
             <span>Annual Billing</span>
@@ -246,7 +246,7 @@ export function BillingView() {
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-[#0c101a] border transition-all duration-200 shadow-xl ${
+              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0c101a] border transition-all duration-200 shadow-sm dark:shadow-xl ${
                 isPro 
                   ? 'border-indigo-500/50 shadow-indigo-500/10 ring-1 ring-indigo-500/30' 
                   : 'border-white/10 hover:border-white/20'
@@ -260,7 +260,7 @@ export function BillingView() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">{plan.name}</h3>
                   {isCurrent && (
                     <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                       Active
@@ -273,7 +273,7 @@ export function BillingView() {
                 </p>
 
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold text-white">{plan.currency_symbol || '₹'}{price}</span>
+                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{plan.currency_symbol || '₹'}{price}</span>
                   <span className="text-xs text-neutral-400 font-medium">{billingSuffix}</span>
                 </div>
 
@@ -317,8 +317,8 @@ export function BillingView() {
                     disabled={actionLoading !== null}
                     className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition active:scale-95 shadow-md ${
                       isPro
-                        ? 'bg-white text-black hover:bg-neutral-200'
-                        : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
+                        ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 dark:bg-white dark:text-black dark:hover:bg-neutral-200'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white dark:border-white/20'
                     }`}
                   >
                     {actionLoading === `checkout_${plan.id}` ? (

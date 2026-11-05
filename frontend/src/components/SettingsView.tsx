@@ -189,10 +189,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Settings & Integrations
           </h1>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
             Manage your GitHub credentials, AI models, automated pull request policies, and local workspace connections.
           </p>
         </div>
@@ -201,7 +201,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-lg active:scale-95 transition flex items-center gap-2 shrink-0 self-start sm:self-auto disabled:opacity-50"
+          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-bold text-xs shadow-md shadow-blue-600/20 active:scale-95 transition flex items-center gap-2 shrink-0 self-start sm:self-auto disabled:opacity-50"
         >
           {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           <span>{saving ? 'Saving...' : 'Save Settings'}</span>
@@ -222,7 +222,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {/* Navigation Tabs Pill Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-white/10 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 dark:border-white/10 no-scrollbar">
         {navSections.map((sec) => {
           const Icon = sec.icon;
           const isActive = activeSection === sec.id;
@@ -233,7 +233,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 ${
                 isActive
                   ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
-                  : 'bg-[#0c101a] border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5'
+                  : 'bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 dark:bg-[#0c101a] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -245,7 +245,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Section 1: GitHub & Tokens */}
       {activeSection === 'github' && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
             <div className="flex items-center gap-2.5">
               <Key className="w-4 h-4 text-cyan-400" />
@@ -327,7 +327,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Section 2: AI Intelligence & Models */}
       {activeSection === 'ai' && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <Sparkles className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-bold text-white">AI Model Provider Configuration</h3>
@@ -394,7 +394,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Section 3: Automation & PRs */}
       {activeSection === 'automation' && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <ShieldAlert className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-white">Automated PR & Runner Policies</h3>
@@ -428,7 +428,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Section 4: Toolbox Skills Profile */}
       {activeSection === 'skills' && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <Terminal className="w-4 h-4 text-cyan-400" />
             <h3 className="text-sm font-bold text-white">Configurable Technology Stack Skills</h3>
@@ -479,7 +479,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Section 5: Antigravity IDE Integration */}
       {activeSection === 'workspace' && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <Cpu className="w-4 h-4 text-purple-400" />
             <h3 className="text-sm font-bold text-white">Google Antigravity Desktop & CLI Integration</h3>
@@ -519,7 +519,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Section 6: Account & Security */}
       {activeSection === 'account' && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <User className="w-4 h-4 text-cyan-400" />
             <h3 className="text-sm font-bold text-white">Account Profile & Session Management</h3>

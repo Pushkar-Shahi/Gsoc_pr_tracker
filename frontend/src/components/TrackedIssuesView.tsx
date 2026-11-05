@@ -121,7 +121,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Quick Add Bar */}
-      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl relative overflow-hidden">
         <div className="max-w-3xl space-y-3 relative z-10">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
@@ -145,7 +145,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
             <button
               type="submit"
               disabled={isAdding || !inputUrl.trim()}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-bold text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 dark:bg-white dark:hover:bg-neutral-200 dark:text-black"
             >
               <Plus className={`w-4 h-4 ${isAdding ? 'animate-spin' : ''}`} />
               <span>{isAdding ? 'Fetching...' : '+ Track Item'}</span>
@@ -201,7 +201,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
             onClick={() => setFilterType('all')}
             className={`px-3 py-1.5 rounded-xl transition active:scale-95 ${
               filterType === 'all' || filterType === 'prs'
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm'
+                ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-600/20 dark:bg-white dark:text-black'
                 : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 dark:text-neutral-400 dark:hover:text-white dark:bg-white/5 dark:hover:bg-white/10'
             }`}
           >
@@ -212,7 +212,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
               onClick={() => setFilterType('issues')}
               className={`px-3 py-1.5 rounded-xl transition active:scale-95 ${
                 filterType === 'issues'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm'
+                  ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-600/20 dark:bg-white dark:text-black'
                   : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 dark:text-neutral-400 dark:hover:text-white dark:bg-white/5 dark:hover:bg-white/10'
               }`}
             >

@@ -538,7 +538,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             onClick={handleTriggerCronNow}
             disabled={isTriggeringCron}
             title="Run 2-Hour Autonomous Scan Now"
-            className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-bold text-xs flex items-center gap-2 shadow-md active:scale-95 transition disabled:opacity-50 shrink-0"
+            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 dark:bg-white dark:hover:bg-neutral-200 dark:text-black dark:border-transparent font-bold text-xs flex items-center gap-2 shadow-sm active:scale-95 transition disabled:opacity-50 shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isTriggeringCron ? 'animate-spin' : ''}`} />
             <span>{isTriggeringCron ? 'Scanning...' : 'Run 2h Scan Now'}</span>
@@ -1162,7 +1162,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
                   <button
                     onClick={() => onSelectIssue(issue.id)}
-                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition flex items-center gap-1.5"
                   >
                     <span>{isTaskActive ? 'Resume Task' : 'Select Issue'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1198,16 +1198,16 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
       {/* Load More & Infinite Scroll Section */}
       {!loading && visibleIssues.length > 0 && (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-white/10">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-white">Issues Explorer Progress</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white border border-white/10 font-mono">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Issues Explorer Progress</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/5 dark:text-white dark:border-white/10 font-mono">
                   {visibleIssues.length} / {totalIssues.toLocaleString()} Loaded ({progressPercent}%)
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
                 {hasMore 
                   ? `${(totalIssues - visibleIssues.length).toLocaleString()} more public issues match your criteria` 
                   : 'All available matching issues have been loaded'}
@@ -1216,8 +1216,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
             <div className="flex items-center gap-3 text-xs">
               {/* Batch Size Selector */}
-              <div className="flex items-center gap-1.5 bg-[#05080f] border border-white/10 rounded-xl px-2.5 py-1">
-                <span className="text-neutral-400 text-[11px]">Batch:</span>
+              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1">
+                <span className="text-slate-500 dark:text-neutral-400 text-[11px]">Batch:</span>
                 {[25, 50, 100].map(size => (
                   <button
                     key={size}
@@ -1225,8 +1225,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     onClick={() => onPageSizeChange && onPageSizeChange(size)}
                     className={`px-2 py-0.5 rounded-lg text-xs font-medium transition ${
                       pageSize === size
-                        ? 'bg-white text-black font-bold shadow-sm'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-600/20 dark:bg-white dark:text-black'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
                     }`}
                   >
                     {size}
@@ -1240,21 +1240,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 onClick={() => setAutoLoad(!autoLoad)}
                 className={`px-3 py-1 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 ${
                   autoLoad
-                    ? 'bg-blue-600/20 text-blue-300 border-blue-500/30'
-                    : 'bg-[#05080f] text-neutral-400 border-white/10 hover:text-white'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-600/20 dark:text-blue-300 dark:border-blue-500/30'
+                    : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-900 dark:bg-[#05080f] dark:text-neutral-400 dark:border-white/10 dark:hover:text-white'
                 }`}
                 title="Automatically fetch next batch when scrolling near the bottom"
               >
-                <span className={`w-2 h-2 rounded-full ${autoLoad ? 'bg-blue-400 animate-pulse' : 'bg-neutral-600'}`} />
+                <span className={`w-2 h-2 rounded-full ${autoLoad ? 'bg-blue-500 animate-pulse' : 'bg-slate-400 dark:bg-neutral-600'}`} />
                 <span>Auto-load: {autoLoad ? 'ON' : 'OFF'}</span>
               </button>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-neutral-900 rounded-full h-2 overflow-hidden border border-white/15">
+          <div className="w-full bg-slate-100 dark:bg-neutral-900 rounded-full h-2 overflow-hidden border border-slate-200 dark:border-white/15">
             <div 
-              className="bg-white h-full transition-all duration-300 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.7)]"
+              className="bg-blue-600 dark:bg-white h-full transition-all duration-300 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.4)] dark:shadow-[0_0_8px_rgba(255,255,255,0.7)]"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -1266,26 +1266,26 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 type="button"
                 onClick={onLoadMore}
                 disabled={loadingMore}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white hover:bg-neutral-200 text-black font-extrabold text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md shadow-blue-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 dark:bg-white dark:hover:bg-neutral-200 dark:text-black"
               >
                 {loadingMore ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-black" />
-                    <span className="text-black">Loading next batch of issues...</span>
+                    <RefreshCw className="w-4 h-4 animate-spin text-white dark:text-black" />
+                    <span>Loading next batch of issues...</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 text-black" />
-                    <span className="text-black">Load More Issues (+{pageSize || 25})</span>
-                    <span className="text-[11px] text-neutral-700 font-semibold">
+                    <Plus className="w-4 h-4 text-white dark:text-black" />
+                    <span>Load More Issues (+{pageSize || 25})</span>
+                    <span className="text-[11px] opacity-80 font-semibold">
                       ({(totalIssues - visibleIssues.length).toLocaleString()} remaining)
                     </span>
                   </>
                 )}
               </button>
             ) : (
-              <div className="py-2 text-center text-xs text-neutral-300 flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className="py-2 text-center text-xs text-slate-600 dark:text-neutral-300 flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 <span>All {totalIssues.toLocaleString()} {unassignedOnly ? 'open unassigned' : 'open'} issues loaded cleanly.</span>
               </div>
             )}

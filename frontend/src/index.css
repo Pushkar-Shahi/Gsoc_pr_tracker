@@ -471,25 +471,12 @@ html:not(.dark) [class*="bg-[#05080f]"].text-neutral-300 {
   color: #0f172a !important;
 }
 
-/* 9. Primary Action Buttons (Dark AMOLED button -> Slate-900 in Light Mode) */
-html:not(.dark) button.bg-white:not([class*="dark:"]),
-html:not(.dark) a.bg-white:not([class*="dark:"]) {
-  background-color: #0f172a !important;
+/* 9. Primary Action Buttons in Light Mode -> Handled cleanly via Tailwind classes without blunt overrides */
+html:not(.dark) button.bg-white.text-black:not([class*="dark:"]),
+html:not(.dark) a.bg-white.text-black:not([class*="dark:"]) {
+  background-color: #2563eb !important;
   color: #ffffff !important;
-  border: 1px solid #1e293b !important;
-  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.2) !important;
-}
-
-html:not(.dark) button.bg-white:not([class*="dark:"]):hover,
-html:not(.dark) a.bg-white:not([class*="dark:"]):hover {
-  background-color: #1e293b !important;
-  color: #ffffff !important;
-}
-
-html:not(.dark) button.bg-white:not([class*="dark:"]) *,
-html:not(.dark) a.bg-white:not([class*="dark:"]) * {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
+  border-color: #1d4ed8 !important;
 }
 
 /* 10. Accessible Darkened Accents for Light Backgrounds */
