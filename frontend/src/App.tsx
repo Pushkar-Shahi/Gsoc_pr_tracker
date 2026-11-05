@@ -431,8 +431,6 @@ export function App() {
             isInstallable={isInstallable}
             onInstallPWA={handleInstallPWA}
             planTier={planTier}
-            isSidebarCollapsed={isSidebarCollapsed}
-            onToggleSidebar={handleToggleSidebar}
           />
 
           {/* Main Content Container */}
