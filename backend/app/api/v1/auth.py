@@ -426,17 +426,30 @@ class DevGoogleLoginRequest(BaseModel):
 
 
 @router.get("/google/login")
-async def google_login(format: Optional[str] = None):
+async def google_login(request: Request, format: Optional[str] = None):
     """Initiates Google OAuth 2.0 authorization code flow."""
     now = time.time()
     for s in [k for k, exp in _oauth_states.items() if exp < now]:
         _oauth_states.pop(s, None)
+        _oauth_meta.pop(s, None)
 
     state = secrets.token_urlsafe(32)
     _oauth_states[state] = now + 600
 
+    base_url = _extract_base_url(request)
+    if "trycloudflare.com" in base_url or ("localhost" not in base_url and "127.0.0.1" not in base_url):
+        redirect_uri = f"{base_url}/api/v1/auth/google/callback"
+        frontend_callback = f"{base_url}/auth/callback"
+    else:
+        redirect_uri = settings.GOOGLE_REDIRECT_URI
+        frontend_callback = settings.FRONTEND_AUTH_CALLBACK_URL
+
+    _oauth_meta[state] = {
+        "redirect_uri": redirect_uri,
+        "frontend_callback": frontend_callback
+    }
+
     client_id = settings.GOOGLE_CLIENT_ID or "mock_google_client_id.apps.googleusercontent.com"
-    redirect_uri = settings.GOOGLE_REDIRECT_URI
     auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&"
@@ -450,6 +463,7 @@ async def google_login(format: Optional[str] = None):
 
 @router.get("/google/callback")
 async def google_callback(
+    request: Request,
     code: Optional[str] = None,
     state: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
@@ -461,6 +475,9 @@ async def google_callback(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state parameter")
 
     _oauth_states.pop(state, None)
+    meta = _oauth_meta.pop(state, {})
+    redirect_uri = meta.get("redirect_uri") or settings.GOOGLE_REDIRECT_URI
+    frontend_callback = meta.get("frontend_callback") or settings.FRONTEND_AUTH_CALLBACK_URL
 
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(
@@ -470,13 +487,14 @@ async def google_callback(
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
                 "code": code,
                 "grant_type": "authorization_code",
-                "redirect_uri": settings.GOOGLE_REDIRECT_URI
+                "redirect_uri": redirect_uri
             }
         )
         token_data = token_resp.json()
         access_token = token_data.get("access_token")
         if not access_token:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to retrieve access token from Google")
+            error_msg = token_data.get("error_description") or token_data.get("error") or "Failed to retrieve access token from Google"
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
         user_resp = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -498,7 +516,7 @@ async def google_callback(
         avatar_url=avatar_url
     )
 
-    redirect_target = f"{settings.FRONTEND_AUTH_CALLBACK_URL}?token={session_token}"
+    redirect_target = f"{frontend_callback}?token={session_token}"
     return RedirectResponse(url=redirect_target, status_code=302)
 
 
