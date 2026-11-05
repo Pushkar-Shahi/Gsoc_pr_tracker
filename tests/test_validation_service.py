@@ -11,6 +11,10 @@ async def test_secret_scanner_detects_rsa_and_tokens(tmp_path):
     # Initialize a temporary git repository
     proc = await asyncio.create_subprocess_exec("git", "init", cwd=str(tmp_path))
     await proc.communicate()
+    proc = await asyncio.create_subprocess_exec("git", "config", "user.name", "CI Bot", cwd=str(tmp_path))
+    await proc.communicate()
+    proc = await asyncio.create_subprocess_exec("git", "config", "user.email", "ci@example.com", cwd=str(tmp_path))
+    await proc.communicate()
 
     # Commit initial file
     initial_file = tmp_path / "main.py"
