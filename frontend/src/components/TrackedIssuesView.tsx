@@ -372,7 +372,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
                           href={task.pr_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2.5 py-1 rounded-lg bg-purple-950/40 border border-purple-500/30 hover:bg-purple-900/50 text-purple-300 flex items-center gap-1.5 transition font-semibold"
+                          className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 dark:bg-purple-950/40 dark:border-purple-500/30 dark:hover:bg-purple-900/50 dark:text-purple-300 flex items-center gap-1.5 transition font-semibold"
                         >
                           <GitPullRequest className="w-3 h-3 text-purple-400" />
                           <span>Pull Request</span>
@@ -385,7 +385,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
                           href={task.assignment_comment_id.startsWith('http') ? task.assignment_comment_id : `${task.issue?.html_url}#issuecomment-${task.assignment_comment_id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/50 text-cyan-300 flex items-center gap-1.5 transition font-medium"
+                          className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-cyan-700 dark:bg-cyan-950/40 dark:border-cyan-500/30 dark:hover:bg-cyan-900/50 dark:text-cyan-300 flex items-center gap-1.5 transition font-medium"
                         >
                           <MessageSquare className="w-3 h-3 text-cyan-400" />
                           <span>Assignment Comment</span>

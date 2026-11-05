@@ -96,18 +96,18 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-xl rounded-2xl bg-[#0c101a] border border-white/15 p-6 shadow-2xl space-y-5">
+      <div className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-6 shadow-2xl space-y-5 text-slate-900 dark:text-white">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-purple-950/50 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-200 text-purple-600 dark:bg-purple-950/50 dark:border-purple-500/30 dark:text-purple-400 flex items-center justify-center">
               <Shield className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 Enterprise SAML 2.0 & OIDC SSO
               </h3>
-              <p className="text-[11px] text-neutral-400">
+              <p className="text-[11px] text-slate-500 dark:text-neutral-400">
                 Centralize authentication and enforce identity governance via corporate IdP.
               </p>
             </div>
@@ -144,11 +144,11 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
           <form onSubmit={handleSave} className="space-y-4">
             {/* Provider Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-neutral-300">Identity Provider (IdP)</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300">Identity Provider (IdP)</label>
               <select
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white text-xs focus:outline-none focus:border-white/30 transition cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-white/30 transition cursor-pointer"
               >
                 <option value="okta" className="bg-[#0c101a] text-white">Okta Workforce Identity</option>
                 <option value="azure_ad" className="bg-[#0c101a] text-white">Microsoft Entra ID (Azure AD)</option>
@@ -160,7 +160,7 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
 
             {/* Metadata URL */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-neutral-300">
+              <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300">
                 IdP Metadata URL <span className="text-rose-400">*</span>
               </label>
               <input
@@ -169,7 +169,7 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
                 onChange={(e) => setMetadataUrl(e.target.value)}
                 placeholder="https://company.okta.com/app/exk123456/sso/saml/metadata"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white/30 transition"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white/30 transition"
               />
               <p className="text-[11px] text-neutral-500 font-mono">
                 Federation metadata XML or OpenID configuration URL provided by your identity team.
@@ -178,24 +178,24 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
 
             {/* Entity ID */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-neutral-300">SP Entity ID / Audience URI (Optional)</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300">SP Entity ID / Audience URI (Optional)</label>
               <input
                 type="text"
                 value={entityId}
                 onChange={(e) => setEntityId(e.target.value)}
                 placeholder="https://issuetopr.dev/sso/saml/entity"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white/30 transition"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white/30 transition"
               />
             </div>
 
             {/* Enforce SSO Switch */}
             <div className="p-3 rounded-xl bg-[#05080f] border border-white/10 flex items-center justify-between">
               <div className="space-y-0.5">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-amber-400" />
                   Enforce SSO for All Organization Members
                 </span>
-                <p className="text-[11px] text-neutral-400">
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
                   Disables local password logins. Users must authenticate through corporate IdP.
                 </p>
               </div>
@@ -234,7 +234,7 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
                 type="button"
                 onClick={handleTestConnection}
                 disabled={testing || !metadataUrl.trim()}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-white/15 flex items-center gap-1.5 active:scale-95 transition disabled:opacity-50"
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:text-neutral-200 dark:border-white/15 flex items-center gap-1.5 active:scale-95 transition disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${testing ? 'animate-spin' : ''}`} />
                 <span>{testing ? 'Probing IdP...' : 'Test IdP Connection'}</span>
@@ -251,7 +251,7 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-black hover:bg-neutral-200 active:scale-95 transition disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 active:scale-95 transition disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
                 >
                   {saving ? 'Saving...' : 'Save Configuration'}
                 </button>

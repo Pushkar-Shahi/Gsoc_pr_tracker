@@ -257,7 +257,7 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
                   href={task.assignment_comment_id.startsWith('http') ? task.assignment_comment_id : `${task.issue?.html_url}#issuecomment-${task.assignment_comment_id}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="min-h-[32px] px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/50 text-cyan-300 flex items-center gap-1.5 transition text-[11px]"
+                  className="min-h-[32px] px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-cyan-700 dark:bg-cyan-950/40 dark:border-cyan-500/30 dark:hover:bg-cyan-900/50 dark:text-cyan-300 flex items-center gap-1.5 transition text-[11px]"
                   title="View assignment comment on GitHub"
                 >
                   <MessageSquare className="w-2.5 h-2.5 text-cyan-400" />
@@ -302,9 +302,9 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
 
         {/* Changes Requested Banner */}
         {isChangesRequested && (
-          <div className="bg-rose-950/20 border border-rose-500/30 rounded-xl p-3 space-y-2 text-xs">
+          <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-500/30 rounded-xl p-3 space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-rose-300 font-semibold">
+              <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 font-semibold">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                 <span>Maintainer requested changes</span>
               </div>
