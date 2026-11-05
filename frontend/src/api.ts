@@ -392,7 +392,7 @@ async function authedFetch(url: string, init?: RequestInit): Promise<Response> {
     throw new Error("STATIC_HOSTING_HTML_RESPONSE");
   }
 
-  if (res.status === 401) {
+  if (res.status === 401 && (url.includes('/auth/me') || url.includes('/auth/verify'))) {
     clearAuthToken();
     if (onUnauthorizedCallback) {
       onUnauthorizedCallback();
