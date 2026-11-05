@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, User as UserIcon } from 'lucide-react';
+import { Sun, Moon, User as UserIcon, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { DiscoveryStatus, PlatformSettings } from '../types';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
@@ -15,19 +15,37 @@ interface HeaderProps {
   isInstallable?: boolean;
   onInstallPWA?: () => void;
   planTier?: string;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onRefreshDiscovery,
   isSyncing,
-  onLock
+  onLock,
+  isSidebarCollapsed = false,
+  onToggleSidebar
 }) => {
   const { isDark, toggleTheme } = useTheme();
 
   return (
     <header className="h-16 px-6 sm:px-8 flex items-center justify-between border-b border-white/5 bg-[#080c14]/80 backdrop-blur-md sticky top-0 z-20">
-      {/* Left: Organization / Account Switcher */}
-      <div className="flex items-center gap-3">
+      {/* Left: Organization / Account Switcher & Sidebar Toggle */}
+      <div className="flex items-center gap-2.5">
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="hidden md:flex w-9 h-9 rounded-xl items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 border border-white/10 transition active:scale-95"
+            title={isSidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeft className="w-4 h-4 text-cyan-400" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4 text-neutral-400" />
+            )}
+          </button>
+        )}
         <OrganizationSwitcher />
       </div>
 

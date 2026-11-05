@@ -50,6 +50,37 @@ export function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Collapsible Sidebar State (persisted across sessions)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('issue_to_pr_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('issue_to_pr_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // Quick keyboard shortcut: Ctrl+B or Cmd+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        handleToggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleToggleSidebar]);
+
   // Notification read-tracking state persisted in localStorage
   const [readLogIds, setReadLogIds] = useState<Set<string>>(() => {
     try {
@@ -372,8 +403,8 @@ export function App() {
           </div>
         )}
 
-        {/* Persistent Left Sidebar (Desktop) - Locked Fixed Position */}
-        <div className="hidden md:block w-64 shrink-0">
+        {/* Persistent Left Sidebar (Desktop) - Collapsible & Locked */}
+        <div className={`hidden md:block transition-all duration-300 ease-in-out shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
           <Sidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -381,6 +412,8 @@ export function App() {
             totalPRs={totalPRs}
             trackedTasksCount={tasks.length}
             onOpenUpgrade={() => setUpgradeModalOpen(true)}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={handleToggleSidebar}
           />
         </div>
 
@@ -398,6 +431,8 @@ export function App() {
             isInstallable={isInstallable}
             onInstallPWA={handleInstallPWA}
             planTier={planTier}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
           />
 
           {/* Main Content Container */}

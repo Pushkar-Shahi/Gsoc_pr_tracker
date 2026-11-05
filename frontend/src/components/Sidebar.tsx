@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Search, Trophy, Bookmark, GitPullRequest, 
   Clock, Play, CreditCard, Settings as SettingsIcon,
-  Zap, ArrowRight, BookOpen
+  Zap, ArrowRight, BookOpen, PanelLeftClose, PanelLeft
 } from 'lucide-react';
 import { BrandIcon } from './BrandIcon';
 
@@ -13,6 +13,8 @@ interface SidebarProps {
   totalPRs?: number;
   trackedTasksCount?: number;
   onOpenUpgrade?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -21,7 +23,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   totalIssues = 744,
   totalPRs = 0,
   trackedTasksCount = 0,
-  onOpenUpgrade
+  onOpenUpgrade,
+  isCollapsed = false,
+  onToggleCollapse
 }) => {
   const navItems = [
     { id: 'issues', label: 'Find Issues', icon: Search, badge: totalIssues > 0 ? String(totalIssues) : '744', badgeType: 'neutral' },
@@ -35,20 +39,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-[#080c14] border-r border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 p-4 shrink-0 select-none z-30">
-      {/* Brand Header */}
-      <div className="flex items-center gap-3 px-2 py-3 mb-4 cursor-pointer" onClick={() => setActiveTab('issues')}>
-        <BrandIcon size={32} showBadge={false} className="text-cyan-400 shrink-0" />
-        <span className="font-extrabold text-lg text-white tracking-tight">
-          Issue-to-PR
-        </span>
-      </div>
+    <aside
+      className={`bg-[#080c14] border-r border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 select-none z-30 transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-20 p-3 items-center' : 'w-64 p-4'
+      }`}
+    >
+      {/* Brand Header & Toggle */}
+      {isCollapsed ? (
+        <div className="flex flex-col items-center gap-2.5 py-2 mb-4 w-full">
+          <div
+            className="cursor-pointer p-1.5 rounded-xl hover:bg-white/5 transition"
+            onClick={() => setActiveTab('issues')}
+            title="Issue-to-PR"
+          >
+            <BrandIcon size={28} showBadge={false} className="text-cyan-400" />
+          </div>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition border border-transparent hover:border-white/10"
+            title="Expand sidebar"
+          >
+            <PanelLeft className="w-4 h-4 text-neutral-300" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between px-2 py-2 mb-4">
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => setActiveTab('issues')}
+          >
+            <BrandIcon size={30} showBadge={false} className="text-cyan-400 shrink-0" />
+            <span className="font-extrabold text-base text-white tracking-tight">
+              Issue-to-PR
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition border border-transparent hover:border-white/10"
+            title="Collapse sidebar for more workspace"
+          >
+            <PanelLeftClose className="w-4 h-4 text-neutral-400 hover:text-white" />
+          </button>
+        </div>
+      )}
 
       {/* Main Navigation Links */}
-      <nav className="space-y-1.5 flex-1 overflow-y-auto no-scrollbar">
+      <nav className={`space-y-1.5 flex-1 overflow-y-auto no-scrollbar w-full ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+
+          if (isCollapsed) {
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                title={`${item.label}${item.badge ? ` (${item.badge})` : ''}`}
+                className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 group ${
+                  isActive
+                    ? 'bg-blue-600/15 text-blue-400 border border-blue-500/40 shadow-sm shadow-blue-500/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Icon className={`w-5 h-5 transition-colors ${
+                  isActive ? 'text-blue-400' : 'text-neutral-400 group-hover:text-white'
+                }`} />
+                {item.badge && (
+                  <span
+                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-[#080c14] ${
+                      item.badgeType === 'gold' ? 'bg-amber-400' : 'bg-blue-400'
+                    }`}
+                  />
+                )}
+              </button>
+            );
+          }
 
           return (
             <button
@@ -84,8 +151,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Context Card */}
-      <div className="mt-auto pt-4">
-        {activeTab === 'bounties' ? (
+      <div className={`mt-auto pt-3 w-full ${isCollapsed ? 'flex justify-center' : ''}`}>
+        {isCollapsed ? (
+          <button
+            onClick={activeTab === 'bounties' ? () => setActiveTab('bounties') : onOpenUpgrade}
+            title={activeTab === 'bounties' ? 'Open Source Bounty Hunter Hub' : 'Supercharge your workflow - Upgrade'}
+            className="w-11 h-11 rounded-xl bg-[#0d121f] hover:bg-[#151c30] border border-white/10 hover:border-amber-400/40 text-amber-400 flex items-center justify-center transition shadow-lg active:scale-95"
+          >
+            <Zap className="w-5 h-5 fill-amber-400 text-amber-400" />
+          </button>
+        ) : activeTab === 'bounties' ? (
           <div className="p-3.5 rounded-2xl bg-[#0d121f] border border-white/10 text-xs shadow-lg space-y-2">
             <div className="font-bold text-white text-xs">
               Open Source Bounty Hunter Hub
