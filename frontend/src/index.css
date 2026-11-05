@@ -452,40 +452,9 @@ html:not(.dark) .text-gray-500 {
   color: #64748b !important;
 }
 
-/* 8. Text White Handling */
-/* Preserve white text on dark solid background elements */
-html:not(.dark) [class*="bg-blue-600"],
-html:not(.dark) [class*="bg-blue-700"],
-html:not(.dark) [class*="bg-emerald-600"],
-html:not(.dark) [class*="bg-indigo-600"],
-html:not(.dark) [class*="bg-purple-600"],
-html:not(.dark) [class*="bg-violet-600"],
-html:not(.dark) [class*="bg-rose-600"],
-html:not(.dark) [class*="bg-red-600"],
-html:not(.dark) [class*="bg-slate-900"],
-html:not(.dark) [class*="bg-slate-950"],
-html:not(.dark) [class*="bg-black"],
-html:not(.dark) [class*="bg-gradient-to-"] {
-  color: #ffffff;
-}
-
-html:not(.dark) [class*="bg-blue-600"] *,
-html:not(.dark) [class*="bg-blue-700"] *,
-html:not(.dark) [class*="bg-emerald-600"] *,
-html:not(.dark) [class*="bg-indigo-600"] *,
-html:not(.dark) [class*="bg-purple-600"] *,
-html:not(.dark) [class*="bg-violet-600"] *,
-html:not(.dark) [class*="bg-rose-600"] *,
-html:not(.dark) [class*="bg-red-600"] *,
-html:not(.dark) [class*="bg-slate-900"] *,
-html:not(.dark) [class*="bg-slate-950"] *,
-html:not(.dark) [class*="bg-black"] *,
-html:not(.dark) [class*="bg-gradient-to-"] * {
-  color: inherit;
-}
-
-/* Convert text-white to slate-900 on cards, pills, wells, badges, and headers */
-html:not(.dark) .text-white:not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-indigo-"]):not([class*="bg-purple-"]):not([class*="bg-violet-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-slate-9"]):not([class*="bg-black"]):not([class*="bg-gradient-"]):not([class*="from-"]):not([class*="text-transparent"]) {
+/* 8. Text White Handling in Light Mode */
+/* Convert bare text-white to slate-900 on cards, pills, wells, badges, and headers */
+html:not(.dark) .text-white:not([class*="bg-blue-600"]):not([class*="bg-emerald-600"]):not([class*="bg-indigo-600"]):not([class*="bg-purple-600"]):not([class*="bg-slate-9"]):not([class*="bg-black"]):not([class*="from-"]):not([class*="text-transparent"]) {
   color: #0f172a;
 }
 

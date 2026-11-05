@@ -99,12 +99,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={`${item.label}${item.badge ? ` (${item.badge})` : ''}`}
                 className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 group ${
                   isActive
-                    ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm dark:bg-blue-600/15 dark:text-blue-400 dark:border-blue-500/40 dark:shadow-blue-500/20'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-500/40 dark:shadow-blue-500/20'
                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
                 }`}
               >
                 <Icon className={`w-5 h-5 transition-colors ${
-                  isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                  isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white'
                 }`} />
                 {item.badge && (
                   <span
@@ -123,15 +123,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 active:scale-95 group ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:bg-blue-600/10 dark:text-white dark:border-blue-500/30 dark:shadow-blue-500/10 font-bold'
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:bg-blue-950/40 dark:text-white dark:border-blue-500/30 dark:shadow-blue-500/10 font-bold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-3">
                 <Icon className={`w-4 h-4 transition-colors ${
-                  isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                  isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white'
                 }`} />
-                <span>{item.label}</span>
+                <span className={isActive ? 'text-blue-700 dark:text-white font-bold' : ''}>{item.label}</span>
               </div>
 
               {item.badge && (
