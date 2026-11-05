@@ -323,6 +323,10 @@ html:not(.dark) .ambient-orb-rose {
    ============================================================================== */
 
 /* Surfaces in light mode */
+html:not(.dark) [class*="bg-[#0c101a]"],
+html:not(.dark) [class*="bg-[#080c14]"],
+html:not(.dark) [class*="bg-[#0f1422]"],
+html:not(.dark) [class*="bg-[#111827]"],
 html:not(.dark) [class*="bg-[#080808]"],
 html:not(.dark) [class*="bg-[#090909]"],
 html:not(.dark) [class*="bg-[#0a0a0f]"],
@@ -332,6 +336,8 @@ html:not(.dark) [class*="bg-[#09090e]"] {
   box-shadow: 0 4px 20px -5px rgba(15, 23, 42, 0.05);
 }
 
+html:not(.dark) [class*="bg-[#05080f]"],
+html:not(.dark) [class*="bg-[#0b0f19]"],
 html:not(.dark) [class*="bg-[#000000]"],
 html:not(.dark) [class*="bg-[#030303]"],
 html:not(.dark) [class*="bg-[#020202]"],

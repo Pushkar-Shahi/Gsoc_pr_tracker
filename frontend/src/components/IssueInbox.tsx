@@ -648,15 +648,15 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
                 {/* Condition Pills */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">Issue State:</span>
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
+                    <span className="text-neutral-400">Issue State:</span>
                     <span className={importSuccessResult.conditions_checked.is_open ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
                       {importSuccessResult.conditions_checked.is_open ? 'OPEN ✓' : 'CLOSED ✗'}
                     </span>
                   </div>
 
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">Assignees:</span>
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
+                    <span className="text-neutral-400">Assignees:</span>
                     <span className={importSuccessResult.conditions_checked.is_unassigned ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
                       {importSuccessResult.conditions_checked.is_unassigned ? '0 (Unassigned) ✓' : 'Already Assigned ✗'}
                     </span>
@@ -678,23 +678,23 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     </span>
                   </div>
 
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">Scope Level:</span>
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
+                    <span className="text-neutral-400">Scope Level:</span>
                     <span className="text-purple-400 capitalize">
                       {importSuccessResult.conditions_checked.difficulty_estimate || 'Intermediate'}
                     </span>
                   </div>
 
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">Maintainer Policy:</span>
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
+                    <span className="text-neutral-400">Maintainer Policy:</span>
                     <span className={importSuccessResult.conditions_checked.assignment_required ? 'text-amber-400' : 'text-emerald-400'}>
                       {importSuccessResult.conditions_checked.assignment_required ? 'Assignment Required' : 'Ready to Work'}
                     </span>
                   </div>
 
-                  <div className="bg-[#0b0f19] px-2.5 py-1.5 rounded-lg border border-gray-800 flex items-center justify-between">
-                    <span className="text-gray-400">GSoC Status:</span>
-                    <span className={importSuccessResult.issue.repository?.is_gsoc ? 'text-amber-300 font-bold' : 'text-gray-400'}>
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
+                    <span className="text-neutral-400">GSoC Status:</span>
+                    <span className={importSuccessResult.issue.repository?.is_gsoc ? 'text-amber-300 font-bold' : 'text-neutral-400'}>
                       {importSuccessResult.issue.repository?.gsoc_org_name ? `🎓 ${importSuccessResult.issue.repository.gsoc_org_name}` : (importSuccessResult.issue.repository?.is_gsoc ? 'Verified GSoC 🎓' : 'Non-GSoC')}
                     </span>
                   </div>
@@ -1172,10 +1172,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
               {/* Explainable reasons pills */}
               {breakdown?.reasons && breakdown.reasons.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-800/60 flex flex-wrap gap-2 text-[11px] text-gray-400">
-                  <span className="text-gray-500 font-medium">Scoring factors:</span>
+                <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-2 text-[11px] text-neutral-400">
+                  <span className="text-neutral-500 font-medium">Scoring factors:</span>
                   {breakdown.reasons.slice(0, 3).map((r: string, idx: number) => (
-                    <span key={idx} className="bg-gray-900/90 px-2 py-0.5 rounded border border-gray-800/70 text-gray-300">
+                    <span key={idx} className="bg-white/5 px-2 py-0.5 rounded-lg border border-white/10 text-neutral-300">
                       • {r}
                     </span>
                   ))}

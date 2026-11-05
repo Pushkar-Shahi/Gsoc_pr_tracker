@@ -400,7 +400,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
         </div>
 
         {/* Panel Footer */}
-        <div className="p-3 border-t border-gray-800 bg-[#0e1424] flex items-center justify-between text-[11px] text-gray-500 px-5">
+        <div className="p-3 border-t border-white/10 bg-[#080c14] flex items-center justify-between text-[11px] text-neutral-400 px-5">
           <span>Real-time webhook & poller events</span>
           <span className="text-gray-400 font-medium">Auto-refreshed</span>
         </div>

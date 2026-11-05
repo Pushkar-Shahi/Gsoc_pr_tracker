@@ -69,10 +69,10 @@ export const TasksPipeline: React.FC<TasksPipelineProps> = ({
       </div>
 
       {tasks.length === 0 ? (
-        <div className="bg-[#111827] border border-gray-800 rounded-2xl p-12 text-center space-y-3">
-          <Terminal className="w-8 h-8 text-gray-500 mx-auto" />
+        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-12 text-center space-y-3 shadow-xl">
+          <Terminal className="w-8 h-8 text-neutral-500 mx-auto" />
           <h3 className="text-base font-semibold text-white">No active tasks in progress</h3>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto">
+          <p className="text-xs text-neutral-400 max-w-sm mx-auto">
             Browse the Issue Inbox and select an open-source issue to initiate contribution preflight and workspace preparation.
           </p>
         </div>
@@ -84,15 +84,15 @@ export const TasksPipeline: React.FC<TasksPipelineProps> = ({
             return (
               <div
                 key={task.id}
-                className="bg-[#111827] border border-gray-800 rounded-2xl p-5 shadow-lg space-y-4 hover:border-gray-700 transition"
+                className="bg-[#0c101a] border border-white/10 rounded-2xl p-5 shadow-xl space-y-4 hover:border-white/20 transition"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-emerald-300 font-semibold">
+                      <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 text-emerald-400 font-semibold">
                         {task.issue?.repository?.full_name || 'Repository'}
                       </span>
-                      <span className="text-xs text-gray-400 font-mono">
+                      <span className="text-xs text-neutral-400 font-mono">
                         #{task.issue?.issue_number}
                       </span>
                       <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${getStageColor(task.workflow_state)}`}>
@@ -111,11 +111,11 @@ export const TasksPipeline: React.FC<TasksPipelineProps> = ({
                           href={task.issue.html_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2.5 py-1 rounded-lg bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white flex items-center gap-1 transition"
+                          className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white flex items-center gap-1 transition"
                           title="Open issue on GitHub"
                         >
                           <span>Issue #{task.issue.issue_number}</span>
-                          <ExternalLink className="w-3 h-3 text-gray-400" />
+                          <ExternalLink className="w-3 h-3 text-neutral-400" />
                         </a>
                       )}
 
@@ -193,7 +193,7 @@ export const TasksPipeline: React.FC<TasksPipelineProps> = ({
 
                     <button
                       onClick={() => onCancelTask(task.id)}
-                      className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-800 transition"
+                      className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-950/20 transition"
                       title="Cancel task and clean up workspace"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -203,14 +203,14 @@ export const TasksPipeline: React.FC<TasksPipelineProps> = ({
 
               {/* Worktree & Branch Info */}
               {task.branch_name && (
-                <div className="bg-[#0b0f19] border border-gray-800/80 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs text-gray-400 gap-2">
+                <div className="bg-[#05080f] border border-white/10 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs text-neutral-400 gap-2">
                   <div className="flex items-center gap-2">
                     <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Working Branch:</span>
-                    <span className="font-mono text-gray-200 font-semibold">{task.branch_name}</span>
+                    <span className="font-mono text-neutral-200 font-semibold">{task.branch_name}</span>
                   </div>
                   {task.worktree_path && (
-                    <div className="truncate max-w-md font-mono text-[11px] text-gray-500" title={task.worktree_path}>
+                    <div className="truncate max-w-md font-mono text-[11px] text-neutral-400" title={task.worktree_path}>
                       {task.worktree_path}
                     </div>
                   )}

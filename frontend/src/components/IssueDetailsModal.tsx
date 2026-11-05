@@ -122,9 +122,9 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
               )}
 
               {/* Author & Metadata */}
-              <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 pb-2 border-b border-gray-800">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-400 pb-2 border-b border-white/10">
                 <span className="flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-gray-500" />
+                  <User className="w-3.5 h-3.5 text-neutral-500" />
                   <span>Author: {issue.author || 'Unknown'}</span>
                 </span>
                 <span>Comments: {issue.comments_count}</span>
@@ -133,10 +133,10 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
 
               {/* Original Markdown Body */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">
                   Original Issue Content
                 </h3>
-                <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 whitespace-pre-wrap font-sans text-xs leading-relaxed text-gray-300 max-h-96 overflow-y-auto">
+                <div className="bg-[#05080f] border border-white/10 rounded-xl p-4 whitespace-pre-wrap font-sans text-xs leading-relaxed text-neutral-300 max-h-96 overflow-y-auto">
                   {issue.body || 'No description provided in this issue.'}
                 </div>
               </div>
@@ -146,15 +146,15 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
           {activeTab === 'ranking' && (
             <div className="space-y-6">
               {/* Overall Score Header */}
-              <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-[#05080f] border border-white/10 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <h4 className="font-semibold text-white">Suitability Score: {issue.ranking_score.toFixed(1)} / 100</h4>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-neutral-400 mt-0.5">
                     Calculated using transparent criteria matching your skills, problem clarity, repo activity, and effort.
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-gray-400 font-medium">Difficulty: </span>
+                  <span className="text-xs text-neutral-400 font-medium">Difficulty: </span>
                   <span className="text-xs font-bold text-emerald-400 uppercase">{issue.difficulty_estimate}</span>
                 </div>
               </div>
@@ -162,20 +162,20 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
               {/* Score Breakdown Grid */}
               {breakdown && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-                    <span className="text-[11px] text-gray-400">Skill Match</span>
+                  <div className="bg-[#0c101a] border border-white/10 rounded-xl p-3">
+                    <span className="text-[11px] text-neutral-400">Skill Match</span>
                     <p className="text-lg font-bold text-emerald-400 mt-1">{breakdown.skill_match} / 35</p>
                   </div>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-                    <span className="text-[11px] text-gray-400">Problem Clarity</span>
+                  <div className="bg-[#0c101a] border border-white/10 rounded-xl p-3">
+                    <span className="text-[11px] text-neutral-400">Problem Clarity</span>
                     <p className="text-lg font-bold text-cyan-400 mt-1">{breakdown.clarity_score} / 25</p>
                   </div>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-                    <span className="text-[11px] text-gray-400">Repo Health</span>
+                  <div className="bg-[#0c101a] border border-white/10 rounded-xl p-3">
+                    <span className="text-[11px] text-neutral-400">Repo Health</span>
                     <p className="text-lg font-bold text-blue-400 mt-1">{breakdown.repo_health_score} / 20</p>
                   </div>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-                    <span className="text-[11px] text-gray-400">Effort & Scope</span>
+                  <div className="bg-[#0c101a] border border-white/10 rounded-xl p-3">
+                    <span className="text-[11px] text-neutral-400">Effort & Scope</span>
                     <p className="text-lg font-bold text-amber-400 mt-1">{breakdown.effort_score} / 20</p>
                   </div>
                 </div>
@@ -183,12 +183,12 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
 
               {/* Justification Reasons */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">
                   Scoring Rationale & Evidence
                 </h4>
                 <div className="space-y-2">
                   {breakdown?.reasons?.map((reason: string, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2 bg-[#0b0f19] p-3 rounded-xl border border-gray-800 text-xs text-gray-300">
+                    <div key={idx} className="flex items-start gap-2 bg-[#05080f] p-3 rounded-xl border border-white/10 text-xs text-neutral-300">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <span>{reason}</span>
                     </div>
@@ -201,36 +201,36 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
           {activeTab === 'policy' && (
             <div className="space-y-6">
               {/* License Card */}
-              <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4">
+              <div className="bg-[#05080f] border border-white/10 rounded-xl p-4">
                 <div className="flex items-center gap-2 text-white font-semibold mb-2">
                   <Shield className="w-4 h-4 text-emerald-400" />
                   <span>Open-Source Licensing Verification</span>
                 </div>
-                <div className="text-xs text-gray-300 space-y-2">
+                <div className="text-xs text-neutral-300 space-y-2">
                   <p>
-                    <span className="text-gray-400">License Status:</span>{' '}
+                    <span className="text-neutral-400">License Status:</span>{' '}
                     <span className="font-semibold text-emerald-400">{issue.license_status}</span>
                   </p>
                   <p>
-                    <span className="text-gray-400">SPDX Identifier:</span>{' '}
-                    <span className="font-mono text-gray-200">{issue.repository?.license_spdx || 'None detected'}</span>
+                    <span className="text-neutral-400">SPDX Identifier:</span>{' '}
+                    <span className="font-mono text-neutral-200">{issue.repository?.license_spdx || 'None detected'}</span>
                   </p>
-                  <p className="text-gray-400 text-[11px]">
+                  <p className="text-neutral-400 text-[11px]">
                     Public visibility alone does not grant copyright permission to reuse code. The platform ensures only repositories with verifiable open-source policies proceed to workspace preparation without warnings.
                   </p>
                 </div>
               </div>
 
               {/* Assignment Policy State */}
-              <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4">
+              <div className="bg-[#05080f] border border-white/10 rounded-xl p-4">
                 <div className="flex items-center gap-2 text-white font-semibold mb-2">
                   <FileText className="w-4 h-4 text-cyan-400" />
                   <span>Contribution Preflight Policy</span>
                 </div>
-                <p className="text-xs text-gray-300 mb-2">
+                <p className="text-xs text-neutral-300 mb-2">
                   Current policy state: <span className="font-bold text-white">{issue.policy_status}</span>
                 </p>
-                <div className="text-xs text-gray-400 leading-relaxed bg-gray-900 p-3 rounded-lg border border-gray-800">
+                <div className="text-xs text-neutral-400 leading-relaxed bg-[#0c101a] p-3 rounded-lg border border-white/10">
                   {issue.policy_status === 'ASSIGNMENT_REQUIRED' ? (
                     <p className="text-blue-300">
                       Repository instructions require maintainer approval before coding begins. The platform will draft an assignment comment for your review before workspace preparation.

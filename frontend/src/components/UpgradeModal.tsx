@@ -38,7 +38,7 @@ export function UpgradeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-lg overflow-hidden bg-neutral-950 border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8"
+        className="relative w-full max-w-lg overflow-hidden bg-[#0c101a] border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow ambient background */}
@@ -47,7 +47,7 @@ export function UpgradeModal({
 
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-900 transition"
+          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-white/10 transition"
         >
           <X className="w-5 h-5" />
         </button>
@@ -70,7 +70,7 @@ export function UpgradeModal({
           {reason || "You have reached your free tier limit of 5 tasks for this month. Upgrade to Pro for unconstrained PR generation, priority runners, and bounty filters."}
         </p>
 
-        <div className="bg-neutral-900/60 border border-white/5 rounded-xl p-4 mb-6 space-y-2.5">
+        <div className="bg-[#05080f] border border-white/10 rounded-xl p-4 mb-6 space-y-2.5">
           <div className="flex items-start gap-2.5 text-xs text-neutral-200">
             <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span><strong>Unlimited tasks & PR publications</strong> each month</span>
@@ -117,7 +117,7 @@ export function UpgradeModal({
                 onClose();
                 onNavigateToBilling();
               }}
-              className="w-full sm:w-auto py-3 px-4 rounded-xl border border-white/10 hover:bg-neutral-900 text-xs font-semibold text-neutral-300 transition"
+              className="w-full sm:w-auto py-3 px-4 rounded-xl border border-white/10 hover:bg-white/10 text-xs font-semibold text-neutral-300 transition"
             >
               Compare All Plans
             </button>

@@ -31,10 +31,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   if (!task) {
     return (
-      <div className="bg-[#111827] border border-gray-800 rounded-2xl p-12 text-center space-y-3">
-        <Terminal className="w-8 h-8 text-gray-500 mx-auto" />
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-12 text-center space-y-3">
+        <Terminal className="w-8 h-8 text-neutral-500 mx-auto" />
         <h3 className="text-base font-semibold text-white">No active workspace selected</h3>
-        <p className="text-xs text-gray-400 max-w-sm mx-auto">
+        <p className="text-xs text-neutral-400 max-w-sm mx-auto">
           Select an issue from the Inbox or Tasks Pipeline to open its isolated Antigravity workspace.
         </p>
       </div>
@@ -114,17 +114,17 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Workspace Header */}
-      <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-800">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-emerald-300">
+              <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 text-emerald-400 font-semibold">
                 {task.issue?.repository?.full_name}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-neutral-400">
                 Issue #{task.issue?.issue_number}
               </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                 {task.workflow_state.replace(/_/g, ' ')}
               </span>
             </div>
@@ -137,11 +137,11 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   href={task.issue.html_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white flex items-center gap-1 transition"
+                  className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white flex items-center gap-1 transition"
                   title="Open issue thread on GitHub"
                 >
                   <span>Issue #{task.issue.issue_number}</span>
-                  <ExternalLink className="w-3 h-3 text-gray-400" />
+                  <ExternalLink className="w-3 h-3 text-neutral-400" />
                 </a>
               )}
 
@@ -150,7 +150,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   href={commentUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-800/50 hover:bg-cyan-900/50 text-cyan-300 flex items-center gap-1.5 transition font-medium"
+                  className="px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/50 text-cyan-300 flex items-center gap-1.5 transition font-medium"
                   title="View assignment comment on GitHub"
                 >
                   <MessageSquare className="w-3 h-3 text-cyan-400" />
@@ -164,7 +164,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   href={task.pr_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-purple-950/40 border border-purple-800/50 hover:bg-purple-900/50 text-purple-300 flex items-center gap-1.5 transition font-semibold"
+                  className="px-2.5 py-1 rounded-lg bg-purple-950/40 border border-purple-500/30 hover:bg-purple-900/50 text-purple-300 flex items-center gap-1.5 transition font-semibold"
                   title="Open pull request on GitHub"
                 >
                   <GitPullRequest className="w-3 h-3 text-purple-400" />
@@ -181,7 +181,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenBriefing}
-                className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-emerald-300 hover:text-emerald-200 font-semibold text-xs border border-emerald-500/30 active:scale-95 transition flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-emerald-300 hover:text-emerald-200 font-semibold text-xs border border-emerald-500/30 active:scale-95 transition flex items-center gap-1.5 shadow-sm"
               >
                 <Cpu className="w-3.5 h-3.5 text-emerald-400" />
                 <span>View Autonomous Plan</span>
@@ -192,7 +192,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               <button
                 onClick={handlePrepareOnly}
                 disabled={launching}
-                className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-xs border border-gray-700 active:scale-95 transition flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-200 font-semibold text-xs border border-white/10 active:scale-95 transition flex items-center gap-1.5"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${launching ? 'animate-spin' : ''}`} />
                 <span>Prepare Git Worktree</span>
@@ -204,15 +204,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               disabled={launching}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 active:scale-95 transition flex items-center gap-2"
             >
-              <Terminal className="w-4 h-4" />
-              <span>
-                {launching 
-                  ? 'Launching Antigravity...' 
-                  : task.worktree_path 
-                    ? 'Open in Antigravity App' 
-                    : 'Prepare & Open in Antigravity'
-                }
-              </span>
+              <Terminal className={`w-4 h-4 ${launching ? 'animate-pulse' : ''}`} />
+              <span>{launching ? 'Launching Antigravity...' : 'Open in Google Antigravity'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -228,9 +222,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         {/* Worktree Path & Git Branch Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Worktree Directory Card */}
-          <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 space-y-2">
-            <div className="flex items-center justify-between text-xs text-gray-400">
-              <span className="flex items-center gap-1.5 font-medium text-gray-300">
+          <div className="bg-[#05080f] border border-white/10 rounded-xl p-4 space-y-2">
+            <div className="flex items-center justify-between text-xs text-neutral-400">
+              <span className="flex items-center gap-1.5 font-medium text-neutral-300">
                 <Folder className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Isolated Git Worktree Path</span>
               </span>
@@ -244,23 +238,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 </button>
               )}
             </div>
-            <p className="font-mono text-xs text-gray-200 bg-gray-900/80 p-2.5 rounded-lg border border-gray-800 truncate" title={task.worktree_path || undefined}>
+            <p className="font-mono text-xs text-neutral-200 bg-[#0c101a] p-2.5 rounded-lg border border-white/10 truncate" title={task.worktree_path || undefined}>
               {task.worktree_path || 'Pending preparation (click "Prepare & Open in Antigravity" above)'}
             </p>
           </div>
 
           {/* Task Branch Card */}
-          <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 space-y-2">
-            <div className="flex items-center justify-between text-xs text-gray-400">
-              <span className="flex items-center gap-1.5 font-medium text-gray-300">
+          <div className="bg-[#05080f] border border-white/10 rounded-xl p-4 space-y-2">
+            <div className="flex items-center justify-between text-xs text-neutral-400">
+              <span className="flex items-center gap-1.5 font-medium text-neutral-300">
                 <GitBranch className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Dedicated Task Branch</span>
               </span>
-              <span className="text-[11px] text-gray-500">
+              <span className="text-[11px] text-neutral-500">
                 Based on: {task.issue?.repository?.default_branch || 'main'}
               </span>
             </div>
-            <p className="font-mono text-xs text-emerald-300 bg-gray-900/80 p-2.5 rounded-lg border border-gray-800 truncate">
+            <p className="font-mono text-xs text-emerald-300 bg-[#0c101a] p-2.5 rounded-lg border border-white/10 truncate">
               {task.branch_name || 'Will be generated: fix/issue-<number>-<slug>'}
             </p>
           </div>
@@ -268,15 +262,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
         {/* Quick Terminal Command Fallback */}
         {manualOpenCommand && (
-          <div className="bg-[#0b0f19] border border-gray-800/80 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-gray-400">
+          <div className="bg-[#05080f] border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-neutral-400">
               <Terminal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               <span>Direct Shell / Terminal Command:</span>
-              <code className="text-gray-200 font-mono bg-gray-900 px-2 py-0.5 rounded border border-gray-800">{manualOpenCommand}</code>
+              <code className="text-neutral-200 font-mono bg-[#0c101a] px-2 py-0.5 rounded border border-white/10">{manualOpenCommand}</code>
             </div>
             <button
               onClick={handleCopyCmd}
-              className="px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-[11px] font-semibold border border-gray-700 transition flex items-center gap-1 self-start sm:self-auto"
+              className="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-neutral-300 text-[11px] font-semibold border border-white/10 transition flex items-center gap-1 self-start sm:self-auto"
             >
               {copiedCmd ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
               <span>{copiedCmd ? 'Copied' : 'Copy Command'}</span>
@@ -286,59 +280,59 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       </div>
 
       {/* Copyable Implementation Prompt for Antigravity */}
-      <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-3">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 shadow-xl space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <Terminal className="w-4 h-4 text-emerald-400" />
               <span>Ready-to-Paste Antigravity Implementation Prompt</span>
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-neutral-400 mt-0.5">
               Copy and paste this structured prompt into your Google Antigravity chat to begin collaborative implementation.
             </p>
           </div>
 
           <button
             onClick={handleCopyPrompt}
-            className="px-3.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold border border-gray-700 transition flex items-center gap-1.5 active:scale-95"
+            className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-200 text-xs font-semibold border border-white/10 transition flex items-center gap-1.5 active:scale-95"
           >
             {copiedPrompt ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'}</span>
           </button>
         </div>
 
-        <div className="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 font-mono text-xs text-gray-300 whitespace-pre-wrap max-h-56 overflow-y-auto leading-relaxed">
+        <div className="bg-[#05080f] border border-white/10 rounded-xl p-4 font-mono text-xs text-neutral-300 whitespace-pre-wrap max-h-56 overflow-y-auto leading-relaxed">
           {promptText}
         </div>
       </div>
 
       {/* Collaboration Rules & Checklist */}
-      <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
         <h3 className="text-sm font-semibold text-white">Collaborative Workflow Checklist</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-gray-300">
-          <div className="bg-[#0b0f19] p-3 rounded-xl border border-gray-800 flex items-start gap-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-neutral-300">
+          <div className="bg-[#05080f] p-3 rounded-xl border border-white/10 flex items-start gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>Isolated worktree prevents conflicts with existing projects or repositories.</span>
           </div>
-          <div className="bg-[#0b0f19] p-3 rounded-xl border border-gray-800 flex items-start gap-2.5">
+          <div className="bg-[#05080f] p-3 rounded-xl border border-white/10 flex items-start gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>Implementation brief generated at <code>.antigravity/BRIEF.md</code>.</span>
           </div>
-          <div className="bg-[#0b0f19] p-3 rounded-xl border border-gray-800 flex items-start gap-2.5">
+          <div className="bg-[#05080f] p-3 rounded-xl border border-white/10 flex items-start gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>Preserve repository formatting and existing docstrings without unrelated edits.</span>
           </div>
-          <div className="bg-[#0b0f19] p-3 rounded-xl border border-gray-800 flex items-start gap-2.5">
+          <div className="bg-[#05080f] p-3 rounded-xl border border-white/10 flex items-start gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>Diff will be automatically scanned for credentials before PR publication.</span>
           </div>
         </div>
 
         {/* Footer Completion Actions */}
-        <div className="pt-4 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <button
             onClick={() => onCancelTask(task.id)}
-            className="text-xs text-gray-500 hover:text-red-400 transition flex items-center gap-1.5"
+            className="text-xs text-neutral-500 hover:text-rose-400 transition flex items-center gap-1.5"
           >
             <Trash2 className="w-4 h-4" />
             <span>Cancel Task & Delete Worktree</span>

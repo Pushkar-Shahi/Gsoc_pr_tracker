@@ -78,7 +78,7 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
         </div>
 
         {pendingApprovalTasks.length === 0 ? (
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 text-center text-xs text-gray-500">
+          <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 text-center text-xs text-neutral-400">
             No assignment requests currently awaiting approval.
           </div>
         ) : (
@@ -88,14 +88,14 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
               const currentText = commentDrafts[task.id] !== undefined ? commentDrafts[task.id] : defaultComment;
 
               return (
-                <div key={task.id} className="bg-[#111827] border border-amber-500/30 rounded-2xl p-5 shadow-xl space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-800">
+                <div key={task.id} className="bg-[#0c101a] border border-amber-500/30 rounded-2xl p-5 shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/10">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-emerald-300">
+                        <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 text-emerald-400 font-semibold">
                           {task.issue?.repository?.full_name}
                         </span>
-                        <span className="text-xs text-gray-400 font-semibold">
+                        <span className="text-xs text-neutral-400 font-semibold">
                           #{task.issue?.issue_number}
                         </span>
                       </div>
@@ -108,7 +108,7 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
                           href={task.issue.html_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs text-gray-300 hover:text-white flex items-center gap-1 transition"
+                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-neutral-300 hover:text-white border border-white/10 flex items-center gap-1 transition"
                         >
                           <span>View Issue</span>
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -136,14 +136,14 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
 
                   {/* Draft Comment Editor */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-300">
+                    <label className="block text-xs font-medium text-neutral-300">
                       Proposed GitHub Assignment Request Comment (You can edit before posting):
                     </label>
                     <textarea
                       rows={3}
                       value={currentText}
                       onChange={(e) => handleCommentChange(task.id, e.target.value)}
-                      className="w-full bg-[#0b0f19] border border-gray-700 rounded-xl p-3 text-xs text-gray-200 font-sans focus:outline-none focus:border-amber-500"
+                      className="w-full bg-[#05080f] border border-white/10 rounded-xl p-3 text-xs text-neutral-200 font-sans focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
@@ -177,7 +177,7 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
         </div>
 
         {waitingMaintainerTasks.length === 0 ? (
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 text-center text-xs text-gray-500">
+          <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 text-center text-xs text-neutral-400">
             No requests currently waiting for maintainer confirmation.
           </div>
         ) : (
@@ -187,18 +187,18 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
               const hasSpecificComment = Boolean(task.assignment_comment_id);
 
               return (
-                <div key={task.id} className="bg-[#111827] border border-cyan-500/30 rounded-2xl p-5 shadow-xl space-y-4 hover:border-cyan-500/50 transition">
+                <div key={task.id} className="bg-[#0c101a] border border-cyan-500/30 rounded-2xl p-5 shadow-xl space-y-4 hover:border-cyan-500/50 transition">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div className="space-y-1.5 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-emerald-300 font-semibold">
+                        <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 text-emerald-400 font-semibold">
                           {task.issue?.repository?.full_name}
                         </span>
                         <span className="text-xs text-cyan-400 font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20">
                           Waiting for assignment response
                         </span>
                         {task.issue?.issue_number && (
-                          <span className="text-xs text-gray-400 font-mono">
+                          <span className="text-xs text-neutral-400 font-mono">
                             #{task.issue.issue_number}
                           </span>
                         )}
@@ -206,12 +206,12 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
 
                       <h4 className="text-base font-semibold text-white mt-1">{task.issue?.title}</h4>
                       
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 pt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-400 pt-0.5">
                         <p>
-                          Assignment comment posted: <span className="text-gray-200">{task.assignment_posted_at ? new Date(task.assignment_posted_at).toLocaleString() : 'Recently'}</span>
+                          Assignment comment posted: <span className="text-neutral-200">{task.assignment_posted_at ? new Date(task.assignment_posted_at).toLocaleString() : 'Recently'}</span>
                         </p>
                         {task.assignment_comment_id && (
-                          <span className="font-mono text-[11px] text-gray-500">
+                          <span className="font-mono text-[11px] text-neutral-400">
                             Comment ID: #{task.assignment_comment_id}
                           </span>
                         )}
@@ -242,11 +242,11 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
                             href={task.issue.html_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 text-xs font-medium transition flex items-center gap-1.5"
+                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-medium transition flex items-center gap-1.5"
                             title="Open issue thread on GitHub"
                           >
                             <span>Issue #{task.issue.issue_number}</span>
-                            <ExternalLink className="w-3 h-3 text-gray-400" />
+                            <ExternalLink className="w-3 h-3 text-neutral-400" />
                           </a>
                         )}
                       </div>
@@ -280,7 +280,7 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
 
                   {/* Submitted Comment Quote Block */}
                   {task.draft_assignment_comment && (
-                    <div className="bg-[#0b0f19] border border-gray-800/80 rounded-xl p-3.5 space-y-2">
+                    <div className="bg-[#05080f] border border-white/10 rounded-xl p-3.5 space-y-2">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="font-semibold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
                           <MessageSquare className="w-3.5 h-3.5" />
@@ -298,7 +298,7 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
                           </a>
                         )}
                       </div>
-                      <p className="text-xs text-gray-200 font-mono whitespace-pre-wrap leading-relaxed bg-gray-900/60 p-3 rounded-lg border border-gray-800">
+                      <p className="text-xs text-neutral-200 font-mono whitespace-pre-wrap leading-relaxed bg-[#0c101a] p-3 rounded-lg border border-white/10">
                         {task.draft_assignment_comment}
                       </p>
                     </div>
@@ -323,14 +323,14 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
               const commentUrl = getCommentUrl(task);
 
               return (
-                <div key={task.id} className="bg-[#111827] border border-emerald-500/30 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div key={task.id} className="bg-[#0c101a] border border-emerald-500/30 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-emerald-300">
+                      <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 text-emerald-400 font-semibold">
                         {task.issue?.repository?.full_name}
                       </span>
                       {task.issue?.issue_number && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-neutral-400">
                           #{task.issue.issue_number}
                         </span>
                       )}
@@ -347,11 +347,11 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
                         href={commentUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 text-xs font-medium transition flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-medium transition flex items-center gap-1.5"
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
                         <span>Comment</span>
-                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                        <ExternalLink className="w-3 h-3 text-neutral-400" />
                       </a>
                     )}
                     {task.issue?.html_url && (
@@ -359,10 +359,10 @@ export const AssignmentQueue: React.FC<AssignmentQueueProps> = ({
                         href={task.issue.html_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 text-xs font-medium transition flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-medium transition flex items-center gap-1.5"
                       >
                         <span>Issue</span>
-                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                        <ExternalLink className="w-3 h-3 text-neutral-400" />
                       </a>
                     )}
                     {task.pr_url && (

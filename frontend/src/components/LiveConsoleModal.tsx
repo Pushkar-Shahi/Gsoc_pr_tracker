@@ -212,8 +212,8 @@ export function LiveConsoleModal({
               onClick={() => setAutoscroll(!autoscroll)}
               className={`p-1.5 rounded-lg border text-xs transition ${
                 autoscroll 
-                  ? 'bg-neutral-800 border-white/20 text-white' 
-                  : 'bg-neutral-950 border-white/10 text-neutral-500'
+                  ? 'bg-white/10 border-white/20 text-white' 
+                  : 'bg-[#05080f] border-white/10 text-neutral-400'
               }`}
               title={autoscroll ? 'Autoscroll Active' : 'Autoscroll Paused'}
             >
@@ -223,7 +223,7 @@ export function LiveConsoleModal({
             {/* Copy button */}
             <button
               onClick={handleCopyLogs}
-              className="p-1.5 rounded-lg bg-neutral-900 border border-white/10 hover:bg-neutral-800 text-neutral-300 text-xs transition"
+              className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-neutral-300 text-xs transition"
               title="Copy output"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
