@@ -475,19 +475,19 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   };
 
   const getScoreBadgeColor = (score: number) => {
-    if (score >= 80) return 'bg-white text-black border-white font-bold shadow-sm';
-    if (score >= 65) return 'bg-neutral-900 text-white border-white/30 font-semibold';
-    return 'bg-neutral-900 text-neutral-300 border-white/15';
+    if (score >= 80) return 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white font-bold shadow-sm';
+    if (score >= 65) return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-neutral-900 dark:text-white dark:border-white/30 font-semibold';
+    return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-neutral-900 dark:text-neutral-300 dark:border-white/15';
   };
 
   const getDifficultyBadge = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner':
-        return <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-neutral-900 text-neutral-200 border border-white/20">Beginner Friendly</span>;
+        return <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-neutral-900 dark:text-neutral-200 dark:border-white/20">Beginner Friendly</span>;
       case 'advanced':
-        return <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-neutral-900 text-neutral-200 border border-white/20">Advanced Scope</span>;
+        return <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-800 border border-purple-200 dark:bg-neutral-900 dark:text-neutral-200 dark:border-white/20">Advanced Scope</span>;
       default:
-        return <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-neutral-900 text-neutral-200 border border-white/20">Intermediate</span>;
+        return <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-800 border border-blue-200 dark:bg-neutral-900 dark:text-neutral-200 dark:border-white/20">Intermediate</span>;
     }
   };
 
@@ -499,10 +499,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       {/* Top Header Row with Page Title on Left and 2H Countdown + Scan Button on Right */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Issue-to-PR
           </h1>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-slate-500 dark:text-neutral-400">
             Find issues, filter smartly, and turn them into pull requests.
           </p>
         </div>
@@ -510,22 +510,22 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         {/* Top Right Live Countdown + Run 2h Scan Now */}
         <div className="flex items-center gap-3">
           {/* Live Countdown Box */}
-          <div className="flex items-center gap-2.5 bg-[#0c101a] border border-white/10 px-3.5 py-2 rounded-2xl shadow-lg">
-            <Clock className="w-4 h-4 text-neutral-400" />
+          <div className="flex items-center gap-2.5 bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 px-3.5 py-2 rounded-2xl shadow-sm dark:shadow-lg">
+            <Clock className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 font-bold">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-500 dark:text-neutral-400 font-bold">
                 NEXT 2H SCAN IN
               </span>
-              <div className="font-mono text-xs font-bold text-white flex items-center gap-1">
-                <span className="bg-[#05080f] px-1.5 py-0.5 rounded border border-white/10">
+              <div className="font-mono text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                <span className="bg-slate-100 dark:bg-[#05080f] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10">
                   {formatCountdown(countdownSec).h}h
                 </span>
-                <span className="text-neutral-500">:</span>
-                <span className="bg-[#05080f] px-1.5 py-0.5 rounded border border-white/10">
+                <span className="text-slate-400 dark:text-neutral-500">:</span>
+                <span className="bg-slate-100 dark:bg-[#05080f] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10">
                   {formatCountdown(countdownSec).m}m
                 </span>
-                <span className="text-neutral-500">:</span>
-                <span className="bg-[#05080f] px-1.5 py-0.5 rounded border border-white/10">
+                <span className="text-slate-400 dark:text-neutral-500">:</span>
+                <span className="bg-slate-100 dark:bg-[#05080f] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10">
                   {formatCountdown(countdownSec).s}s
                 </span>
               </div>
@@ -538,7 +538,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             onClick={handleTriggerCronNow}
             disabled={isTriggeringCron}
             title="Run 2-Hour Autonomous Scan Now"
-            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-neutral-200 text-black font-bold text-xs flex items-center gap-2 shadow-md active:scale-95 transition disabled:opacity-50 shrink-0"
+            className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-bold text-xs flex items-center gap-2 shadow-md active:scale-95 transition disabled:opacity-50 shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isTriggeringCron ? 'animate-spin' : ''}`} />
             <span>{isTriggeringCron ? 'Scanning...' : 'Run 2h Scan Now'}</span>
@@ -547,17 +547,17 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       </div>
 
       {/* Targeted Issue Verification & Import Card */}
-      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+      <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-xl space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
-              <Link2 className="w-5 h-5 text-neutral-300" />
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-white shrink-0">
+              <Link2 className="w-5 h-5 text-slate-600 dark:text-neutral-300" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Live Issue Scraper & 7-Point Detection Engine
               </h3>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-slate-500 dark:text-neutral-400">
                 Paste any GitHub issue URL or reference to scrape live issues, detect assignees, OSI licenses, and more.
               </p>
             </div>
@@ -565,25 +565,25 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           <button
             type="button"
             onClick={() => setShowImportBar(!showImportBar)}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white transition shrink-0 flex items-center gap-1.5 self-start sm:self-auto active:scale-95"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-300 dark:hover:text-white transition shrink-0 flex items-center gap-1.5 self-start sm:self-auto active:scale-95"
           >
             <span>{showImportBar ? 'Collapse' : 'Expand'}</span>
-            {showImportBar ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />}
+            {showImportBar ? <ChevronUp className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />}
           </button>
         </div>
 
         {/* Expandable Import Form */}
         {showImportBar && (
-          <form onSubmit={handleImportSubmit} className="pt-3 border-t border-white/5 space-y-3">
+          <form onSubmit={handleImportSubmit} className="pt-3 border-t border-slate-100 dark:border-white/5 space-y-3">
             <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
-                <Link2 className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Link2 className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={importUrl}
                   onChange={(e) => setImportUrl(e.target.value)}
                   placeholder="Enter GitHub issue URL (e.g. https://github.com/pylint-dev/pylint/issues/11713)"
-                  className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 font-mono transition"
+                  className="w-full bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-mono transition"
                 />
               </div>
               <button
@@ -592,7 +592,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 shrink-0 ${
                   importUrl.trim()
                     ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'
-                    : 'bg-[#182030] hover:bg-[#1f283c] text-neutral-400 border border-white/10'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-400 border border-slate-200 dark:bg-[#182030] dark:hover:bg-[#1f283c] dark:text-neutral-400 dark:border-white/10'
                 }`}
               >
                 {isImporting ? (
@@ -753,24 +753,24 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5">
+      <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-xl space-y-3.5">
         <form onSubmit={handleSearchSubmit} className="space-y-3.5">
           <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search issues by keyword, title, repository..."
-                className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition"
+                className="w-full bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white font-medium text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0"
             >
-              <Filter className="w-3.5 h-3.5 text-neutral-400" />
+              <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
               <span>Apply Filters</span>
             </button>
           </div>
@@ -792,7 +792,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     unassigned_only: unassignedOnly,
                   });
                 }}
-                className="appearance-none bg-[#05080f] border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-neutral-300 focus:outline-none focus:border-white/30 cursor-pointer"
+                className="appearance-none bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-slate-800 dark:text-neutral-300 focus:outline-none focus:border-blue-500 cursor-pointer"
               >
                 <option value="">All Languages</option>
                 <option value="Python">Python</option>
@@ -801,7 +801,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 <option value="Go">Go</option>
                 <option value="Rust">Rust</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             <div className="relative">
@@ -819,14 +819,14 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     unassigned_only: unassignedOnly,
                   });
                 }}
-                className="appearance-none bg-[#05080f] border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-neutral-300 focus:outline-none focus:border-white/30 cursor-pointer"
+                className="appearance-none bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-slate-800 dark:text-neutral-300 focus:outline-none focus:border-blue-500 cursor-pointer"
               >
                 <option value="">All Difficulties</option>
                 <option value="beginner">Beginner Friendly</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             <div className="relative">
@@ -844,19 +844,19 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     unassigned_only: unassignedOnly,
                   });
                 }}
-                className="appearance-none bg-[#05080f] border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-neutral-300 focus:outline-none focus:border-white/30 cursor-pointer"
+                className="appearance-none bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-slate-800 dark:text-neutral-300 focus:outline-none focus:border-blue-500 cursor-pointer"
               >
                 <option value="">All Licenses</option>
                 <option value="VERIFIED_OSI">Verified OSI</option>
                 <option value="UNKNOWN">Needs Review / Unknown</option>
                 <option value="NO_LICENSE">No License Detected</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
           {/* Org Pills with horizontal scrollbar */}
-          <div className="overflow-x-auto pb-2 pt-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="overflow-x-auto pb-2 pt-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-slate-100 dark:[&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
             <div className="flex items-center gap-2 min-w-max">
               <button
                 type="button"
@@ -875,7 +875,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                   selectedGsocOrg === ''
                     ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
-                    : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
+                    : 'bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#05080f] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white'
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
@@ -903,13 +903,13 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                       isSelected
                         ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
-                        : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#05080f] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white'
                     }`}
                   >
                     <span>{org.icon}</span>
                     <span>{org.label}</span>
                     {org.issue_count > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-white/10 text-neutral-300 ml-0.5">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-200 text-slate-800 dark:bg-white/10 dark:text-neutral-300 ml-0.5">
                         {org.issue_count}
                       </span>
                     )}
@@ -920,7 +920,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddOrgModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-300 dark:hover:text-white flex items-center gap-1.5 shrink-0 transition"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Org</span>
@@ -934,11 +934,11 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <select className="appearance-none bg-[#0c101a] border border-white/10 rounded-xl pl-3 pr-8 py-1.5 text-xs text-neutral-300 focus:outline-none cursor-pointer">
+            <select className="appearance-none bg-slate-50 dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-800 dark:text-neutral-300 focus:outline-none cursor-pointer">
               <option value="all">All Open Issues</option>
               <option value="assigned">Assigned Issues</option>
             </select>
-            <ChevronDown className="w-3 h-3 text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3 h-3 text-slate-400 dark:text-neutral-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           <button
@@ -958,43 +958,43 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
               unassignedOnly
-                ? 'bg-amber-400/10 text-amber-300 border-amber-400/30 font-bold'
-                : 'bg-[#0c101a] border-white/10 text-neutral-300 hover:text-white'
+                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/30 font-bold'
+                : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#0c101a] dark:border-white/10 dark:text-neutral-300 dark:hover:text-white'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" />
             <span>Unassigned Only</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-neutral-400">
-          <ArrowUpDown className="w-3.5 h-3.5 text-neutral-400" />
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-neutral-400">
+          <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-400" />
           <span>Sort:</span>
           <div className="relative">
             <select
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="appearance-none bg-[#0c101a] border border-white/10 rounded-xl pl-2.5 pr-7 py-1 text-xs text-neutral-200 focus:outline-none cursor-pointer"
+              className="appearance-none bg-slate-50 dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-xl pl-2.5 pr-7 py-1 text-xs text-slate-800 dark:text-neutral-200 focus:outline-none cursor-pointer"
             >
               <option value="created">Newest</option>
               <option value="rank">Suitability</option>
               <option value="stars">Stars</option>
             </select>
-            <ChevronDown className="w-3 h-3 text-neutral-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3 h-3 text-slate-400 dark:text-neutral-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
-          <span className="text-neutral-600">|</span>
+          <span className="text-slate-300 dark:text-neutral-600">|</span>
           <button
             type="button"
             onClick={() => handleSortChange('rank')}
-            className={`hover:text-white transition ${sortBy === 'rank' ? 'text-white font-bold' : ''}`}
+            className={`hover:text-slate-900 dark:hover:text-white transition ${sortBy === 'rank' ? 'text-slate-900 dark:text-white font-bold' : ''}`}
           >
             Suitability
           </button>
-          <span className="text-neutral-600">|</span>
+          <span className="text-slate-300 dark:text-neutral-600">|</span>
           <button
             type="button"
             onClick={() => handleSortChange('stars')}
-            className={`hover:text-white transition ${sortBy === 'stars' ? 'text-white font-bold' : ''}`}
+            className={`hover:text-slate-900 dark:hover:text-white transition ${sortBy === 'stars' ? 'text-slate-900 dark:text-white font-bold' : ''}`}
           >
             Stars
           </button>
@@ -1049,36 +1049,36 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           return (
             <div
               key={issue.id}
-              className="p-5 rounded-2xl bg-[#0c101a] hover:bg-[#0e1320] border border-white/10 hover:border-white/20 shadow-xl transition space-y-3.5"
+              className="p-5 rounded-2xl bg-white dark:bg-[#0c101a] hover:bg-slate-50 dark:hover:bg-[#0e1320] border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm dark:shadow-xl transition space-y-3.5"
             >
               {/* Top Badges & Suitability Gauge */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-white">
+                  <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 dark:bg-white/5 dark:border-white/10 dark:text-white">
                     {issue.repository?.full_name || issue.repository?.name || 'public/repo'}
                   </span>
 
                   {issue.repository?.primary_language && (
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-neutral-300 flex items-center gap-1.5">
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-neutral-300 flex items-center gap-1.5">
                       <span>🐍</span>
                       <span>{issue.repository.primary_language}</span>
                     </span>
                   )}
 
-                  <div className="flex items-center gap-1 text-xs text-neutral-300 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10">
-                    <Star className="w-3 h-3 text-amber-400" />
+                  <div className="flex items-center gap-1 text-xs text-slate-700 dark:text-neutral-300 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                    <Star className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                     <span>{issue.repository?.stars_count?.toLocaleString() || '12,979'}</span>
                   </div>
 
                   {/* License or Policy Check */}
                   {issue.policy_status === 'policy_check_required' ? (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-amber-950/40 text-amber-400 border border-amber-500/30">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-500/30">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                       <span>Policy Check Required</span>
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-xl bg-white/5 text-neutral-300 border border-white/10">
-                      <span className="w-2 h-2 rounded-full border border-neutral-400" />
+                    <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/5 dark:text-neutral-300 dark:border-white/10">
+                      <span className="w-2 h-2 rounded-full border border-slate-400 dark:border-neutral-400" />
                       <span>{issue.repository?.license_spdx || 'MIT'}</span>
                     </span>
                   )}
@@ -1086,49 +1086,49 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
                 {/* Suitability Score Gauge */}
                 <div className="text-right shrink-0">
-                  <div className="text-[11px] text-neutral-400 flex items-center justify-end gap-1">
-                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                  <div className="text-[11px] text-slate-500 dark:text-neutral-400 flex items-center justify-end gap-1">
+                    <Sparkles className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                     <span>Suitability</span>
                   </div>
-                  <div className="text-2xl font-black text-white font-mono tracking-tight mt-0.5">
-                    {issue.ranking_score?.toFixed(0) || 65} <span className="text-xs text-neutral-500 font-normal">/100</span>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight mt-0.5">
+                    {issue.ranking_score?.toFixed(0) || 65} <span className="text-xs text-slate-400 dark:text-neutral-500 font-normal">/100</span>
                   </div>
                 </div>
               </div>
 
               {/* Title and Link */}
               <div>
-                <h2 className="text-base font-bold text-white group-hover:text-blue-400 transition flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition flex items-center gap-2">
                   <a
                     href={issue.html_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-blue-400 transition inline-flex items-center gap-1.5"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 transition inline-flex items-center gap-1.5"
                   >
                     <span>#{issue.issue_number} — {issue.title}</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-400" />
                   </a>
                 </h2>
               </div>
 
               {/* Description Excerpt */}
-              <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-neutral-400 line-clamp-2 leading-relaxed">
                 {issue.ai_summary || issue.body?.slice(0, 240)}
               </p>
 
               {/* Bottom Tags & Action Buttons */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/5">
                 <div className="flex flex-wrap items-center gap-2">
                   {getDifficultyBadge(issue.difficulty_estimate)}
-                  <span className="flex items-center gap-1 text-xs text-neutral-400 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10">
-                    <Clock className="w-3 h-3 text-neutral-400" />
+                  <span className="flex items-center gap-1 text-xs text-slate-600 dark:text-neutral-400 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                    <Clock className="w-3 h-3 text-slate-400 dark:text-neutral-400" />
                     <span>~{issue.estimated_effort_hours || 5}h effort</span>
                   </span>
 
                   {issue.labels?.slice(0, 3).map((lbl: any, idx: number) => {
                     const name = typeof lbl === 'object' ? lbl.name : lbl;
                     return (
-                      <span key={idx} className="text-xs text-neutral-400 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10">
+                      <span key={idx} className="text-xs text-slate-600 dark:text-neutral-400 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
                         {name}
                       </span>
                     );
@@ -1146,23 +1146,23 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                       }}
                       disabled={completingIds.has(issue.id)}
                       title="Mark as completed & remove from inbox"
-                      className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-300 dark:hover:text-white dark:border-white/10 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
                     >
-                      <Check className="w-3.5 h-3.5 stroke-[2.5] text-emerald-400" />
+                      <Check className="w-3.5 h-3.5 stroke-[2.5] text-emerald-600 dark:text-emerald-400" />
                       <span>Done</span>
                     </button>
                   )}
 
                   <button
                     onClick={() => onOpenDetails(issue)}
-                    className="px-3 py-1.5 text-neutral-300 hover:text-white text-xs font-semibold transition"
+                    className="px-3 py-1.5 text-slate-600 hover:text-slate-900 dark:text-neutral-300 dark:hover:text-white text-xs font-semibold transition"
                   >
                     Details & Rationale
                   </button>
 
                   <button
                     onClick={() => onSelectIssue(issue.id)}
-                    className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
                   >
                     <span>{isTaskActive ? 'Resume Task' : 'Select Issue'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1172,10 +1172,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
               {/* Explainable reasons pills */}
               {breakdown?.reasons && breakdown.reasons.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-2 text-[11px] text-neutral-400">
-                  <span className="text-neutral-500 font-medium">Scoring factors:</span>
+                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/10 flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-neutral-400">
+                  <span className="text-slate-600 dark:text-neutral-500 font-medium">Scoring factors:</span>
                   {breakdown.reasons.slice(0, 3).map((r: string, idx: number) => (
-                    <span key={idx} className="bg-white/5 px-2 py-0.5 rounded-lg border border-white/10 text-neutral-300">
+                    <span key={idx} className="bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-700 dark:text-neutral-300">
                       • {r}
                     </span>
                   ))}

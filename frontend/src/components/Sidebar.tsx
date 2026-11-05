@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`bg-[#080c14] border-r border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 select-none z-30 transition-all duration-300 ease-in-out ${
+      className={`bg-white dark:bg-[#080c14] border-r border-slate-200 dark:border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 select-none z-30 transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-20 p-3 items-center' : 'w-64 p-4'
       }`}
     >
@@ -48,19 +48,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isCollapsed ? (
         <div className="flex flex-col items-center gap-2.5 py-2 mb-4 w-full">
           <div
-            className="cursor-pointer p-1.5 rounded-xl hover:bg-white/5 transition"
+            className="cursor-pointer p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition"
             onClick={() => setActiveTab('issues')}
             title="Issue-to-PR"
           >
-            <BrandIcon size={28} showBadge={false} className="text-cyan-400" />
+            <BrandIcon size={28} showBadge={false} className="text-cyan-500 dark:text-cyan-400" />
           </div>
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition border border-transparent hover:border-white/10"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 transition border border-transparent hover:border-slate-200 dark:hover:border-white/10"
             title="Expand sidebar"
           >
-            <PanelLeft className="w-4 h-4 text-neutral-300" />
+            <PanelLeft className="w-4 h-4 text-slate-600 dark:text-neutral-300" />
           </button>
         </div>
       ) : (
@@ -69,18 +69,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => setActiveTab('issues')}
           >
-            <BrandIcon size={30} showBadge={false} className="text-cyan-400 shrink-0" />
-            <span className="font-extrabold text-base text-white tracking-tight">
+            <BrandIcon size={30} showBadge={false} className="text-cyan-500 dark:text-cyan-400 shrink-0" />
+            <span className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
               Issue-to-PR
             </span>
           </div>
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition border border-transparent hover:border-white/10"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 transition border border-transparent hover:border-slate-200 dark:hover:border-white/10"
             title="Collapse sidebar for more workspace"
           >
-            <PanelLeftClose className="w-4 h-4 text-neutral-400 hover:text-white" />
+            <PanelLeftClose className="w-4 h-4 text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white" />
           </button>
         </div>
       )}
@@ -99,17 +99,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={`${item.label}${item.badge ? ` (${item.badge})` : ''}`}
                 className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 group ${
                   isActive
-                    ? 'bg-blue-600/15 text-blue-400 border border-blue-500/40 shadow-sm shadow-blue-500/20'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
+                    ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm dark:bg-blue-600/15 dark:text-blue-400 dark:border-blue-500/40 dark:shadow-blue-500/20'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
                 }`}
               >
                 <Icon className={`w-5 h-5 transition-colors ${
-                  isActive ? 'text-blue-400' : 'text-neutral-400 group-hover:text-white'
+                  isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white'
                 }`} />
                 {item.badge && (
                   <span
-                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-[#080c14] ${
-                      item.badgeType === 'gold' ? 'bg-amber-400' : 'bg-blue-400'
+                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#080c14] ${
+                      item.badgeType === 'gold' ? 'bg-amber-400' : 'bg-blue-500'
                     }`}
                   />
                 )}
@@ -123,13 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 active:scale-95 group ${
                 isActive
-                  ? 'bg-blue-600/10 text-white border border-blue-500/30 shadow-sm shadow-blue-500/10'
-                  : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:bg-blue-600/10 dark:text-white dark:border-blue-500/30 dark:shadow-blue-500/10 font-bold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-3">
                 <Icon className={`w-4 h-4 transition-colors ${
-                  isActive ? 'text-blue-400' : 'text-neutral-400 group-hover:text-white'
+                  isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white'
                 }`} />
                 <span>{item.label}</span>
               </div>
@@ -137,10 +137,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {item.badge && (
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
                   item.badgeType === 'gold'
-                    ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-400/10 dark:text-amber-400 dark:border-amber-400/20'
                     : isActive
-                    ? 'bg-white/10 text-white border border-white/20'
-                    : 'bg-neutral-800 text-neutral-300'
+                    ? 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-white/10 dark:text-white dark:border-white/20'
+                    : 'bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300'
                 }`}>
                   {item.badge}
                 </span>
@@ -156,38 +156,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={activeTab === 'bounties' ? () => setActiveTab('bounties') : onOpenUpgrade}
             title={activeTab === 'bounties' ? 'Open Source Bounty Hunter Hub' : 'Supercharge your workflow - Upgrade'}
-            className="w-11 h-11 rounded-xl bg-[#0d121f] hover:bg-[#151c30] border border-white/10 hover:border-amber-400/40 text-amber-400 flex items-center justify-center transition shadow-lg active:scale-95"
+            className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-amber-600 dark:bg-[#0d121f] dark:hover:bg-[#151c30] dark:border-white/10 dark:hover:border-amber-400/40 dark:text-amber-400 flex items-center justify-center transition shadow-sm active:scale-95"
           >
-            <Zap className="w-5 h-5 fill-amber-400 text-amber-400" />
+            <Zap className="w-5 h-5 fill-amber-500 text-amber-500" />
           </button>
         ) : activeTab === 'bounties' ? (
-          <div className="p-3.5 rounded-2xl bg-[#0d121f] border border-white/10 text-xs shadow-lg space-y-2">
-            <div className="font-bold text-white text-xs">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 text-xs shadow-sm space-y-2">
+            <div className="font-bold text-slate-900 dark:text-white text-xs">
               Open Source Bounty Hunter Hub
             </div>
-            <p className="text-[11px] text-neutral-400 leading-relaxed">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               Find real cash rewards by solving open-source issues.
             </p>
             <button
               onClick={() => setActiveTab('bounties')}
-              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
             >
               <span>Learn More</span>
-              <ArrowRight className="w-3 h-3 text-neutral-400" />
+              <ArrowRight className="w-3 h-3 text-slate-500 dark:text-neutral-400" />
             </button>
           </div>
         ) : (
-          <div className="p-3.5 rounded-2xl bg-[#0d121f] border border-white/10 text-xs shadow-lg space-y-2">
-            <div className="flex items-center gap-2 text-white font-bold text-xs">
-              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 text-xs shadow-sm space-y-2">
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs">
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
               <span>Supercharge your workflow</span>
             </div>
-            <p className="text-[11px] text-neutral-400 leading-relaxed">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               Automate more. Ship faster.
             </p>
             <button
               onClick={onOpenUpgrade}
-              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-slate-800 dark:border-white/10 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm"
             >
               <span>Upgrade</span>
               <ArrowRight className="w-3 h-3 text-white" />

@@ -125,10 +125,10 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
         <div className="max-w-3xl space-y-3 relative z-10">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-            <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Universal GitHub Tracker</span>
+            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Universal GitHub Tracker</span>
           </div>
-          <h2 className="text-xl font-extrabold text-white">Track an Issue or Pull Request</h2>
-          <p className="text-xs text-neutral-400">
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Track an Issue or Pull Request</h2>
+          <p className="text-xs text-slate-500 dark:text-neutral-400">
             Paste any GitHub Issue or Pull Request URL to monitor its live status, CI check runs, assignments, and maintainer review comments in real-time.
           </p>
 
@@ -139,13 +139,13 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
                 placeholder="https://github.com/owner/repo/pull/123 or https://github.com/owner/repo/issues/456"
-                className="w-full bg-[#05080f] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition font-mono"
+                className="w-full bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition font-mono"
               />
             </div>
             <button
               type="submit"
               disabled={isAdding || !inputUrl.trim()}
-              className="px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-bold text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
             >
               <Plus className={`w-4 h-4 ${isAdding ? 'animate-spin' : ''}`} />
               <span>{isAdding ? 'Fetching...' : '+ Track Item'}</span>
@@ -156,18 +156,18 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
                 type="button"
                 onClick={handleImportClick}
                 disabled={isImporting}
-                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-xs shadow-sm active:scale-95 transition flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white dark:border-white/10 font-bold text-xs shadow-sm active:scale-95 transition flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0"
                 title="Automatically import all PRs authored by you from GitHub"
               >
-                <Sparkles className={`w-4 h-4 text-neutral-300 ${isImporting ? 'animate-spin' : ''}`} />
+                <Sparkles className={`w-4 h-4 text-slate-600 dark:text-neutral-300 ${isImporting ? 'animate-spin' : ''}`} />
                 <span>{isImporting ? 'Importing...' : 'Import My PRs'}</span>
               </button>
             )}
           </form>
 
           {errorMsg && (
-            <div className="p-3 bg-rose-950/30 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -176,33 +176,33 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
 
       {/* Stats Counter Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 space-y-1 shadow-lg">
-          <span className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider block">Total Tracked</span>
-          <span className="text-2xl font-black text-white">{tasks.length}</span>
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-4 space-y-1 shadow-sm dark:shadow-lg">
+          <span className="text-[11px] text-slate-500 dark:text-neutral-400 font-semibold uppercase tracking-wider block">Total Tracked</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white">{tasks.length}</span>
         </div>
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 space-y-1 shadow-lg">
-          <span className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider block">Active PRs</span>
-          <span className="text-2xl font-black text-white">{totalPRs - mergedPRs}</span>
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-4 space-y-1 shadow-sm dark:shadow-lg">
+          <span className="text-[11px] text-slate-500 dark:text-neutral-400 font-semibold uppercase tracking-wider block">Active PRs</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white">{totalPRs - mergedPRs}</span>
         </div>
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 space-y-1 shadow-lg">
-          <span className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider block">Merged PRs</span>
-          <span className="text-2xl font-black text-white">{mergedPRs}</span>
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-4 space-y-1 shadow-sm dark:shadow-lg">
+          <span className="text-[11px] text-slate-500 dark:text-neutral-400 font-semibold uppercase tracking-wider block">Merged PRs</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white">{mergedPRs}</span>
         </div>
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 space-y-1 shadow-lg">
-          <span className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider block">Monitored Issues</span>
-          <span className="text-2xl font-black text-white">{totalIssues}</span>
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-4 space-y-1 shadow-sm dark:shadow-lg">
+          <span className="text-[11px] text-slate-500 dark:text-neutral-400 font-semibold uppercase tracking-wider block">Monitored Issues</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white">{totalIssues}</span>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#0c101a] border border-white/10 rounded-2xl p-3 shadow-lg">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-3 shadow-sm dark:shadow-lg">
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
           <button
             onClick={() => setFilterType('all')}
             className={`px-3 py-1.5 rounded-xl transition active:scale-95 ${
               filterType === 'all' || filterType === 'prs'
-                ? 'bg-white text-black font-bold shadow-sm'
-                : 'text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 dark:text-neutral-400 dark:hover:text-white dark:bg-white/5 dark:hover:bg-white/10'
             }`}
           >
             Pull Requests ({totalPRs})
@@ -212,8 +212,8 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
               onClick={() => setFilterType('issues')}
               className={`px-3 py-1.5 rounded-xl transition active:scale-95 ${
                 filterType === 'issues'
-                  ? 'bg-white text-black font-bold shadow-sm'
-                  : 'text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10'
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 dark:text-neutral-400 dark:hover:text-white dark:bg-white/5 dark:hover:bg-white/10'
               }`}
             >
               Issues ({totalIssues})
@@ -223,24 +223,24 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
 
         <div className="flex items-center gap-2">
           {/* Sort Selector */}
-          <div className="flex items-center gap-1 bg-[#05080f] border border-white/10 rounded-xl p-1 text-xs">
-            <span className="text-neutral-500 px-1 text-[11px] flex items-center gap-1">
-              <ArrowUpDown className="w-3 h-3 text-neutral-400" />
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl p-1 text-xs">
+            <span className="text-slate-500 dark:text-neutral-500 px-1 text-[11px] flex items-center gap-1">
+              <ArrowUpDown className="w-3 h-3 text-slate-400 dark:text-neutral-400" />
               <span>Sort:</span>
             </span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortField)}
-              className="bg-transparent text-neutral-200 text-xs focus:outline-none cursor-pointer pr-1 font-medium"
+              className="bg-transparent text-slate-800 dark:text-neutral-200 text-xs focus:outline-none cursor-pointer pr-1 font-medium"
             >
-              <option value="updated" className="bg-[#0c101a] text-white">Recently Updated</option>
-              <option value="repo" className="bg-[#0c101a] text-white">Repository Name</option>
-              <option value="number" className="bg-[#0c101a] text-white">PR / Issue #</option>
-              <option value="status" className="bg-[#0c101a] text-white">Status Priority</option>
+              <option value="updated" className="bg-white dark:bg-[#0c101a] text-slate-900 dark:text-white">Recently Updated</option>
+              <option value="repo" className="bg-white dark:bg-[#0c101a] text-slate-900 dark:text-white">Repository Name</option>
+              <option value="number" className="bg-white dark:bg-[#0c101a] text-slate-900 dark:text-white">PR / Issue #</option>
+              <option value="status" className="bg-white dark:bg-[#0c101a] text-slate-900 dark:text-white">Status Priority</option>
             </select>
             <button
               onClick={() => setSortAsc(!sortAsc)}
-              className="p-1 text-neutral-400 hover:text-white rounded transition"
+              className="p-1 text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white rounded transition"
               title={sortAsc ? 'Ascending' : 'Descending'}
             >
               {sortAsc ? '↑' : '↓'}
@@ -248,13 +248,13 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
           </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search repo, title, #..."
-              className="bg-[#05080f] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 w-36 sm:w-48 transition"
+              className="bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 w-36 sm:w-48 transition"
             />
           </div>
         </div>
@@ -262,10 +262,10 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
 
       {/* Cards List */}
       {sortedAndFilteredTasks.length === 0 ? (
-        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-8 sm:p-12 text-center space-y-3 shadow-xl">
-          <FolderGit2 className="w-8 h-8 text-neutral-500 mx-auto" />
-          <h3 className="text-base font-bold text-white">No items found</h3>
-          <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-8 sm:p-12 text-center space-y-3 shadow-sm dark:shadow-xl">
+          <FolderGit2 className="w-8 h-8 text-slate-400 dark:text-neutral-500 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">No items found</h3>
+          <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
             Paste any GitHub pull request or issue URL into the box above to start live tracking.
           </p>
         </div>
