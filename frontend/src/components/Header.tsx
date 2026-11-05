@@ -20,7 +20,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onRefreshDiscovery,
   isSyncing,
-  onLock
+  onLock,
+  setActiveTab
 }) => {
   const { isDark, toggleTheme } = useTheme();
 
@@ -53,11 +54,11 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{isSyncing ? 'Syncing...' : 'Sync Live'}</span>
         </button>
 
-        {/* User Profile / Lock */}
+        {/* User Profile / Settings */}
         <button
-          onClick={onLock}
+          onClick={() => setActiveTab ? setActiveTab('settings') : onLock?.()}
           className="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-neutral-300 hover:text-white hover:border-white/20 transition active:scale-95"
-          title="Account / Session settings"
+          title="Open Settings & Account"
         >
           <UserIcon className="w-4 h-4" />
         </button>
