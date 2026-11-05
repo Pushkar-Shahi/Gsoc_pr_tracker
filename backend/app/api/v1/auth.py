@@ -158,7 +158,7 @@ async def _provision_user_and_token(
             name=f"{gh_username}'s Workspace",
             slug=f"org-{gh_username.lower()}-{uuid.uuid4().hex[:6]}",
             is_personal=True,
-            billing_tier="starter"
+            billing_tier=getattr(settings, "DEFAULT_ORG_TIER", "pro")
         )
         db.add(org)
         await db.flush()
@@ -172,7 +172,7 @@ async def _provision_user_and_token(
         db.add(membership)
         await db.flush()
         tenant_id = org.id
-        tier = "starter"
+        tier = getattr(settings, "DEFAULT_ORG_TIER", "pro")
     else:
         tenant_id = membership.org_id
         tier = membership.organization.billing_tier if (membership.organization and membership.organization.billing_tier) else "starter"

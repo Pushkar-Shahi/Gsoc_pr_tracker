@@ -60,9 +60,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 px-6 sm:px-8 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/85 dark:bg-[#080c14]/80 backdrop-blur-md sticky top-0 z-20">
-      {/* Left: Organization / Account Switcher */}
-      <div className="flex items-center gap-3">
+      {/* Left: Organization / Account Switcher & Early Access Badge */}
+      <div className="flex items-center gap-2.5">
         <OrganizationSwitcher />
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500/30 text-[11px] font-semibold select-none shadow-xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
+          <span>Early Access Beta</span>
+        </div>
       </div>
 
       {/* Right Controls: Theme Toggle, Sync Live, Profile */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Key, CheckCircle2, AlertTriangle, ExternalLink, X, RefreshCw, Lock } from 'lucide-react';
+import { Shield, CheckCircle2, AlertTriangle, X, RefreshCw, Lock } from 'lucide-react';
 import { SSOConfig, SSOTestResult } from '../types';
 import * as api from '../api';
 
@@ -9,7 +9,7 @@ interface EnterpriseSSOModalProps {
 }
 
 export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, onClose }) => {
-  const [config, setConfig] = useState<SSOConfig | null>(null);
+  const [_config, setConfig] = useState<SSOConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);

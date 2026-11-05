@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Compass, TrendingUp, Bookmark, Box, ExternalLink, Search, 
-  RefreshCw, Clock, ArrowRight, ShieldCheck, CheckCircle2
+  RefreshCw, Clock, ArrowRight, CheckCircle2
 } from 'lucide-react';
 import { Issue, BountyStats } from '../types';
 import * as api from '../api';
@@ -262,17 +262,28 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
       </div>
 
       {/* 2-Column Grid of Bounty Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {bounties.map((bounty) => {
-          const isClaiming = claimingId === bounty.id;
-          const isClaimed = Boolean((bounty as any).is_bounty_claimed || (bounty as any).task_id);
+      {loading ? (
+        <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-neutral-400">
+          <RefreshCw className="w-6 h-6 animate-spin mb-2 text-blue-600 dark:text-blue-400" />
+          <span className="text-xs font-medium">Loading open bounties...</span>
+        </div>
+      ) : bounties.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-neutral-400 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl">
+          <Box className="w-8 h-8 mb-2 opacity-50" />
+          <span className="text-xs font-semibold">No bounties match current filters</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {bounties.map((bounty) => {
+            const isClaiming = claimingId === bounty.id;
+            const isClaimed = Boolean((bounty as any).is_bounty_claimed || (bounty as any).task_id);
 
-          return (
-            <div 
-              key={bounty.id}
-              className="p-5 rounded-2xl bg-[#0c101a] hover:bg-[#0e1320] border border-white/10 hover:border-white/20 shadow-xl transition space-y-3.5 flex flex-col justify-between"
-            >
-              <div className="space-y-2.5">
+            return (
+              <div 
+                key={bounty.id}
+                className="p-5 rounded-2xl bg-white dark:bg-[#0c101a] hover:bg-slate-50 dark:hover:bg-[#0e1320] border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm dark:shadow-xl transition space-y-3.5 flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
                 {/* Badges row & Score */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -360,6 +371,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
           );
         })}
       </div>
+      )}
     </div>
   );
 };

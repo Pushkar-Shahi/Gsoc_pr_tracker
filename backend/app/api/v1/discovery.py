@@ -88,7 +88,11 @@ async def get_cron_status():
         }
 
     # Keep worker sync aligned with universal internal schedule
-    worker.last_cron_run_at = cycle_start if not worker.last_cron_run_at or worker.last_cron_run_at < cycle_start else worker.last_cron_run_at
+    last_run = worker.last_cron_run_at
+    if last_run and last_run.tzinfo is None:
+        last_run = last_run.replace(tzinfo=timezone.utc)
+    if not last_run or last_run < cycle_start:
+        worker.last_cron_run_at = cycle_start
     worker.next_cron_run_at = cycle_end
 
     return {

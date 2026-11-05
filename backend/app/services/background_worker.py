@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from sqlalchemy import select, or_
@@ -344,11 +344,11 @@ class BackgroundWorkerService:
         self._tasks.append(asyncio.create_task(self._pr_tracker_loop(), name="pr_tracker_worker"))
         self._tasks.append(asyncio.create_task(self._discovery_loop(), name="discovery_cron_worker"))
         self._tasks.append(asyncio.create_task(self._issue_reconciler_loop(), name="issue_reconciler_worker"))
-        now_epoch = int(datetime.utcnow().timestamp())
+        now_epoch = int(datetime.now(timezone.utc).timestamp())
         cycle_start_epoch = (now_epoch // self.discovery_interval_sec) * self.discovery_interval_sec
         cycle_end_epoch = cycle_start_epoch + self.discovery_interval_sec
-        self.last_cron_run_at = datetime.utcfromtimestamp(cycle_start_epoch)
-        self.next_cron_run_at = datetime.utcfromtimestamp(cycle_end_epoch)
+        self.last_cron_run_at = datetime.fromtimestamp(cycle_start_epoch, tz=timezone.utc)
+        self.next_cron_run_at = datetime.fromtimestamp(cycle_end_epoch, tz=timezone.utc)
         logger.info(f"Background workers started (PR tracker, 2-hour discovery cron [{self.discovery_interval_sec}s], issue reconciler).")
 
     async def stop(self):

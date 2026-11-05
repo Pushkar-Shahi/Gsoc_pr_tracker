@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  History, Search, Filter, ShieldCheck, Terminal, Clock, CheckCircle, 
-  Download, FileSpreadsheet, FileCode, Shield 
-} from 'lucide-react';
+import { Search, FileSpreadsheet, FileCode, Shield } from 'lucide-react';
 import { AuditLog } from '../types';
 import { exportAuditLogs } from '../api';
 import { EnterpriseSSOModal } from './EnterpriseSSOModal';

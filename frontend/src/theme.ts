@@ -113,7 +113,7 @@ export function useTheme() {
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [theme]);
 
   const toggleTheme = () => {
     const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';

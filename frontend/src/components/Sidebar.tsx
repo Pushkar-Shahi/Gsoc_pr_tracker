@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Search, Trophy, Bookmark, GitPullRequest, 
   Clock, Play, CreditCard, Settings as SettingsIcon,
-  Zap, ArrowRight, BookOpen, PanelLeftClose, PanelLeft
+  Zap, ArrowRight, PanelLeftClose, PanelLeft, Sparkles
 } from 'lucide-react';
 import { BrandIcon } from './BrandIcon';
 
@@ -154,42 +154,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`mt-auto pt-3 w-full ${isCollapsed ? 'flex justify-center' : ''}`}>
         {isCollapsed ? (
           <button
-            onClick={activeTab === 'bounties' ? () => setActiveTab('bounties') : onOpenUpgrade}
-            title={activeTab === 'bounties' ? 'Open Source Bounty Hunter Hub' : 'Supercharge your workflow - Upgrade'}
+            onClick={() => setActiveTab('bounties')}
+            title="Early Access Beta - All Pro Features Free"
             className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-amber-600 dark:bg-[#0d121f] dark:hover:bg-[#151c30] dark:border-white/10 dark:hover:border-amber-400/40 dark:text-amber-400 flex items-center justify-center transition shadow-sm active:scale-95"
           >
             <Zap className="w-5 h-5 fill-amber-500 text-amber-500" />
           </button>
         ) : activeTab === 'bounties' ? (
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 text-xs shadow-sm space-y-2">
-            <div className="font-bold text-slate-900 dark:text-white text-xs">
-              Open Source Bounty Hunter Hub
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-900 dark:text-white text-xs">
+                Bounty Hunter Hub
+              </span>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                ACTIVE
+              </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              Find real cash rewards by solving open-source issues.
+              Find cash bounties on GitHub issues via Algora & Polar.
             </p>
             <button
-              onClick={() => setActiveTab('bounties')}
+              onClick={() => setActiveTab('find')}
               className="w-full mt-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
             >
-              <span>Learn More</span>
+              <span>Back to Issues</span>
               <ArrowRight className="w-3 h-3 text-slate-500 dark:text-neutral-400" />
             </button>
           </div>
         ) : (
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 text-xs shadow-sm space-y-2">
-            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs">
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-              <span>Supercharge your workflow</span>
+          <div className="p-3.5 rounded-2xl bg-gradient-to-b from-blue-50/60 to-slate-50 dark:from-[#0d1527] dark:to-[#0c101a] border border-blue-100 dark:border-blue-500/20 text-xs shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-xs">
+                <Sparkles className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+                <span>Early Access Beta</span>
+              </div>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-400/30">
+                100% FREE
+              </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              Automate more. Ship faster.
+            <p className="text-[11px] text-slate-600 dark:text-neutral-300 leading-relaxed">
+              All Pro capabilities unlocked. Unlimited PRs & priority scrapers.
             </p>
             <button
-              onClick={onOpenUpgrade}
-              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-blue-600 dark:border-white/10 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
+              onClick={() => setActiveTab('bounties')}
+              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white border border-blue-600 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
             >
-              <span>Upgrade</span>
+              <span>Explore Bounties</span>
               <ArrowRight className="w-3 h-3 text-white" />
             </button>
           </div>

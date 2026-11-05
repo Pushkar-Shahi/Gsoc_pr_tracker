@@ -194,9 +194,11 @@ async def create_tables():
             if not o_check.scalar_one_or_none():
                 slug_check = await conn.execute(text("SELECT id FROM organizations WHERE slug = 'default-org'"))
                 if not slug_check.scalar_one_or_none():
+                    default_tier = getattr(settings, "DEFAULT_ORG_TIER", "pro")
+                    bool_val = 'TRUE' if is_pg else '1'
                     await conn.execute(text(
                         "INSERT INTO organizations (id, name, slug, is_personal, billing_tier, created_at, updated_at) "
-                        f"VALUES ('default-org', 'Personal Workspace', 'default-org', {'TRUE' if is_pg else '1'}, 'starter', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);"
+                        f"VALUES ('default-org', 'Personal Workspace', 'default-org', {bool_val}, '{default_tier}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);"
                     ))
 
             # Check default membership

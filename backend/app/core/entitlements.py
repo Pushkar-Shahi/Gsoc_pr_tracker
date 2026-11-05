@@ -3,6 +3,7 @@ from typing import Callable
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.tenant import get_current_tenant, TenantContext
 from app.db.database import get_db
 from app.services.billing_service import BillingService
@@ -24,12 +25,12 @@ def require_tier(minimum_tier: str) -> Callable:
     min_rank = TIER_RANKS.get(minimum_tier.lower(), 1)
 
     async def tier_checker(ctx: TenantContext = Depends(get_current_tenant)) -> TenantContext:
+        # Free Beta Mode or Superuser bypasses all tier restrictions
+        if getattr(settings, "FREE_BETA_MODE", False) or ctx.user.is_superuser:
+            return ctx
+
         current_tier = (ctx.organization.billing_tier or "starter").lower()
         curr_rank = TIER_RANKS.get(current_tier, 0)
-
-        # Superusers bypass tier restrictions
-        if ctx.user.is_superuser:
-            return ctx
 
         if curr_rank < min_rank:
             raise HTTPException(
@@ -51,8 +52,8 @@ async def enforce_task_creation_quota(ctx: TenantContext, db: AsyncSession) -> N
     Verifies that the tenant has not exceeded their monthly task quota.
     Raises HTTP 402 PAYMENT_REQUIRED with QUOTA_EXCEEDED code if limit is reached.
     """
-    # Superusers bypass quotas
-    if ctx.user.is_superuser:
+    # Free Beta Mode or Superuser bypasses quotas completely
+    if getattr(settings, "FREE_BETA_MODE", False) or ctx.user.is_superuser:
         return
 
     current_tier = (ctx.organization.billing_tier or "starter").lower()

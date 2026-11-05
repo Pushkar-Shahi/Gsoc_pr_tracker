@@ -422,6 +422,10 @@ class BillingService:
     @staticmethod
     async def get_monthly_task_usage(tenant_id: str, db: AsyncSession) -> Tuple[int, Optional[int]]:
         """Returns (usage_count, limit_count) for the tenant in the current calendar month."""
+        if getattr(settings, "FREE_BETA_MODE", False):
+            meter = await BillingService.get_or_create_task_usage_meter(tenant_id, db)
+            return meter.usage_count, None  # Unlimited during Free Beta
+
         # Check org tier
         org_stmt = select(Organization).where(Organization.id == tenant_id)
         org_res = await db.execute(org_stmt)
@@ -450,7 +454,7 @@ class BillingService:
         org_stmt = select(Organization).where(Organization.id == tenant_id)
         org_res = await db.execute(org_stmt)
         org = org_res.scalar_one_or_none()
-        tier = org.billing_tier if org else "starter"
+        effective_tier = org.billing_tier if org else ("pro" if getattr(settings, "FREE_BETA_MODE", False) else "starter")
 
         sub_stmt = select(Subscription).where(Subscription.tenant_id == tenant_id)
         sub_res = await db.execute(sub_stmt)
@@ -459,11 +463,13 @@ class BillingService:
         usage_count, limit_count = await BillingService.get_monthly_task_usage(tenant_id, db)
 
         return {
-            "tier": tier,
+            "tier": effective_tier,
             "status": sub.status if sub else "active",
             "cancel_at_period_end": sub.cancel_at_period_end if sub else False,
             "current_period_end": sub.current_period_end.isoformat() if sub and sub.current_period_end else None,
             "tasks_created_this_month": usage_count,
             "monthly_task_limit": limit_count,
             "is_simulation": is_simulation_mode(),
+            "free_beta_mode": getattr(settings, "FREE_BETA_MODE", False),
+            "plan_display_name": "Early Adopter Founder Plan" if getattr(settings, "FREE_BETA_MODE", False) else f"{effective_tier.capitalize()} Plan",
         }

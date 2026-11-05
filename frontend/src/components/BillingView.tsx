@@ -96,15 +96,15 @@ export function BillingView() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-200">
       {/* Header & Status Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-xl bg-white/5 border border-white/10 text-white">
+            <span className="p-1.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-white/5 dark:border-white/10 dark:text-white">
               <CreditCard className="w-4 h-4" />
             </span>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Billing & Plans</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Billing & Plans</h1>
           </div>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-slate-500 dark:text-neutral-400">
             Scale your autonomous issue triage, worktree generation, and Antigravity workflow.
           </p>
         </div>
@@ -113,7 +113,7 @@ export function BillingView() {
           <button
             onClick={handleOpenPortal}
             disabled={actionLoading === 'portal'}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-neutral-200 text-xs font-semibold hover:bg-white/10 transition active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/5 dark:border-white/10 dark:hover:border-white/20 dark:text-neutral-200 text-xs font-semibold dark:hover:bg-white/10 transition active:scale-95 disabled:opacity-50"
           >
             {actionLoading === 'portal' ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -125,11 +125,33 @@ export function BillingView() {
         </div>
       </div>
 
+      {/* Early Access Public Launch Special Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-[#0c101a] border border-blue-200 dark:border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-blue-600 text-white shrink-0 shadow-sm shadow-blue-600/30">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                🎉 Public Launch Special: Founder Early Adopter Tier
+              </h3>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-400/30">
+                100% FREE
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-neutral-300 mt-0.5 leading-relaxed">
+              All Pro developer capabilities are unlocked for free during our public launch. Early contributors will keep grandfathered perks when premium tiers roll out!
+            </p>
+          </div>
+        </div>
+      </div>
+
       {message && (
         <div className={`p-4 rounded-xl border text-xs font-medium flex items-center justify-between ${
           message.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-            : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300'
+            : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300'
         }`}>
           <span>{message.text}</span>
           <button onClick={() => setMessage(null)} className="underline ml-4 hover:opacity-80">Dismiss</button>
@@ -139,13 +161,13 @@ export function BillingView() {
       {/* Monthly Task Meter & Active Tier Snapshot */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Current Plan Card */}
-        <div className="p-5 rounded-2xl bg-[#0c101a] border border-white/10 relative overflow-hidden shadow-xl">
-          <div className="text-xs uppercase tracking-wider text-neutral-400 font-semibold mb-1">
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 relative overflow-hidden shadow-sm dark:shadow-xl">
+          <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-neutral-400 font-semibold mb-1">
             Current Tier
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-slate-900 dark:text-white capitalize">
-              {currentTier === 'starter' ? 'Community Starter' : currentTier === 'pro' ? 'Pro Developer' : 'Engineering Team'}
+              {currentTier === 'starter' ? 'Community Starter' : currentTier === 'pro' ? 'Pro Developer (Early Access)' : 'Engineering Team'}
             </span>
             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
               currentTier === 'pro'
@@ -157,7 +179,7 @@ export function BillingView() {
               {subInfo?.status || 'Active'}
             </span>
           </div>
-          <p className="text-xs text-neutral-400 mt-2">
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-2">
             {currentTier === 'starter' 
               ? 'Free tier for personal open-source issue exploration.' 
               : 'Full access to unconstrained PR publication and priority queues.'}
@@ -165,21 +187,21 @@ export function BillingView() {
         </div>
 
         {/* Task Quota Progress Card */}
-        <div className="md:col-span-2 p-5 rounded-2xl bg-[#0c101a] border border-white/10 shadow-xl">
+        <div className="md:col-span-2 p-5 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs uppercase tracking-wider text-neutral-400 font-semibold">
+            <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-neutral-400 font-semibold">
               Monthly Task Quota
             </div>
-            <span className="text-xs font-mono font-bold text-white">
+            <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
               {isUnlimited ? `${usageCount} tasks created (Unlimited)` : `${usageCount} / ${limitCount} tasks used`}
             </span>
           </div>
 
-          <div className="w-full bg-[#05080f] h-2.5 rounded-full overflow-hidden border border-white/10 mb-2">
+          <div className="w-full bg-slate-100 dark:bg-[#05080f] h-2.5 rounded-full overflow-hidden border border-slate-200 dark:border-white/10 mb-2">
             <div 
               className={`h-full transition-all duration-500 ${
                 isUnlimited 
-                  ? 'bg-indigo-500 w-full' 
+                  ? 'bg-blue-600 dark:bg-indigo-500 w-full' 
                   : usagePct >= 100 
                   ? 'bg-rose-500' 
                   : usagePct >= 80 
@@ -190,10 +212,10 @@ export function BillingView() {
             />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-neutral-400">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400">
             <span>Resets on the 1st of next month</span>
             {!isUnlimited && usagePct >= 80 && (
-              <span className="text-amber-400 font-medium">
+              <span className="text-amber-500 font-medium">
                 {limitCount - usageCount <= 0 ? 'Limit reached' : `${limitCount - usageCount} tasks remaining`}
               </span>
             )}
@@ -248,13 +270,13 @@ export function BillingView() {
               key={plan.id}
               className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0c101a] border transition-all duration-200 shadow-sm dark:shadow-xl ${
                 isPro 
-                  ? 'border-indigo-500/50 shadow-indigo-500/10 ring-1 ring-indigo-500/30' 
-                  : 'border-white/10 hover:border-white/20'
+                  ? 'border-blue-400 dark:border-indigo-500/50 shadow-blue-500/5 dark:shadow-indigo-500/10 ring-1 ring-blue-400/40 dark:ring-indigo-500/30' 
+                  : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
               }`}
             >
               {isPro && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold text-[10px] tracking-wide uppercase shadow-md">
-                  Most Popular
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-[10px] tracking-wide uppercase shadow-md">
+                  Unlocked in Public Beta
                 </div>
               )}
 
@@ -268,26 +290,26 @@ export function BillingView() {
                   )}
                 </div>
 
-                <p className="text-xs text-neutral-400 leading-relaxed min-h-[36px] mb-6">
+                <p className="text-xs text-slate-500 dark:text-neutral-400 leading-relaxed min-h-[36px] mb-6">
                   {plan.description}
                 </p>
 
                 <div className="flex items-baseline gap-1 mb-6">
                   <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{plan.currency_symbol || '₹'}{price}</span>
-                  <span className="text-xs text-neutral-400 font-medium">{billingSuffix}</span>
+                  <span className="text-xs text-slate-500 dark:text-neutral-400 font-medium">{billingSuffix}</span>
                 </div>
 
-                <div className="border-t border-white/10 pt-5 space-y-3 mb-6">
+                <div className="border-t border-slate-100 dark:border-white/10 pt-5 space-y-3 mb-6">
                   {plan.features.map((f, i) => (
                     <div key={i} className="flex items-start gap-2.5 text-xs">
                       {f.included ? (
                         <Check className={`w-4 h-4 shrink-0 mt-0.5 ${
-                          f.highlight ? 'text-indigo-400' : 'text-emerald-400'
+                          f.highlight ? 'text-blue-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'
                         }`} />
                       ) : (
-                        <span className="w-4 h-4 shrink-0 text-center text-neutral-600 font-bold">—</span>
+                        <span className="w-4 h-4 shrink-0 text-center text-slate-400 dark:text-neutral-600 font-bold">—</span>
                       )}
-                      <span className={f.included ? (f.highlight ? 'text-white font-semibold' : 'text-neutral-300') : 'text-neutral-500'}>
+                      <span className={f.included ? (f.highlight ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-700 dark:text-neutral-300') : 'text-slate-400 dark:text-neutral-500'}>
                         {f.name}
                       </span>
                     </div>
@@ -299,17 +321,17 @@ export function BillingView() {
                 {isCurrent ? (
                   <button
                     disabled
-                    className="w-full py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-neutral-400 text-xs font-bold cursor-default"
+                    className="w-full py-2.5 px-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 dark:bg-white/5 dark:border-white/10 dark:text-neutral-400 text-xs font-bold cursor-default"
                   >
-                    Current Plan
+                    ✓ Current Active Plan
                   </button>
                 ) : plan.id === 'starter' ? (
                   <button
                     onClick={() => handleSimulateTier('starter')}
                     disabled={actionLoading !== null}
-                    className="w-full py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-semibold transition"
+                    className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-300 text-xs font-semibold transition"
                   >
-                    Downgrade to Starter
+                    Included in Community
                   </button>
                 ) : (
                   <button

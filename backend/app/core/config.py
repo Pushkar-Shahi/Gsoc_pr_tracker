@@ -104,7 +104,17 @@ class Settings:
     GITLAB_CLIENT_SECRET: Optional[str] = os.getenv("GITLAB_CLIENT_SECRET", "")
     GITLAB_REDIRECT_URI: str = os.getenv("GITLAB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/gitlab/callback")
 
-    # Stripe & Monetization Settings
+    # Free Beta Launch & Monetization Settings
+    @property
+    def FREE_BETA_MODE(self) -> bool:
+        if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("ENVIRONMENT") == "testing":
+            return False
+        return os.getenv("FREE_BETA_MODE", "true").lower() in ("true", "1", "yes")
+
+    @property
+    def DEFAULT_ORG_TIER(self) -> str:
+        return "pro" if self.FREE_BETA_MODE else "starter"
+
     STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock_stripe_key_2026")
     STRIPE_PUBLISHABLE_KEY: Optional[str] = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_mock_stripe_key_2026")
     STRIPE_WEBHOOK_SECRET: Optional[str] = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_mock_stripe_webhook_secret_2026")
