@@ -372,8 +372,8 @@ export function App() {
           </div>
         )}
 
-        {/* Persistent Left Sidebar (Desktop) */}
-        <div className="hidden md:block">
+        {/* Persistent Left Sidebar (Desktop) - Locked Fixed Position */}
+        <div className="hidden md:block w-64 shrink-0">
           <Sidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}

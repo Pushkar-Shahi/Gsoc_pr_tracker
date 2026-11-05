@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-[#080c14] border-r border-white/10 flex flex-col h-screen sticky top-0 p-4 shrink-0 select-none z-30">
+    <aside className="w-64 bg-[#080c14] border-r border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 p-4 shrink-0 select-none z-30">
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-2 py-3 mb-4 cursor-pointer" onClick={() => setActiveTab('issues')}>
         <BrandIcon size={32} showBadge={false} className="text-cyan-400 shrink-0" />
