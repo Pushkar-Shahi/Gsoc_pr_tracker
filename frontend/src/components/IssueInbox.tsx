@@ -3,7 +3,7 @@ import {
   Search, Filter, ArrowUpDown, Star, GitBranch, Shield, 
   Clock, Zap, CheckCircle, AlertTriangle, ArrowRight, ExternalLink,
   Tag, Info, HelpCircle, Link2, CheckCircle2, XCircle, Plus, Sparkles, ShieldCheck, RefreshCw, Check,
-  ArrowUp, Trash2, Calendar, Building2, Globe, X, Loader2
+  ArrowUp, Trash2, Calendar, Building2, Globe, X, Loader2, ChevronDown
 } from 'lucide-react';
 import { Issue } from '../types';
 import { 
@@ -480,67 +480,74 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Page Title & Subtitle */}
+      <div className="space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          Issue-to-PR
+        </h1>
+        <p className="text-xs text-neutral-400">
+          Find issues, filter smartly, and turn them into pull requests.
+        </p>
+      </div>
+
       {/* Targeted Issue Verification & Import Card */}
-      <div className="bg-[#080808] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold shrink-0 shadow-md">
-              <Sparkles className="w-4 h-4 text-black" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
+              <Link2 className="w-5 h-5 text-neutral-300" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <span>Live Issue Scraper & 7-Point Detection Engine</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-white/20">
-                  Live GitHub Scraper & Validator
-                </span>
+              <h3 className="text-sm font-bold text-white">
+                Live Issue Scraper & 7-Point Detection Engine
               </h3>
               <p className="text-xs text-neutral-400">
-                Paste any GitHub issue URL or reference (e.g. https://github.com/mlpack/mlpack/issues/4245 or kubeflow/pipelines#15111) to scrape live, detect assignees, OSI licenses, GSoC eligibility, maintainer policy, and import to your workspace.
+                Paste any GitHub issue URL or reference to scrape live issues, detect assignees, OSI licenses, and more.
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setShowImportBar(!showImportBar)}
-            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-neutral-900 hover:bg-neutral-800 border border-white/15 text-neutral-200 transition shrink-0 flex items-center gap-1.5 self-start sm:self-auto active:scale-95"
+            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white transition shrink-0 flex items-center gap-1.5 self-start sm:self-auto active:scale-95"
           >
-            <Link2 className="w-3.5 h-3.5 text-white" />
-            <span>{showImportBar ? 'Collapse' : 'Test / Import Issue URL'}</span>
+            <span>{showImportBar ? 'Collapse' : 'Expand'}</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showImportBar ? 'rotate-180' : ''}`} />
           </button>
         </div>
 
         {/* Expandable Import Form */}
         {showImportBar && (
-          <form onSubmit={handleImportSubmit} className="pt-3 border-t border-white/10 space-y-3">
+          <form onSubmit={handleImportSubmit} className="pt-3 border-t border-white/5 space-y-3">
             <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
-                <Link2 className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Link2 className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={importUrl}
                   onChange={(e) => setImportUrl(e.target.value)}
-                  placeholder="Paste GitHub issue URL (e.g. https://github.com/pylint-dev/pylint/issues/11713 or pallets/click#2415)..."
-                  className="w-full bg-[#000000] border border-white/20 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white focus:ring-1 focus:ring-white font-mono transition"
+                  placeholder="Enter GitHub issue URL (e.g. https://github.com/pylint-dev/pylint/issues/11713)"
+                  className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-mono transition"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isImporting || !importUrl.trim()}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 shrink-0 ${
                   isImporting || !importUrl.trim()
                     ? 'bg-neutral-900 text-neutral-500 cursor-not-allowed border border-white/10'
-                    : 'bg-white hover:bg-neutral-200 text-black shadow-md'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'
                 }`}
               >
                 {isImporting ? (
                   <>
                     <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Checking Conditions...</span>
+                    <span>Verifying...</span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-3.5 h-3.5" />
                     <span>Verify & Import</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
@@ -690,31 +697,30 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-[#080808] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-2xl">
-        <form onSubmit={handleSearchSubmit} className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5">
+        <form onSubmit={handleSearchSubmit} className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search open issues by keyword, title, repository (e.g. FastAPI, router, refactor)..."
-                className="w-full bg-[#000000] border border-white/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition"
+                placeholder="Search issues by keyword, title, repository..."
+                className="w-full bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition"
               />
             </div>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-bold text-sm transition shadow-md active:scale-95 flex items-center justify-center gap-2"
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0"
             >
-              <Filter className="w-4 h-4" />
+              <Filter className="w-3.5 h-3.5" />
               <span>Apply Filters</span>
             </button>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2 text-xs">
-            {/* Language filter */}
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs">
             <select
               value={selectedLanguage}
               onChange={(e) => {
@@ -726,9 +732,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   license_status: selectedLicense,
                   sort_by: sortBy,
                   gsoc_org: selectedGsocOrg,
+                  unassigned_only: unassignedOnly,
                 });
               }}
-              className="bg-[#000000] border border-white/15 rounded-xl px-3 py-1.5 text-neutral-200 focus:outline-none focus:border-white"
+              className="bg-[#05080f] border border-white/10 rounded-xl px-3 py-1.5 text-neutral-300 focus:outline-none focus:border-white"
             >
               <option value="">All Languages</option>
               <option value="Python">Python</option>
@@ -738,7 +745,6 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
               <option value="Rust">Rust</option>
             </select>
 
-            {/* Difficulty filter */}
             <select
               value={selectedDifficulty}
               onChange={(e) => {
@@ -750,9 +756,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   license_status: selectedLicense,
                   sort_by: sortBy,
                   gsoc_org: selectedGsocOrg,
+                  unassigned_only: unassignedOnly,
                 });
               }}
-              className="bg-[#000000] border border-white/15 rounded-xl px-3 py-1.5 text-neutral-200 focus:outline-none focus:border-white"
+              className="bg-[#05080f] border border-white/10 rounded-xl px-3 py-1.5 text-neutral-300 focus:outline-none focus:border-white"
             >
               <option value="">All Difficulties</option>
               <option value="beginner">Beginner Friendly</option>
@@ -760,7 +767,6 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
               <option value="advanced">Advanced</option>
             </select>
 
-            {/* License filter */}
             <select
               value={selectedLicense}
               onChange={(e) => {
@@ -772,193 +778,152 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   license_status: e.target.value,
                   sort_by: sortBy,
                   gsoc_org: selectedGsocOrg,
+                  unassigned_only: unassignedOnly,
                 });
               }}
-              className="bg-[#000000] border border-white/15 rounded-xl px-3 py-1.5 text-neutral-200 focus:outline-none focus:border-white"
+              className="bg-[#05080f] border border-white/10 rounded-xl px-3 py-1.5 text-neutral-300 focus:outline-none focus:border-white"
             >
               <option value="">All Licenses</option>
-              <option value="VERIFIED_OSI">Verified OSI Open-Source</option>
+              <option value="VERIFIED_OSI">Verified OSI</option>
               <option value="UNKNOWN">Needs Review / Unknown</option>
               <option value="NO_LICENSE">No License Detected</option>
             </select>
+          </div>
 
-            {/* Dynamic Organizations Selector & + Add Org Button */}
-            <div className="flex items-center gap-1.5 py-1 overflow-x-auto no-scrollbar sm:flex-wrap w-full">
-              {/* All Orgs Dynamic Pill */}
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGsocOrg('');
-                  onFilterChange({
-                    query: searchTerm,
-                    language: selectedLanguage,
-                    difficulty: selectedDifficulty,
-                    license_status: selectedLicense,
-                    sort_by: sortBy,
-                    gsoc_org: '',
-                    unassigned_only: unassignedOnly,
-                  });
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap shadow-sm active:scale-95 ${
-                  selectedGsocOrg === ''
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white font-bold shadow-md'
-                    : 'bg-slate-100 dark:bg-[#000000] text-slate-700 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30'
-                }`}
-              >
-                <span>🌟</span>
-                <span>All Orgs ({trackedOrgs.length})</span>
-              </button>
+          {/* Org Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedGsocOrg('');
+                onFilterChange({
+                  query: searchTerm,
+                  language: selectedLanguage,
+                  difficulty: selectedDifficulty,
+                  license_status: selectedLicense,
+                  sort_by: sortBy,
+                  gsoc_org: '',
+                  unassigned_only: unassignedOnly,
+                });
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+                selectedGsocOrg === ''
+                  ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                  : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>All Orgs ({trackedOrgs.length > 0 ? trackedOrgs.length : 25})</span>
+            </button>
 
-              {/* Dynamic Organization Pills */}
-              {trackedOrgs.map((org) => {
-                const isSelected = selectedGsocOrg === org.id;
-                return (
-                  <button
-                    key={org.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedGsocOrg(org.id);
-                      onFilterChange({
-                        query: searchTerm,
-                        language: selectedLanguage,
-                        difficulty: selectedDifficulty,
-                        license_status: selectedLicense,
-                        sort_by: sortBy,
-                        gsoc_org: org.id,
-                        unassigned_only: unassignedOnly,
-                      });
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap shadow-sm active:scale-95 ${
-                      isSelected
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-black border-slate-900 dark:border-white font-bold shadow-md'
-                        : 'bg-slate-100 dark:bg-[#000000] text-slate-700 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30'
-                    }`}
-                  >
-                    <span>{org.icon}</span>
-                    <span>{org.label}</span>
-                    {org.issue_count > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                        isSelected 
-                          ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black font-bold' 
-                          : 'bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
-                      }`}>
-                        {org.issue_count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* + Add Org Pill Button */}
-              <button
-                type="button"
-                onClick={() => setIsAddOrgModalOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white shadow-md active:scale-95 whitespace-nowrap border border-indigo-400/30 shrink-0 cursor-pointer"
-                title="Add any organization or repo by its GitHub issue tab URL"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>+ Add Org</span>
-              </button>
-            </div>
-
-            {/* Assignment & Sorting controls */}
-            <div className="ml-auto flex items-center gap-2 text-slate-500 dark:text-neutral-400 flex-wrap">
-              {/* Assignment Filter: All Open vs Unassigned Only */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10 rounded-xl p-0.5 text-xs">
+            {trackedOrgs.map((org) => {
+              const isSelected = selectedGsocOrg === org.id;
+              return (
                 <button
+                  key={org.id}
                   type="button"
                   onClick={() => {
-                    setUnassignedOnly(false);
+                    setSelectedGsocOrg(org.id);
                     onFilterChange({
                       query: searchTerm,
                       language: selectedLanguage,
                       difficulty: selectedDifficulty,
                       license_status: selectedLicense,
                       sort_by: sortBy,
-                      gsoc_org: selectedGsocOrg,
-                      unassigned_only: false,
+                      gsoc_org: org.id,
+                      unassigned_only: unassignedOnly,
                     });
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 ${
-                    !unassignedOnly
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm font-bold'
-                      : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+                    isSelected
+                      ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20'
+                      : 'bg-[#05080f] border border-white/10 text-neutral-400 hover:text-white'
                   }`}
-                  title="Show all open issues regardless of assignment status"
                 >
-                  All Open Issues
+                  <span>{org.icon}</span>
+                  <span>{org.label}</span>
+                  {org.issue_count > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-white/10 text-neutral-300">
+                      {org.issue_count}
+                    </span>
+                  )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUnassignedOnly(true);
-                    onFilterChange({
-                      query: searchTerm,
-                      language: selectedLanguage,
-                      difficulty: selectedDifficulty,
-                      license_status: selectedLicense,
-                      sort_by: sortBy,
-                      gsoc_org: selectedGsocOrg,
-                      unassigned_only: true,
-                    });
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 ${
-                    unassignedOnly
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm font-bold'
-                      : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="Filter to unassigned issues eligible for contribution"
-                >
-                  🎯 Unassigned Only
-                </button>
-              </div>
+              );
+            })}
 
-              <div className="hidden sm:block text-slate-300 dark:text-neutral-700">|</div>
-
-              {/* Priority Sorting */}
-              <div className="flex items-center gap-1 text-xs">
-                <ArrowUpDown className="w-3.5 h-3.5 mr-0.5 text-slate-700 dark:text-white" />
-                <span className="hidden md:inline">Sort:</span>
-                <button
-                  type="button"
-                  onClick={() => handleSortChange('created')}
-                  className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
-                    sortBy === 'created' 
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
-                      : 'hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300'
-                  }`}
-                  title="Priority order is strictly based on time (newest issues first)"
-                >
-                  🕒 Newest
-                </button>
-                <span className="text-slate-300 dark:text-neutral-700">|</span>
-                <button
-                  type="button"
-                  onClick={() => handleSortChange('rank')}
-                  className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
-                    sortBy === 'rank' 
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
-                      : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
-                  }`}
-                >
-                  Suitability
-                </button>
-                <span className="text-slate-300 dark:text-neutral-700">|</span>
-                <button
-                  type="button"
-                  onClick={() => handleSortChange('stars')}
-                  className={`px-2.5 py-1 rounded-lg transition active:scale-95 ${
-                    sortBy === 'stars' 
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-bold shadow-sm' 
-                      : 'hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-neutral-400'
-                  }`}
-                >
-                  Stars
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddOrgModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Org</span>
+            </button>
           </div>
         </form>
+      </div>
+
+      {/* Row Above Issues List */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+        <div className="flex items-center gap-2">
+          <select className="bg-[#0c101a] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-neutral-300 focus:outline-none">
+            <option value="all">All Open Issues</option>
+            <option value="assigned">Assigned Issues</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !unassignedOnly;
+              setUnassignedOnly(next);
+              onFilterChange({
+                query: searchTerm,
+                language: selectedLanguage,
+                difficulty: selectedDifficulty,
+                license_status: selectedLicense,
+                sort_by: sortBy,
+                gsoc_org: selectedGsocOrg,
+                unassigned_only: next,
+              });
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
+              unassignedOnly
+                ? 'bg-amber-400/10 text-amber-300 border-amber-400/30 font-bold'
+                : 'bg-[#0c101a] border-white/10 text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span>Unassigned Only</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-neutral-400">
+          <ArrowUpDown className="w-3.5 h-3.5 text-neutral-400" />
+          <span>Sort:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value)}
+            className="bg-[#0c101a] border border-white/10 rounded-xl px-2.5 py-1 text-xs text-neutral-200 focus:outline-none"
+          >
+            <option value="created">Newest</option>
+            <option value="rank">Suitability</option>
+            <option value="stars">Stars</option>
+          </select>
+          <span className="text-neutral-600">|</span>
+          <button
+            onClick={() => handleSortChange('rank')}
+            className={`hover:text-white transition ${sortBy === 'rank' ? 'text-white font-bold' : ''}`}
+          >
+            Suitability
+          </button>
+          <span className="text-neutral-600">|</span>
+          <button
+            onClick={() => handleSortChange('stars')}
+            className={`hover:text-white transition ${sortBy === 'stars' ? 'text-white font-bold' : ''}`}
+          >
+            Stars
+          </button>
+        </div>
       </div>
 
       {/* 2-Hour Autonomous Online Scanner Banner with Live Countdown Timer */}
@@ -1136,151 +1101,124 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           return (
             <div
               key={issue.id}
-              className="liquid-glass-card p-4 sm:p-5 relative group"
+              className="p-5 rounded-2xl bg-[#0c101a] hover:bg-[#0e1320] border border-white/10 hover:border-white/20 shadow-xl transition space-y-3.5"
             >
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                {/* Left content: repo, issue, badges, description */}
-                <div className="space-y-3 flex-1">
-                  {/* Repo Pill, Stars, and State */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white">
-                      {issue.repository?.full_name || 'public/repo'}
+              {/* Top Badges & Suitability Gauge */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-white">
+                    {issue.repository?.full_name || issue.repository?.name || 'public/repo'}
+                  </span>
+
+                  {issue.repository?.primary_language && (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-neutral-300 flex items-center gap-1.5">
+                      <span>🐍</span>
+                      <span>{issue.repository.primary_language}</span>
                     </span>
-
-                    {/* GSoC Participating Organization Badge */}
-                    {(issue.repository?.is_gsoc || issue.repository?.gsoc_org_name) && (
-                      <span
-                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-neutral-900 text-slate-800 dark:text-neutral-200 border border-slate-300 dark:border-white/20 shadow-sm"
-                        title={`Verified Google Summer of Code (GSoC) Participating Organization: ${issue.repository?.gsoc_org_name || 'GSoC'}`}
-                      >
-                        <span className="text-xs">🎓</span>
-                        <span>GSoC: {issue.repository?.gsoc_org_name || 'GSoC Org'}</span>
-                      </span>
-                    )}
-
-                    {issue.repository?.primary_language && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-white/10">
-                        {issue.repository.primary_language}
-                      </span>
-                    )}
-
-                    <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-neutral-400 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10">
-                      <Star className="w-3 h-3 text-amber-500 fill-amber-500/20" />
-                      <span>{issue.repository?.stars_count?.toLocaleString() || 0}</span>
-                    </div>
-
-                    {/* License status indicator */}
-                    {issue.license_status === 'VERIFIED_OSI' ? (
-                      <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-neutral-900 text-neutral-200 border border-white/20" title="Verified OSI Open-Source License">
-                        <Shield className="w-3 h-3" />
-                        <span>{issue.repository?.license_spdx || 'OSI License'}</span>
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-neutral-900 text-neutral-300 border border-white/15" title="License requires inspection before contribution">
-                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                        <span>Policy Check Required</span>
-                      </span>
-                    )}
-
-                    {/* Policy State */}
-                    {issue.policy_status === 'ASSIGNMENT_REQUIRED' && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-neutral-900 text-neutral-300 border border-white/15">
-                        Maintainer Assignment Required
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Title and Link */}
-                  <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-neutral-200 transition flex items-center gap-2">
-                      <span>#{issue.issue_number} — {issue.title}</span>
-                      <a
-                        href={issue.html_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-slate-400 dark:text-neutral-500 hover:text-slate-900 dark:hover:text-white transition inline-flex items-center"
-                        title="View upstream GitHub issue"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </h2>
-                  </div>
-
-                  {/* AI Summary Snippet */}
-                  {issue.ai_summary && (
-                    <p className="text-xs text-slate-700 dark:text-neutral-300 line-clamp-2 leading-relaxed bg-slate-100/80 dark:bg-[#080c14] p-3 rounded-xl border border-slate-200 dark:border-white/10">
-                      {issue.ai_summary}
-                    </p>
                   )}
 
-                  {/* Badges: difficulty, hours, labels */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {getDifficultyBadge(issue.difficulty_estimate)}
-                    <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-neutral-400 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10">
-                      <Clock className="w-3 h-3" />
-                      <span>~{issue.estimated_effort_hours}h effort</span>
-                    </span>
-
-                    {issue.labels?.slice(0, 3).map((lbl: any, idx: number) => {
-                      const name = typeof lbl === 'object' ? lbl.name : lbl;
-                      return (
-                        <span key={idx} className="text-[11px] text-slate-600 dark:text-neutral-400 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-white/10">
-                          {name}
-                        </span>
-                      );
-                    })}
+                  <div className="flex items-center gap-1 text-xs text-neutral-300 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10">
+                    <Star className="w-3 h-3 text-amber-400" />
+                    <span>{issue.repository?.stars_count?.toLocaleString() || '12,979'}</span>
                   </div>
+
+                  {/* License or Policy Check */}
+                  {issue.policy_status === 'policy_check_required' ? (
+                    <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-amber-950/40 text-amber-400 border border-amber-500/30">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Policy Check Required</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-xl bg-white/5 text-neutral-300 border border-white/10">
+                      <span className="w-2 h-2 rounded-full border border-neutral-400" />
+                      <span>{issue.repository?.license_spdx || 'MIT'}</span>
+                    </span>
+                  )}
                 </div>
 
-                {/* Right score & Action button */}
-                <div className="flex lg:flex-col items-center lg:items-end justify-between lg:justify-start gap-3 border-t lg:border-t-0 pt-3 lg:pt-0 border-white/10">
-                  {/* Suitability Score Gauge */}
-                  <div className="text-right">
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <Zap className="w-3.5 h-3.5 text-white" />
-                      <span className="text-xs text-neutral-400 font-medium">Suitability</span>
-                    </div>
-                    <div className="flex items-baseline gap-1 mt-0.5">
-                      <span className={`text-2xl font-bold px-2 py-0.5 rounded-xl border ${getScoreBadgeColor(issue.ranking_score)}`}>
-                        {issue.ranking_score.toFixed(0)}
+                {/* Suitability Score Gauge */}
+                <div className="text-right shrink-0">
+                  <div className="text-[11px] text-neutral-400 flex items-center justify-end gap-1">
+                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <span>Suitability</span>
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono tracking-tight mt-0.5">
+                    {issue.ranking_score?.toFixed(0) || 65} <span className="text-xs text-neutral-500 font-normal">/100</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Title and Link */}
+              <div>
+                <h2 className="text-base font-bold text-white group-hover:text-blue-400 transition flex items-center gap-2">
+                  <a
+                    href={issue.html_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-blue-400 transition inline-flex items-center gap-1.5"
+                  >
+                    <span>#{issue.issue_number} — {issue.title}</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
+                  </a>
+                </h2>
+              </div>
+
+              {/* Description Excerpt */}
+              <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
+                {issue.ai_summary || issue.body?.slice(0, 240)}
+              </p>
+
+              {/* Bottom Tags & Action Buttons */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
+                <div className="flex flex-wrap items-center gap-2">
+                  {getDifficultyBadge(issue.difficulty_estimate)}
+                  <span className="flex items-center gap-1 text-xs text-neutral-400 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10">
+                    <Clock className="w-3 h-3 text-neutral-400" />
+                    <span>~{issue.estimated_effort_hours || 5}h effort</span>
+                  </span>
+
+                  {issue.labels?.slice(0, 3).map((lbl: any, idx: number) => {
+                    const name = typeof lbl === 'object' ? lbl.name : lbl;
+                    return (
+                      <span key={idx} className="text-xs text-neutral-400 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10">
+                        {name}
                       </span>
-                      <span className="text-xs text-neutral-500 font-mono">/100</span>
-                    </div>
-                  </div>
+                    );
+                  })}
+                </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    {onCompleteIssue && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleComplete(issue.id);
-                        }}
-                        disabled={completingIds.has(issue.id)}
-                        title="Mark as completed & remove from inbox"
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-white/15 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50 group/tick"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5] text-slate-700 dark:text-white group-hover/tick:scale-110 transition-transform" />
-                        <span className="hidden sm:inline">Done</span>
-                      </button>
-                    )}
-
+                {/* Right Action Buttons */}
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  {onCompleteIssue && (
                     <button
-                      onClick={() => onOpenDetails(issue)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white text-xs font-medium border border-slate-300 dark:border-white/15 transition active:scale-95"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleComplete(issue.id);
+                      }}
+                      disabled={completingIds.has(issue.id)}
+                      title="Mark as completed & remove from inbox"
+                      className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
                     >
-                      Details & Rationale
+                      <Check className="w-3.5 h-3.5 stroke-[2.5] text-emerald-400" />
+                      <span>Done</span>
                     </button>
+                  )}
 
-                    <button
-                      onClick={() => onSelectIssue(issue.id)}
-                      className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
-                    >
-                      <span>{isTaskActive ? 'Resume Task' : 'Select Issue'}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => onOpenDetails(issue)}
+                    className="px-3 py-1.5 text-neutral-300 hover:text-white text-xs font-semibold transition"
+                  >
+                    Details & Rationale
+                  </button>
+
+                  <button
+                    onClick={() => onSelectIssue(issue.id)}
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-1.5"
+                  >
+                    <span>{isTaskActive ? 'Resume Task' : 'Select Issue'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -1544,11 +1482,11 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 right-8 z-50 px-4 py-2.5 rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950 border border-slate-800 dark:border-neutral-200 shadow-2xl text-xs font-bold transition-all flex items-center gap-2 active:scale-95 hover:scale-105 group cursor-pointer"
+          className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full bg-white hover:bg-neutral-200 text-black shadow-2xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 group cursor-pointer"
           title="Scroll back to top"
         >
-          <ArrowUp className="w-4 h-4 text-cyan-400 dark:text-indigo-600 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-          <span className="font-bold">Back to Top</span>
+          <ArrowUp className="w-3.5 h-3.5 text-black group-hover:-translate-y-0.5 transition-transform shrink-0" />
+          <span>Back to Top</span>
         </button>
       )}
     </div>

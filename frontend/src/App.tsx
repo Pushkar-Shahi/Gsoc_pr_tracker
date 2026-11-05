@@ -8,6 +8,7 @@ import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, SubscriptionI
 import * as api from './api';
 
 import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { IssueInbox } from './components/IssueInbox';
 import { IssueDetailsModal } from './components/IssueDetailsModal';
 import { TrackedIssuesView } from './components/TrackedIssuesView';
@@ -355,174 +356,52 @@ export function App() {
   const unreadNotificationsCount = auditLogs.filter(l => !readLogIds.has(l.id)).length;
 
   return (
-    <div className="min-h-screen bg-canvas-mesh text-slate-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
-        {/* Atmospheric Liquid Ambient Glow Orbs (Isolated on GPU compositor layer) */}
+    <div className="min-h-screen bg-[#080c14] text-neutral-100 flex font-sans selection:bg-blue-500 selection:text-white relative overflow-x-hidden">
+        {/* Atmospheric Liquid Ambient Glow Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" style={{ contain: 'strict' }}>
-          <div className="ambient-orb-indigo -top-32 -left-32 opacity-40" />
-          <div className="ambient-orb-cyan top-1/4 -right-32 opacity-35" />
-          <div className="ambient-orb-emerald -bottom-32 left-1/3 opacity-25" />
-          <div className="ambient-orb-rose top-2/3 -left-32 opacity-20" />
+          <div className="ambient-orb-indigo -top-32 -left-32 opacity-25" />
+          <div className="ambient-orb-cyan top-1/4 -right-32 opacity-20" />
+          <div className="ambient-orb-emerald -bottom-32 left-1/3 opacity-15" />
         </div>
 
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 liquid-glass border border-slate-200 dark:border-white/20 text-slate-900 dark:text-white px-4 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-2.5 animate-bounce">
-            <ShieldCheck className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
+          <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 bg-[#0c101a] border border-white/20 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-2.5 animate-bounce">
+            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
 
-        {/* Header */}
-        <Header
-          discoveryStatus={discoveryStatus}
-          settings={settings}
-          onRefreshDiscovery={handleSyncAll}
-          isSyncing={isSyncing}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab as any}
-          onLock={api.logout}
-          isInstallable={isInstallable}
-          onInstallPWA={handleInstallPWA}
-          planTier={planTier}
-        />
-
-        {/* Desktop Top Navigation Bar (Hidden on Mobile) */}
-        <nav className="hidden sm:block liquid-glass-header sticky top-16 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-2.5 text-xs font-medium no-scrollbar">
-              {/* 1. Issue Finder */}
-              <button
-                onClick={() => setActiveTab('issues')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'issues'
-                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/30'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                <span>Find Issues</span>
-                {totalIssues > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === 'issues' ? 'bg-black/40 text-white' : 'bg-slate-200 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-300 dark:border-white/20'
-                  }`}>
-                    {totalIssues}
-                  </span>
-                )}
-              </button>
-
-              {/* 2. Bounties & Monetization */}
-              <button
-                onClick={() => setActiveTab('bounties')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'bounties'
-                    ? 'bg-gradient-to-r from-amber-500 to-emerald-500 text-black font-extrabold shadow-lg shadow-emerald-500/30'
-                    : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-950/20'
-                }`}
-              >
-                <Coins className="w-4 h-4" />
-                <span>Bounties</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  activeTab === 'bounties' ? 'bg-black text-amber-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30'
-                }`}>
-                  $$$
-                </span>
-              </button>
-
-              {/* 3. Tracked Items */}
-              <button
-                onClick={() => setActiveTab('tracker')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'tracker'
-                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow-lg shadow-purple-500/30'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <Layers className="w-4 h-4" />
-                <span>Tracked Items</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  activeTab === 'tracker' ? 'bg-black/40 text-white' : 'bg-slate-200 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-300 dark:border-white/20'
-                }`}>
-                  {tasks.length}
-                </span>
-              </button>
-
-              {/* 4. Pull Requests */}
-              <button
-                onClick={() => setActiveTab('prs')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'prs'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/30'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <GitPullRequest className="w-4 h-4" />
-                <span>Pull Requests</span>
-                {totalPRs > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === 'prs' ? 'bg-black/40 text-white' : 'bg-slate-200 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-300 dark:border-white/20'
-                  }`}>
-                    {totalPRs}
-                  </span>
-                )}
-              </button>
-
-              {/* 5. Activity History */}
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'history'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/30'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <History className="w-4 h-4" />
-                <span>Timeline</span>
-              </button>
-
-              {/* 6. Hybrid Runners */}
-              <button
-                onClick={() => setActiveTab('runners')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'runners'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/30'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <Cpu className="w-4 h-4" />
-                <span>Runners</span>
-              </button>
-
-              {/* 7. Billing & Plans */}
-              <button
-                onClick={() => setActiveTab('billing')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 active:scale-95 ${
-                  activeTab === 'billing'
-                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold shadow-lg shadow-rose-500/30'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>Billing</span>
-              </button>
-
-              {/* 8. Settings */}
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 shrink-0 ml-auto active:scale-95 ${
-                  activeTab === 'settings'
-                    ? 'bg-slate-900 text-white dark:bg-neutral-800 dark:text-white font-bold border border-slate-700 dark:border-white/30 shadow-md'
-                    : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-neutral-900/60'
-                }`}
-              >
-                <SettingsIcon className="w-4 h-4" />
-                <span>Settings</span>
-              </button>
-            </div>
-          </div>
-        </nav>
+        {/* Persistent Left Sidebar (Desktop) */}
+        <div className="hidden md:block">
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            totalIssues={totalIssues}
+            totalPRs={totalPRs}
+            trackedTasksCount={tasks.length}
+            onOpenUpgrade={() => setUpgradeModalOpen(true)}
+          />
+        </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 pb-32 sm:pb-8">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+          {/* Top Header */}
+          <Header
+            discoveryStatus={discoveryStatus}
+            settings={settings}
+            onRefreshDiscovery={handleSyncAll}
+            isSyncing={isSyncing}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab as any}
+            onLock={api.logout}
+            isInstallable={isInstallable}
+            onInstallPWA={handleInstallPWA}
+            planTier={planTier}
+          />
+
+          {/* Main Content Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 pb-28 md:pb-12">
           {activeTab === 'issues' && (
             <IssueInbox
               issues={issues}
@@ -724,6 +603,7 @@ export function App() {
             </button>
           </div>
         </nav>
+      </div>
 
         {/* Issue Details Modal */}
         {selectedIssueModal && (
