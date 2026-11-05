@@ -144,15 +144,15 @@ export function BillingView() {
             Current Tier
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-white capitalize">
+            <span className="text-xl font-bold text-slate-900 dark:text-white capitalize">
               {currentTier === 'starter' ? 'Community Starter' : currentTier === 'pro' ? 'Pro Developer' : 'Engineering Team'}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
               currentTier === 'pro'
-                ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300'
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-500/20 dark:border-indigo-500/30 dark:text-indigo-300'
                 : currentTier === 'team'
-                ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-white/5 border-white/10 text-neutral-300'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/20 dark:border-emerald-500/30 dark:text-emerald-300'
+                : 'bg-slate-100 border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-neutral-300'
             }`}>
               {subInfo?.status || 'Active'}
             </span>
@@ -262,7 +262,7 @@ export function BillingView() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">{plan.name}</h3>
                   {isCurrent && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20">
                       Active
                     </span>
                   )}
@@ -338,20 +338,20 @@ export function BillingView() {
       </div>
 
       {/* Developer Simulation Mode Box (Visible for local testing) */}
-      <div className="p-5 rounded-2xl bg-[#0c101a] border border-dashed border-white/20 shadow-xl">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[#0c101a] border border-dashed border-slate-300 dark:border-white/20 shadow-sm dark:shadow-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded bg-amber-500/20 text-amber-400">
+            <span className="p-1 rounded bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-transparent">
               <Zap className="w-4 h-4" />
             </span>
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               Developer Quick Simulation Switcher
             </span>
-            <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+            <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20 font-semibold">
               Test Mode
             </span>
           </div>
-          <span className="text-[11px] text-neutral-400">
+          <span className="text-[11px] text-slate-500 dark:text-neutral-400">
             Instantly toggle organization tiers to verify quota enforcement & UI changes.
           </span>
         </div>
@@ -360,21 +360,21 @@ export function BillingView() {
           <button
             onClick={() => handleSimulateTier('starter')}
             disabled={actionLoading !== null || currentTier === 'starter'}
-            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-neutral-200 transition disabled:opacity-40"
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 transition disabled:opacity-40"
           >
             Switch to Starter (5 tasks/mo)
           </button>
           <button
             onClick={() => handleSimulateTier('pro')}
             disabled={actionLoading !== null || currentTier === 'pro'}
-            className="px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/30 text-xs font-medium text-indigo-200 transition disabled:opacity-40"
+            className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 dark:border-indigo-500/30 dark:text-indigo-200 transition disabled:opacity-40"
           >
             Switch to Pro (Unlimited)
           </button>
           <button
             onClick={() => handleSimulateTier('team')}
             disabled={actionLoading !== null || currentTier === 'team'}
-            className="px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 text-xs font-medium text-emerald-200 transition disabled:opacity-40"
+            className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:border-emerald-500/30 dark:text-emerald-200 transition disabled:opacity-40"
           >
             Switch to Team (Private & RBAC)
           </button>

@@ -139,28 +139,28 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
     switch (status) {
       case 'success':
         return (
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-white/10 px-2 py-0.5 rounded border border-white/20">
-            <CheckCircle2 className="w-3 h-3 text-white" />
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-white dark:bg-white/10 dark:border-white/20 px-2 py-0.5 rounded">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-white" />
             <span>Checks Passing</span>
           </span>
         );
       case 'failure':
         return (
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-white/20 px-2 py-0.5 rounded border border-white/40">
-            <AlertCircle className="w-3 h-3 text-white" />
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 dark:text-white dark:bg-white/20 dark:border-white/40 px-2 py-0.5 rounded">
+            <AlertCircle className="w-3 h-3 text-rose-600 dark:text-white" />
             <span>Checks Failing</span>
           </span>
         );
       case 'pending':
         return (
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-300 bg-neutral-900 px-2 py-0.5 rounded border border-white/10">
-            <Clock className="w-3 h-3 text-white animate-spin" />
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 dark:text-neutral-300 dark:bg-neutral-900 dark:border-white/10 px-2 py-0.5 rounded">
+            <Clock className="w-3 h-3 text-amber-600 dark:text-white animate-spin" />
             <span>CI Pending</span>
           </span>
         );
       default:
         return (
-          <span className="text-[11px] text-neutral-400 font-mono">
+          <span className="text-[11px] text-slate-500 dark:text-neutral-400 font-mono">
             {status || 'Preflight Passed'}
           </span>
         );
@@ -170,8 +170,8 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
   const getReviewBadge = (status?: string, isMerged?: boolean) => {
     if (isMerged) {
       return (
-        <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-white text-black border border-white flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-black" />
+        <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 dark:bg-white dark:text-black dark:border-white flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-purple-500 dark:text-black" />
           <span>MERGED UPSTREAM</span>
         </span>
       );
@@ -179,27 +179,27 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
     switch (status) {
       case 'CHANGES_REQUESTED':
         return (
-          <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-neutral-900 text-white border border-white/30 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-white" />
+          <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-neutral-900 dark:text-white dark:border-white/30 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-white" />
             <span>Changes Requested</span>
           </span>
         );
       case 'APPROVED':
         return (
-          <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-white/15 text-white border border-white/30 flex items-center gap-1">
-            <Check className="w-3 h-3 text-white" />
+          <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-white/15 dark:text-white dark:border-white/30 flex items-center gap-1">
+            <Check className="w-3 h-3 text-emerald-600 dark:text-white" />
             <span>Approved by Maintainer</span>
           </span>
         );
       case 'COMMENTED':
         return (
-          <span className="text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-200 border border-white/15">
+          <span className="text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-neutral-900 dark:text-neutral-200 dark:border-white/15">
             Maintainer Commented
           </span>
         );
       default:
         return (
-          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/10">
+          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 dark:bg-white/5 dark:text-neutral-400 dark:border-white/10">
             Awaiting Review
           </span>
         );

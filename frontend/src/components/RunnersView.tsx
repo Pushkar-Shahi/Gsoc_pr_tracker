@@ -79,7 +79,7 @@ export function RunnersView() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Hybrid Local Runners</h2>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
+            <span className="text-[10px] uppercase font-mono px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-400 dark:border-emerald-500/30 font-semibold">
               Zero Cloud Compute Cost
             </span>
           </div>
@@ -117,30 +117,30 @@ export function RunnersView() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
-            <span className="text-[11px] font-mono uppercase text-neutral-400">Online Runners</span>
+            <span className="text-[11px] font-mono uppercase text-slate-500 dark:text-neutral-400">Online Runners</span>
             <div className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{onlineCount}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-950/50 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 dark:bg-emerald-950/50 dark:border-emerald-500/30 dark:text-emerald-400 flex items-center justify-center">
             <Zap className="w-5 h-5" />
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
-            <span className="text-[11px] font-mono uppercase text-neutral-400">Total Registered</span>
+            <span className="text-[11px] font-mono uppercase text-slate-500 dark:text-neutral-400">Total Registered</span>
             <div className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{runners.length}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neutral-300">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-neutral-300 flex items-center justify-center">
             <Server className="w-5 h-5" />
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-sm dark:shadow-xl">
           <div>
-            <span className="text-[11px] font-mono uppercase text-neutral-400">Architecture</span>
+            <span className="text-[11px] font-mono uppercase text-slate-500 dark:text-neutral-400">Architecture</span>
             <div className="text-sm font-bold text-slate-900 dark:text-white mt-1">Hybrid Cloud-to-Local</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-950/50 border border-blue-500/30 flex items-center justify-center text-blue-400">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 dark:bg-blue-950/50 dark:border-blue-500/30 dark:text-blue-400 flex items-center justify-center">
             <Cpu className="w-5 h-5" />
           </div>
         </div>
@@ -174,7 +174,7 @@ export function RunnersView() {
                 <div key={runner.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition">
                   <div className="flex items-start gap-3.5 min-w-0">
                     <div className="relative mt-1">
-                      <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neutral-300">
+                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-neutral-300">
                         <Terminal className="w-4 h-4" />
                       </div>
                       <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0c101a] ${
@@ -312,7 +312,7 @@ export function RunnersView() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-mono uppercase text-neutral-400">Runner Token</span>
+                  <span className="text-[11px] font-mono uppercase text-slate-500 dark:text-neutral-400">Runner Token</span>
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -332,7 +332,7 @@ export function RunnersView() {
 
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono uppercase text-neutral-400">Launch Command</span>
+                    <span className="text-[11px] font-mono uppercase text-slate-500 dark:text-neutral-400">Launch Command</span>
                     <button
                       onClick={() => copyToClipboard(`python3 -m runner.agent --url ${runnerBaseUrl} --token "${createdToken}"`)}
                       className="text-[11px] text-neutral-400 hover:text-white flex items-center gap-1 transition"

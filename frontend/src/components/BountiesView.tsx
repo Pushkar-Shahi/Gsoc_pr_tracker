@@ -105,19 +105,19 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Open Source Bounty Hunter Hub
             </h1>
             <div className="flex items-center gap-1.5">
-              <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300 font-mono text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-transparent font-mono text-[10px] font-bold">
                 POLAR.SH
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300 font-mono text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-transparent font-mono text-[10px] font-bold">
                 ALGORA
               </span>
             </div>
           </div>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
             Earn real cash rewards by solving high-value issues across verified open-source codebases.
           </p>
         </div>
@@ -281,8 +281,8 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
                     </span>
                     <span className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold ${
                       bounty.bounty_platform === 'algora'
-                        ? 'bg-rose-950/60 text-rose-400 border border-rose-500/30'
-                        : 'bg-neutral-800 text-neutral-300'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-500/30'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-neutral-800 dark:text-neutral-300'
                     }`}>
                       {bounty.bounty_platform === 'algora' ? 'ALGORA' : 'POLAR.SH'}
                     </span>
@@ -299,7 +299,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
                 </div>
 
                 {/* Title */}
-                <h3 className="text-sm font-bold text-white leading-snug line-clamp-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
                   {bounty.title}
                 </h3>
 

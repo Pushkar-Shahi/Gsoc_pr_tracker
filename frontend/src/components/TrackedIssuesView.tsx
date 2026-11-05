@@ -145,10 +145,14 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
             <button
               type="submit"
               disabled={isAdding || !inputUrl.trim()}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 dark:bg-white dark:hover:bg-neutral-200 dark:text-black"
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs active:scale-95 transition flex items-center justify-center gap-2 shrink-0 ${
+                inputUrl.trim()
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 dark:bg-white dark:hover:bg-neutral-200 dark:text-black'
+                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed dark:bg-white/5 dark:text-neutral-500 dark:border-white/10'
+              }`}
             >
               <Plus className={`w-4 h-4 ${isAdding ? 'animate-spin' : ''}`} />
-              <span>{isAdding ? 'Fetching...' : '+ Track Item'}</span>
+              <span>{isAdding ? 'Fetching...' : 'Track Item'}</span>
             </button>
 
             {onImportAuthorPRs && (
@@ -305,16 +309,16 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
 
                       {/* State Badge */}
                       {isMerged ? (
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-purple-400" />
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-purple-500 dark:text-purple-400" />
                           <span>MERGED UPSTREAM</span>
                         </span>
                       ) : isClosed ? (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/10">
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 dark:bg-white/5 dark:text-neutral-400 dark:border-white/10">
                           CLOSED
                         </span>
                       ) : (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
                           OPEN
                         </span>
                       )}
@@ -322,9 +326,9 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
                       {/* Review Status Badge if PR */}
                       {isPR && task.pr_review_status && task.pr_review_status !== 'PENDING' && (
                         <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                          task.pr_review_status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-                          task.pr_review_status === 'CHANGES_REQUESTED' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
-                          'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                          task.pr_review_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30' :
+                          task.pr_review_status === 'CHANGES_REQUESTED' ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30' :
+                          'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30'
                         }`}>
                           {task.pr_review_status.replace(/_/g, ' ')}
                         </span>
@@ -333,13 +337,13 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
                       {/* CI Status Badge if PR */}
                       {isPR && task.pr_ci_status && (
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
-                          task.pr_ci_status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                          task.pr_ci_status === 'failure' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          task.pr_ci_status === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' :
+                          task.pr_ci_status === 'failure' ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20' :
+                          'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
                         }`}>
-                          {task.pr_ci_status === 'success' ? <CheckCircle2 className="w-3 h-3" /> :
-                           task.pr_ci_status === 'failure' ? <AlertCircle className="w-3 h-3" /> :
-                           <Clock className="w-3 h-3 animate-spin" />}
+                          {task.pr_ci_status === 'success' ? <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> :
+                           task.pr_ci_status === 'failure' ? <AlertCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" /> :
+                           <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 animate-spin" />}
                           <span>CI: {task.pr_ci_status.toUpperCase()}</span>
                         </span>
                       )}
