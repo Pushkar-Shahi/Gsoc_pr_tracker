@@ -75,7 +75,7 @@ export function RunnersView() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header & Stats Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[#090909] border border-white/10 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[#0c101a] border border-white/10 shadow-xl">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold tracking-tight text-white">Hybrid Local Runners</h2>
@@ -92,7 +92,7 @@ export function RunnersView() {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium bg-neutral-900 text-neutral-300 border border-white/15 hover:bg-neutral-800 transition active:scale-95"
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium bg-white/5 text-neutral-300 border border-white/10 hover:bg-white/10 hover:text-white transition active:scale-95"
             title="Refresh Runner Status"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -115,7 +115,7 @@ export function RunnersView() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-xl bg-[#080808] border border-white/10 flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
           <div>
             <span className="text-[11px] font-mono uppercase text-neutral-400">Online Runners</span>
             <div className="text-2xl font-bold text-white mt-0.5">{onlineCount}</div>
@@ -125,17 +125,17 @@ export function RunnersView() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#080808] border border-white/10 flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
           <div>
             <span className="text-[11px] font-mono uppercase text-neutral-400">Total Registered</span>
             <div className="text-2xl font-bold text-white mt-0.5">{runners.length}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-white/15 flex items-center justify-center text-neutral-300">
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neutral-300">
             <Server className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#080808] border border-white/10 flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-[#0c101a] border border-white/10 flex items-center justify-between shadow-xl">
           <div>
             <span className="text-[11px] font-mono uppercase text-neutral-400">Architecture</span>
             <div className="text-sm font-bold text-white mt-1">Hybrid Cloud-to-Local</div>
@@ -147,7 +147,7 @@ export function RunnersView() {
       </div>
 
       {/* Runners List */}
-      <div className="rounded-2xl bg-[#080808] border border-white/10 overflow-hidden shadow-xl">
+      <div className="rounded-2xl bg-[#0c101a] border border-white/10 overflow-hidden shadow-xl">
         <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-neutral-300 font-mono">Connected Devices</span>
           <span className="text-[11px] text-neutral-500">Auto-timeout offline threshold: 90s</span>
@@ -174,10 +174,10 @@ export function RunnersView() {
                 <div key={runner.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition">
                   <div className="flex items-start gap-3.5 min-w-0">
                     <div className="relative mt-1">
-                      <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-white/15 flex items-center justify-center text-neutral-300">
+                      <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neutral-300">
                         <Terminal className="w-4 h-4" />
                       </div>
-                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-black ${
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0c101a] ${
                         isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'
                       }`} />
                     </div>
@@ -188,7 +188,7 @@ export function RunnersView() {
                         <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-semibold ${
                           isOnline 
                             ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30' 
-                            : 'bg-neutral-900 text-neutral-400 border-white/10'
+                            : 'bg-white/5 text-neutral-400 border-white/10'
                         }`}>
                           {runner.status.toUpperCase()}
                         </span>
@@ -212,7 +212,7 @@ export function RunnersView() {
 
                   <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
                     {runner.system_stats && (
-                      <div className="hidden md:flex items-center gap-3 text-[11px] font-mono px-3 py-1.5 rounded-xl bg-neutral-900/80 border border-white/10 text-neutral-400">
+                      <div className="hidden md:flex items-center gap-3 text-[11px] font-mono px-3 py-1.5 rounded-xl bg-[#05080f] border border-white/10 text-neutral-400">
                         {runner.system_stats.cpu_percent !== undefined && (
                           <span>CPU: {runner.system_stats.cpu_percent}%</span>
                         )}
@@ -224,7 +224,7 @@ export function RunnersView() {
 
                     <button
                       onClick={() => handleDelete(runner.id)}
-                      className="p-2 rounded-xl text-neutral-400 hover:text-rose-400 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/30 transition"
+                      className="p-2 rounded-xl text-neutral-400 hover:text-rose-400 hover:bg-rose-950/20 border border-transparent hover:border-rose-500/20 transition"
                       title="Deregister runner"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -240,7 +240,7 @@ export function RunnersView() {
       {/* Registration Modal */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl bg-[#090909] border border-white/15 p-6 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl bg-[#0c101a] border border-white/15 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Plus className="w-4 h-4 text-emerald-400" />
@@ -264,7 +264,7 @@ export function RunnersView() {
                     onChange={(e) => setNewRunnerName(e.target.value)}
                     placeholder="e.g., MacBook Pro M3 Local Worker"
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#030303] border border-white/20 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-white transition"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-white/30 transition"
                   />
                 </div>
 
@@ -273,12 +273,12 @@ export function RunnersView() {
                   <select
                     value={newRunnerOS}
                     onChange={(e) => setNewRunnerOS(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#030303] border border-white/20 text-white text-xs focus:outline-none focus:border-white transition"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white text-xs focus:outline-none focus:border-white/30 transition cursor-pointer"
                   >
-                    <option value="macOS (Darwin arm64)">macOS (Apple Silicon)</option>
-                    <option value="macOS (Darwin x86_64)">macOS (Intel)</option>
-                    <option value="Linux (x86_64)">Linux Ubuntu / Debian</option>
-                    <option value="Windows 11 (WSL2)">Windows (WSL2)</option>
+                    <option value="macOS (Darwin arm64)" className="bg-[#0c101a] text-white">macOS (Apple Silicon)</option>
+                    <option value="macOS (Darwin x86_64)" className="bg-[#0c101a] text-white">macOS (Intel)</option>
+                    <option value="Linux (x86_64)" className="bg-[#0c101a] text-white">Linux Ubuntu / Debian</option>
+                    <option value="Windows 11 (WSL2)" className="bg-[#0c101a] text-white">Windows (WSL2)</option>
                   </select>
                 </div>
 
@@ -286,7 +286,7 @@ export function RunnersView() {
                   <button
                     type="button"
                     onClick={() => setShowRegisterModal(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-neutral-300 border border-white/10 transition"
                   >
                     Cancel
                   </button>
@@ -318,11 +318,11 @@ export function RunnersView() {
                       type="text"
                       readOnly
                       value={createdToken}
-                      className="w-full px-3 py-2 rounded-xl bg-[#030303] border border-white/20 text-white font-mono text-xs select-all"
+                      className="w-full px-3 py-2 rounded-xl bg-[#05080f] border border-white/10 text-white font-mono text-xs select-all"
                     />
                     <button
                       onClick={() => copyToClipboard(createdToken)}
-                      className="h-9 px-3 rounded-xl bg-neutral-900 border border-white/20 text-neutral-200 hover:text-white flex items-center gap-1 text-xs shrink-0 active:scale-95 transition"
+                      className="h-9 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-200 hover:text-white flex items-center gap-1 text-xs shrink-0 active:scale-95 transition"
                     >
                       {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedToken ? 'Copied' : 'Copy'}</span>
@@ -341,7 +341,7 @@ export function RunnersView() {
                       <span>Copy Command</span>
                     </button>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#030303] border border-white/10 text-[11px] font-mono text-neutral-300 overflow-x-auto">
+                  <div className="p-3 rounded-xl bg-[#05080f] border border-white/10 text-[11px] font-mono text-neutral-300 overflow-x-auto">
                     <code>
                       python3 -m runner.agent --url {runnerBaseUrl} --token "{createdToken}"
                     </code>

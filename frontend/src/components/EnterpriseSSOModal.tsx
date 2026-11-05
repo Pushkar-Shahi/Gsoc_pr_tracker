@@ -96,7 +96,7 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-xl rounded-2xl bg-[#090909] border border-white/15 p-6 shadow-2xl space-y-5">
+      <div className="relative w-full max-w-xl rounded-2xl bg-[#0c101a] border border-white/15 p-6 shadow-2xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
@@ -148,13 +148,13 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
               <select
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#030303] border border-white/20 text-white text-xs focus:outline-none focus:border-white transition"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white text-xs focus:outline-none focus:border-white/30 transition cursor-pointer"
               >
-                <option value="okta">Okta Workforce Identity</option>
-                <option value="azure_ad">Microsoft Entra ID (Azure AD)</option>
-                <option value="google">Google Workspace Enterprise SAML</option>
-                <option value="onelogin">OneLogin</option>
-                <option value="custom_saml">Custom SAML 2.0 / OIDC</option>
+                <option value="okta" className="bg-[#0c101a] text-white">Okta Workforce Identity</option>
+                <option value="azure_ad" className="bg-[#0c101a] text-white">Microsoft Entra ID (Azure AD)</option>
+                <option value="google" className="bg-[#0c101a] text-white">Google Workspace Enterprise SAML</option>
+                <option value="onelogin" className="bg-[#0c101a] text-white">OneLogin</option>
+                <option value="custom_saml" className="bg-[#0c101a] text-white">Custom SAML 2.0 / OIDC</option>
               </select>
             </div>
 
@@ -169,7 +169,7 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
                 onChange={(e) => setMetadataUrl(e.target.value)}
                 placeholder="https://company.okta.com/app/exk123456/sso/saml/metadata"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#030303] border border-white/20 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white transition"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white/30 transition"
               />
               <p className="text-[11px] text-neutral-500 font-mono">
                 Federation metadata XML or OpenID configuration URL provided by your identity team.
@@ -184,12 +184,12 @@ export const EnterpriseSSOModal: React.FC<EnterpriseSSOModalProps> = ({ isOpen, 
                 value={entityId}
                 onChange={(e) => setEntityId(e.target.value)}
                 placeholder="https://issuetopr.dev/sso/saml/entity"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#030303] border border-white/20 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white transition"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#05080f] border border-white/10 text-white placeholder-neutral-500 text-xs font-mono focus:outline-none focus:border-white/30 transition"
               />
             </div>
 
             {/* Enforce SSO Switch */}
-            <div className="p-3 rounded-xl bg-[#030303] border border-white/10 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-[#05080f] border border-white/10 flex items-center justify-between">
               <div className="space-y-0.5">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-amber-400" />

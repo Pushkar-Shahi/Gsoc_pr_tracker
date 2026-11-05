@@ -37,11 +37,11 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
   });
 
   const getActionBadgeColor = (action: string) => {
-    if (action.includes('PR_PUBLISHED')) return 'bg-white text-black border-white font-bold';
-    if (action.includes('VALIDATION')) return 'bg-white/15 text-white border-white/30';
-    if (action.includes('ASSIGNMENT')) return 'bg-neutral-800 text-white border-white/20';
-    if (action.includes('WORKSPACE')) return 'bg-neutral-900 text-neutral-200 border-white/10';
-    return 'bg-[#111111] text-neutral-300 border-white/10';
+    if (action.includes('PR_PUBLISHED')) return 'bg-purple-500/20 text-purple-300 border-purple-500/30 font-bold';
+    if (action.includes('VALIDATION')) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+    if (action.includes('ASSIGNMENT')) return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+    if (action.includes('WORKSPACE')) return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+    return 'bg-white/5 text-neutral-300 border-white/10';
   };
 
   return (
@@ -63,7 +63,7 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
           <button
             onClick={() => handleExport('csv')}
             disabled={isExporting !== null}
-            className="px-3 py-2 rounded-xl bg-[#080808] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
             title="Download audit logs in RFC 4180 CSV format"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
@@ -73,7 +73,7 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
           <button
             onClick={() => handleExport('json')}
             disabled={isExporting !== null}
-            className="px-3 py-2 rounded-xl bg-[#080808] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
             title="Download logs in SIEM NDJSON format for Splunk/Datadog"
           >
             <FileCode className="w-3.5 h-3.5 text-cyan-400" />
@@ -92,7 +92,7 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
       </div>
 
       {/* Filters */}
-      <div className="bg-[#080808] border border-white/10 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3 shadow-lg">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -100,28 +100,28 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search audit trail by action, task ID, or details..."
-            className="w-full min-h-[44px] bg-[#000000] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition"
+            className="w-full min-h-[44px] bg-[#05080f] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition"
           />
         </div>
 
         <select
           value={filterAction}
           onChange={(e) => setFilterAction(e.target.value)}
-          className="min-h-[44px] bg-[#000000] border border-white/10 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-white transition cursor-pointer"
+          className="min-h-[44px] bg-[#05080f] border border-white/10 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-white/30 transition cursor-pointer"
         >
-          <option value="" className="bg-[#000000] text-white">All Action Types</option>
-          <option value="ISSUE_SELECTED" className="bg-[#000000] text-white">ISSUE_SELECTED</option>
-          <option value="WORKSPACE_PREPARED" className="bg-[#000000] text-white">WORKSPACE_PREPARED</option>
-          <option value="ASSIGNMENT_COMMENT_POSTED" className="bg-[#000000] text-white">ASSIGNMENT_COMMENT_POSTED</option>
-          <option value="VALIDATION_RUN" className="bg-[#000000] text-white">VALIDATION_RUN</option>
-          <option value="PR_PUBLISHED" className="bg-[#000000] text-white">PR_PUBLISHED</option>
-          <option value="TASK_CANCELLED" className="bg-[#000000] text-white">TASK_CANCELLED</option>
-          <option value="DISCOVERY_SYNC" className="bg-[#000000] text-white">DISCOVERY_SYNC</option>
+          <option value="" className="bg-[#0c101a] text-white">All Action Types</option>
+          <option value="ISSUE_SELECTED" className="bg-[#0c101a] text-white">ISSUE_SELECTED</option>
+          <option value="WORKSPACE_PREPARED" className="bg-[#0c101a] text-white">WORKSPACE_PREPARED</option>
+          <option value="ASSIGNMENT_COMMENT_POSTED" className="bg-[#0c101a] text-white">ASSIGNMENT_COMMENT_POSTED</option>
+          <option value="VALIDATION_RUN" className="bg-[#0c101a] text-white">VALIDATION_RUN</option>
+          <option value="PR_PUBLISHED" className="bg-[#0c101a] text-white">PR_PUBLISHED</option>
+          <option value="TASK_CANCELLED" className="bg-[#0c101a] text-white">TASK_CANCELLED</option>
+          <option value="DISCOVERY_SYNC" className="bg-[#0c101a] text-white">DISCOVERY_SYNC</option>
         </select>
       </div>
 
       {/* Logs Table / List */}
-      <div className="bg-[#080808] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#0c101a] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
         {filteredLogs.length === 0 ? (
           <div className="p-12 text-center text-xs text-neutral-500">
             No audit records matching your search.
@@ -129,7 +129,7 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
         ) : (
           <div className="divide-y divide-white/5">
             {filteredLogs.map(log => (
-              <div key={log.id} className="p-4 hover:bg-[#0f0f0f] transition space-y-2.5">
+              <div key={log.id} className="p-4 hover:bg-white/[0.02] transition space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${getActionBadgeColor(log.action)}`}>
@@ -146,7 +146,7 @@ export const ActivityHistoryView: React.FC<ActivityHistoryViewProps> = ({ logs }
                 </div>
 
                 {log.details && (
-                  <div className="bg-[#000000] border border-white/10 rounded-xl p-3 font-mono text-[11px] text-neutral-300 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  <div className="bg-[#05080f] border border-white/10 rounded-xl p-3 font-mono text-[11px] text-neutral-300 whitespace-pre-wrap max-h-40 overflow-y-auto">
                     {JSON.stringify(log.details, null, 2)}
                   </div>
                 )}

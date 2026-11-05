@@ -99,7 +99,7 @@ export function BillingView() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-lg bg-neutral-900 border border-white/10 text-white">
+            <span className="p-1.5 rounded-xl bg-white/5 border border-white/10 text-white">
               <CreditCard className="w-4 h-4" />
             </span>
             <h1 className="text-2xl font-bold text-white tracking-tight">Billing & Plans</h1>
@@ -113,7 +113,7 @@ export function BillingView() {
           <button
             onClick={handleOpenPortal}
             disabled={actionLoading === 'portal'}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 border border-white/10 hover:border-white/20 text-neutral-200 text-xs font-semibold hover:bg-neutral-800 transition active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-neutral-200 text-xs font-semibold hover:bg-white/10 transition active:scale-95 disabled:opacity-50"
           >
             {actionLoading === 'portal' ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -139,7 +139,7 @@ export function BillingView() {
       {/* Monthly Task Meter & Active Tier Snapshot */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Current Plan Card */}
-        <div className="p-5 rounded-2xl bg-neutral-950 border border-white/10 relative overflow-hidden">
+        <div className="p-5 rounded-2xl bg-[#0c101a] border border-white/10 relative overflow-hidden shadow-xl">
           <div className="text-xs uppercase tracking-wider text-neutral-400 font-semibold mb-1">
             Current Tier
           </div>
@@ -152,7 +152,7 @@ export function BillingView() {
                 ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300'
                 : currentTier === 'team'
                 ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-neutral-800 border-white/10 text-neutral-300'
+                : 'bg-white/5 border-white/10 text-neutral-300'
             }`}>
               {subInfo?.status || 'Active'}
             </span>
@@ -165,7 +165,7 @@ export function BillingView() {
         </div>
 
         {/* Task Quota Progress Card */}
-        <div className="md:col-span-2 p-5 rounded-2xl bg-neutral-950 border border-white/10">
+        <div className="md:col-span-2 p-5 rounded-2xl bg-[#0c101a] border border-white/10 shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs uppercase tracking-wider text-neutral-400 font-semibold">
               Monthly Task Quota
@@ -175,7 +175,7 @@ export function BillingView() {
             </span>
           </div>
 
-          <div className="w-full bg-neutral-900 h-2.5 rounded-full overflow-hidden border border-white/5 mb-2">
+          <div className="w-full bg-[#05080f] h-2.5 rounded-full overflow-hidden border border-white/10 mb-2">
             <div 
               className={`h-full transition-all duration-500 ${
                 isUnlimited 
@@ -203,7 +203,7 @@ export function BillingView() {
 
       {/* Pricing Toggle (Monthly vs Annual) */}
       <div className="flex flex-col items-center justify-center gap-2 pt-2">
-        <div className="inline-flex items-center bg-neutral-950 p-1 rounded-xl border border-white/10">
+        <div className="inline-flex items-center bg-[#0c101a] p-1 rounded-xl border border-white/10 shadow-md">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
@@ -246,9 +246,9 @@ export function BillingView() {
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-neutral-950 border transition-all duration-200 ${
+              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-[#0c101a] border transition-all duration-200 shadow-xl ${
                 isPro 
-                  ? 'border-indigo-500/50 shadow-xl shadow-indigo-500/10 ring-1 ring-indigo-500/30' 
+                  ? 'border-indigo-500/50 shadow-indigo-500/10 ring-1 ring-indigo-500/30' 
                   : 'border-white/10 hover:border-white/20'
               }`}
             >
@@ -299,7 +299,7 @@ export function BillingView() {
                 {isCurrent ? (
                   <button
                     disabled
-                    className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 border border-white/10 text-neutral-400 text-xs font-bold cursor-default"
+                    className="w-full py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-neutral-400 text-xs font-bold cursor-default"
                   >
                     Current Plan
                   </button>
@@ -307,7 +307,7 @@ export function BillingView() {
                   <button
                     onClick={() => handleSimulateTier('starter')}
                     disabled={actionLoading !== null}
-                    className="w-full py-2.5 px-4 rounded-xl border border-white/10 hover:bg-neutral-900 text-neutral-300 text-xs font-semibold transition"
+                    className="w-full py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-semibold transition"
                   >
                     Downgrade to Starter
                   </button>
@@ -318,7 +318,7 @@ export function BillingView() {
                     className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition active:scale-95 shadow-md ${
                       isPro
                         ? 'bg-white text-black hover:bg-neutral-200'
-                        : 'bg-neutral-900 hover:bg-neutral-800 text-white border border-white/15'
+                        : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
                     }`}
                   >
                     {actionLoading === `checkout_${plan.id}` ? (
@@ -338,7 +338,7 @@ export function BillingView() {
       </div>
 
       {/* Developer Simulation Mode Box (Visible for local testing) */}
-      <div className="p-5 rounded-2xl bg-neutral-950/80 border border-dashed border-white/20">
+      <div className="p-5 rounded-2xl bg-[#0c101a] border border-dashed border-white/20 shadow-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded bg-amber-500/20 text-amber-400">
@@ -356,25 +356,25 @@ export function BillingView() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => handleSimulateTier('starter')}
             disabled={actionLoading !== null || currentTier === 'starter'}
-            className="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-xs font-medium text-neutral-200 transition disabled:opacity-40"
+            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-neutral-200 transition disabled:opacity-40"
           >
             Switch to Starter (5 tasks/mo)
           </button>
           <button
             onClick={() => handleSimulateTier('pro')}
             disabled={actionLoading !== null || currentTier === 'pro'}
-            className="px-3 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/30 text-xs font-medium text-indigo-200 transition disabled:opacity-40"
+            className="px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/30 text-xs font-medium text-indigo-200 transition disabled:opacity-40"
           >
             Switch to Pro (Unlimited)
           </button>
           <button
             onClick={() => handleSimulateTier('team')}
             disabled={actionLoading !== null || currentTier === 'team'}
-            className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 text-xs font-medium text-emerald-200 transition disabled:opacity-40"
+            className="px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 text-xs font-medium text-emerald-200 transition disabled:opacity-40"
           >
             Switch to Team (Private & RBAC)
           </button>

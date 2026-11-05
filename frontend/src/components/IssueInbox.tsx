@@ -662,14 +662,14 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                     </span>
                   </div>
 
-                  <div className="bg-[#000000] px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center justify-between">
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
                     <span className="text-neutral-400">License:</span>
                     <span className="text-white font-medium">
                       {importSuccessResult.conditions_checked.license_spdx || 'OSI Verified ✓'}
                     </span>
                   </div>
 
-                  <div className="bg-[#000000] px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center justify-between">
+                  <div className="bg-[#05080f] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
                     <span className="text-neutral-400">Toolbox Match:</span>
                     <span className="text-white font-medium">
                       {importSuccessResult.conditions_checked.skill_match?.length > 0
@@ -1029,8 +1029,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
       {/* Empty State */}
       {!loading && visibleIssues.length === 0 && (
-        <div className="bg-[#080808] border border-white/10 rounded-2xl p-8 sm:p-12 text-center space-y-4 shadow-2xl">
-          <div className="w-12 h-12 rounded-2xl bg-neutral-900 border border-white/15 flex items-center justify-center mx-auto text-white">
+        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-8 sm:p-12 text-center space-y-4 shadow-xl">
+          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-white">
             <Search className="w-6 h-6" />
           </div>
           <h3 className="text-base font-semibold text-white">No matching open issues found</h3>
@@ -1198,12 +1198,12 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
       {/* Load More & Infinite Scroll Section */}
       {!loading && visibleIssues.length > 0 && (
-        <div className="bg-[#000000] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-white">Issues Explorer Progress</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-white border border-white/20 font-mono">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white border border-white/10 font-mono">
                   {visibleIssues.length} / {totalIssues.toLocaleString()} Loaded ({progressPercent}%)
                 </span>
               </div>
@@ -1216,7 +1216,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
             <div className="flex items-center gap-3 text-xs">
               {/* Batch Size Selector */}
-              <div className="flex items-center gap-1.5 bg-[#080808] border border-white/15 rounded-xl px-2.5 py-1">
+              <div className="flex items-center gap-1.5 bg-[#05080f] border border-white/10 rounded-xl px-2.5 py-1">
                 <span className="text-neutral-400 text-[11px]">Batch:</span>
                 {[25, 50, 100].map(size => (
                   <button
@@ -1240,12 +1240,12 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 onClick={() => setAutoLoad(!autoLoad)}
                 className={`px-3 py-1 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 ${
                   autoLoad
-                    ? 'bg-neutral-900 text-white border-white/30'
-                    : 'bg-[#080808] text-neutral-400 border-white/10 hover:text-white'
+                    ? 'bg-blue-600/20 text-blue-300 border-blue-500/30'
+                    : 'bg-[#05080f] text-neutral-400 border-white/10 hover:text-white'
                 }`}
                 title="Automatically fetch next batch when scrolling near the bottom"
               >
-                <span className={`w-2 h-2 rounded-full ${autoLoad ? 'bg-white animate-pulse' : 'bg-neutral-600'}`} />
+                <span className={`w-2 h-2 rounded-full ${autoLoad ? 'bg-blue-400 animate-pulse' : 'bg-neutral-600'}`} />
                 <span>Auto-load: {autoLoad ? 'ON' : 'OFF'}</span>
               </button>
             </div>

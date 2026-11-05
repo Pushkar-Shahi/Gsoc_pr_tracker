@@ -24,10 +24,10 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   const breakdown = issue.ranking_breakdown;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-      <div className="bg-[#0a0a0a] border border-white/15 rounded-t-3xl sm:rounded-2xl w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="bg-[#0c101a] border border-white/15 rounded-t-3xl sm:rounded-2xl w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 flex items-center justify-between bg-[#000000]">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 flex items-center justify-between bg-[#080c14]">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-neutral-900 border border-white/20 text-white font-semibold">
               {issue.repository?.full_name}
@@ -61,7 +61,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
         </div>
 
         {/* Modal Title & Navigation Tabs */}
-        <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-2 border-b border-white/10 bg-[#000000]">
+        <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-2 border-b border-white/10 bg-[#080c14]">
           <h2 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">
             #{issue.issue_number} — {issue.title}
           </h2>
@@ -247,7 +247,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-white/10 bg-[#000000] flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-white/10 bg-[#080c14] flex items-center justify-between">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-medium text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-white/15 transition active:scale-95"

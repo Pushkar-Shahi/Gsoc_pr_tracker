@@ -160,11 +160,11 @@ export function LiveConsoleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-4xl h-[85vh] flex flex-col bg-[#050505] border border-white/15 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl h-[85vh] flex flex-col bg-[#0c101a] border border-white/15 rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Terminal Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-neutral-950 border-b border-white/10 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 bg-[#080c14] border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-rose-500/80 cursor-pointer hover:opacity-80" onClick={onClose} />
@@ -294,7 +294,7 @@ export function LiveConsoleModal({
         </div>
 
         {/* Terminal Footer */}
-        <div className="px-4 py-2 bg-neutral-950 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-neutral-400 shrink-0">
+        <div className="px-4 py-2 bg-[#080c14] border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-neutral-400 shrink-0">
           <span>Sandbox: Ephemeral Isolated Fleet (2 CPU / 4GB RAM)</span>
           <span>Lines: {logs.length}</span>
         </div>

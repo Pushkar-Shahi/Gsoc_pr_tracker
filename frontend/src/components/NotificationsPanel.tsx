@@ -210,14 +210,14 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
         aria-hidden="true" 
       />
 
-      <div className="relative bg-[#080808] border-l border-white/10 w-full max-w-md h-full flex flex-col shadow-2xl z-10 animate-slide-left">
+      <div className="relative bg-[#0c101a] border-l border-white/10 w-full max-w-md h-full flex flex-col shadow-2xl z-10 animate-slide-left">
         {/* Panel Header */}
-        <div className="px-5 py-4 border-b border-white/10 bg-[#000000] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-white/10 bg-[#080c14] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="relative p-2 rounded-xl bg-white text-black shadow-md">
               <Bell className="w-4 h-4 text-black" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white rounded-full animate-ping" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" />
               )}
             </div>
             <div>
@@ -228,7 +228,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                     {unreadCount} New
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-400 text-[10px] font-medium border border-white/10">
+                  <span className="px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 text-[10px] font-medium border border-white/10">
                     All caught up
                   </span>
                 )}
@@ -240,7 +240,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-900 transition"
+              className="p-1.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition"
               title="Close panel"
             >
               <X className="w-5 h-5" />
@@ -249,9 +249,9 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
         </div>
 
         {/* Toolbar: Filters, Desktop Notification Permission, Mark All Read & Clear All */}
-        <div className="px-5 py-2.5 border-b border-white/10 bg-[#000000] flex items-center justify-between gap-2 text-xs">
+        <div className="px-5 py-2.5 border-b border-white/10 bg-[#080c14] flex items-center justify-between gap-2 text-xs">
           {/* Tab Filter */}
-          <div className="flex items-center gap-1 bg-[#050505] p-0.5 rounded-xl border border-white/10">
+          <div className="flex items-center gap-1 bg-[#05080f] p-0.5 rounded-xl border border-white/10">
             <button
               onClick={() => setFilterMode('all')}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition active:scale-95 ${
@@ -343,8 +343,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                   onClick={() => handleCardClick(meta.tab)}
                   className={`group relative rounded-2xl p-3.5 border transition-all cursor-pointer ${
                     isUnread
-                      ? 'bg-[#000000] border-white/30 hover:border-white shadow-lg'
-                      : 'bg-[#000000] border-white/10 hover:border-white/20'
+                      ? 'bg-[#05080f] border-white/20 hover:border-white/40 shadow-lg'
+                      : 'bg-[#05080f]/60 border-white/10 hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
