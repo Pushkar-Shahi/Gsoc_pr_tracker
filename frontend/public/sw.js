@@ -1,5 +1,7 @@
-const CACHE_NAME = 'issuetopr-v16-launch';
+const CACHE_NAME = 'issuetopr-v17-pwa-mobile';
 const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icons/icon-192.png',
@@ -80,6 +82,8 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => {
           const cached = await caches.match(event.request);
           if (cached) return cached;
+          const rootCached = (await caches.match('/')) || (await caches.match('/index.html'));
+          if (rootCached) return rootCached;
           return new Response('You are currently offline. Please reconnect to access the latest version.', {
             status: 503,
             headers: { 'Content-Type': 'text/plain' }

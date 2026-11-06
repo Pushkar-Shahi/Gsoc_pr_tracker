@@ -6,10 +6,45 @@
   "scope": "/",
   "id": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
   "background_color": "#070b14",
   "theme_color": "#0e1424",
   "categories": ["developer", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Find Issues",
+      "short_name": "Issues",
+      "description": "Browse curated open source & GSoC issues",
+      "url": "/?tab=issues",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cash Bounties",
+      "short_name": "Bounties",
+      "description": "Explore Algora and Polar cash reward bounties",
+      "url": "/?tab=bounties",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tracked Items",
+      "short_name": "Tracked",
+      "description": "View tracked GitHub issues and active pull requests",
+      "url": "/?tab=tracker",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pull Requests",
+      "short_name": "PRs",
+      "description": "Track review status, CI test runs, and merges",
+      "url": "/?tab=prs",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

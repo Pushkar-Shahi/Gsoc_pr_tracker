@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut } from 'lucide-react';
+import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut, Download, Menu } from 'lucide-react';
 import { DiscoveryStatus, PlatformSettings } from '../types';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
@@ -14,6 +14,7 @@ interface HeaderProps {
   onLock?: () => void;
   isInstallable?: boolean;
   onInstallPWA?: () => void;
+  onToggleMobileMenu?: () => void;
   planTier?: string;
 }
 
@@ -21,7 +22,10 @@ export const Header: React.FC<HeaderProps> = ({
   onRefreshDiscovery,
   isSyncing,
   onLock,
-  setActiveTab
+  setActiveTab,
+  isInstallable,
+  onInstallPWA,
+  onToggleMobileMenu
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -59,18 +63,30 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 px-6 sm:px-8 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/85 dark:bg-[#080c14]/80 backdrop-blur-md sticky top-0 z-20">
+    <header className="h-16 px-3.5 sm:px-8 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/85 dark:bg-[#080c14]/80 backdrop-blur-md sticky top-0 z-20">
       {/* Left: Organization / Account Switcher & Early Access Badge */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         <OrganizationSwitcher />
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500/30 text-[11px] font-semibold select-none shadow-xs">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500/30 text-[11px] font-semibold select-none shadow-xs shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
           <span>Early Access Beta</span>
         </div>
       </div>
 
-      {/* Right Controls: Theme Toggle, Sync Live, Profile */}
-      <div className="flex items-center gap-3">
+      {/* Right Controls: Install App, Theme Toggle, Sync Live, Profile, Mobile Menu */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Install PWA Button (Visible when installable) */}
+        {isInstallable && onInstallPWA && (
+          <button
+            onClick={onInstallPWA}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-600/20 active:scale-95 transition"
+            title="Install Issue-to-PR PWA App"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Install App</span>
+          </button>
+        )}
+
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
@@ -84,11 +100,12 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onRefreshDiscovery}
           disabled={isSyncing}
-          className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white text-xs font-semibold flex items-center gap-2 transition active:scale-95 disabled:opacity-50"
+          className="hidden xs:flex px-3 sm:px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white text-xs font-semibold items-center gap-1.5 sm:gap-2 transition active:scale-95 disabled:opacity-50"
           title="Sync live status and issues with GitHub"
         >
           <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isSyncing ? 'animate-ping' : ''}`} />
-          <span>{isSyncing ? 'Syncing...' : 'Sync Live'}</span>
+          <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Live'}</span>
+          <span className="sm:hidden">{isSyncing ? '...' : 'Sync'}</span>
         </button>
 
         {/* User Profile Dropdown Menu (Safe, never logs out on click) */}
@@ -151,6 +168,19 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* Mobile Hamburger Menu Toggle */}
+        {onToggleMobileMenu && (
+          <button
+            type="button"
+            onClick={onToggleMobileMenu}
+            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/5 transition active:scale-95"
+            title="Open Mobile Menu"
+            aria-label="Open Mobile Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
       </div>
     </header>
   );

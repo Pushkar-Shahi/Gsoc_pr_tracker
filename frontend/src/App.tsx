@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Layers, GitPullRequest, Settings as SettingsIcon, History, 
-  ShieldCheck, Search, Cpu, CreditCard, Coins
+  Layers, GitPullRequest, ShieldCheck, Search, 
+  Coins, Menu, Share2, X
 } from 'lucide-react';
 
-import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, SubscriptionInfo } from './types';
+import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog } from './types';
 import * as api from './api';
 
 import { Header } from './components/Header';
@@ -20,14 +20,28 @@ import { UpgradeModal } from './components/UpgradeModal';
 import { BountiesView } from './components/BountiesView';
 import { SettingsView } from './components/SettingsView';
 import { NotificationsPanel } from './components/NotificationsPanel';
+import { MobileDrawer } from './components/MobileDrawer';
 import { promptPWAInstall } from './registerSW';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'issues' | 'bounties' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
-  const [planTier, setPlanTier] = useState<string>('starter');
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [planTier, setPlanTier] = useState<string>('pro');
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<string | undefined>(undefined);
+
+  // iOS Safari "Add to Home Screen" detection
+  const [showIosInstallGuide, setShowIosInstallGuide] = useState(() => {
+    try {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+      const dismissed = localStorage.getItem('dismissed_ios_install_guide');
+      return isIos && !isStandalone && !dismissed;
+    } catch {
+      return false;
+    }
+  });
 
   // Tracked Items & PRs
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -430,6 +444,7 @@ export function App() {
             onLock={api.logout}
             isInstallable={isInstallable}
             onInstallPWA={handleInstallPWA}
+            onToggleMobileMenu={() => setIsMobileDrawerOpen(prev => !prev)}
             planTier={planTier}
           />
 
@@ -505,22 +520,49 @@ export function App() {
           )}
         </main>
 
-        {/* Mobile Bottom Navigation Bar (iOS / Android Style) */}
-        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#030303]/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 px-2 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-slate-900/10 dark:shadow-black">
-          <div className="grid grid-cols-7 gap-1 text-[10px] font-medium text-center">
+        {/* iOS Safari PWA Install Instruction Banner */}
+        {showIosInstallGuide && (
+          <aside aria-label="Install App" className="fixed bottom-20 left-4 right-4 z-50 p-4 rounded-2xl bg-slate-900/95 dark:bg-neutral-900/95 text-white backdrop-blur-xl border border-white/20 shadow-2xl animate-fade-in flex items-start gap-3 md:hidden">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-400/30 flex items-center justify-center shrink-0 mt-0.5">
+              <Share2 className="w-5 h-5" />
+            </div>
+            <div className="flex-1 text-xs space-y-1">
+              <div className="font-bold text-sm flex items-center justify-between">
+                <span>Install Issue-to-PR App</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIosInstallGuide(false);
+                    try { localStorage.setItem('dismissed_ios_install_guide', 'true'); } catch {}
+                  }}
+                  className="p-1 text-neutral-400 hover:text-white rounded-lg transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-neutral-300 leading-relaxed">
+                Tap the <strong className="text-white">Share</strong> button in Safari's toolbar, then scroll down and tap <strong className="text-white">"Add to Home Screen"</strong>.
+              </p>
+            </div>
+          </aside>
+        )}
+
+        {/* Mobile Bottom Navigation Bar (iOS / Android Ergonomic 5-Tab Bar) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#030303]/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl shadow-slate-900/10 dark:shadow-black">
+          <div className="grid grid-cols-5 gap-1 text-[11px] font-medium text-center">
             {/* 1. Find Issues */}
             <button
               onClick={() => setActiveTab('issues')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'issues'
-                  ? 'text-indigo-600 bg-indigo-50 border border-indigo-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  ? 'text-blue-600 bg-blue-50 border border-blue-200 dark:text-white dark:bg-white/10 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
             >
               <div className="relative">
                 <Search className="w-5 h-5 mb-0.5" />
                 {totalIssues > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-black text-[9px] font-bold">
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-blue-600 text-white dark:bg-white dark:text-black text-[9px] font-bold">
                     {totalIssues > 99 ? '99+' : totalIssues}
                   </span>
                 )}
@@ -531,7 +573,7 @@ export function App() {
             {/* 2. Bounties */}
             <button
               onClick={() => setActiveTab('bounties')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'bounties'
                   ? 'text-amber-600 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-500/30 font-bold'
                   : 'text-slate-500 hover:text-amber-600 dark:text-neutral-400 dark:hover:text-amber-300'
@@ -539,23 +581,26 @@ export function App() {
             >
               <div className="relative">
                 <Coins className="w-5 h-5 mb-0.5 text-amber-500 dark:text-amber-400" />
+                <span className="absolute -top-1 -right-2.5 px-1 py-0.2 rounded-full bg-amber-400 text-slate-900 font-extrabold text-[8px]">
+                  $$$
+                </span>
               </div>
               <span>Bounties</span>
             </button>
 
-            {/* 3. Tracked */}
+            {/* 3. Tracked Items */}
             <button
               onClick={() => setActiveTab('tracker')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'tracker'
-                  ? 'text-purple-600 bg-purple-50 border border-purple-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  ? 'text-purple-600 bg-purple-50 border border-purple-200 dark:text-white dark:bg-white/10 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
             >
               <div className="relative">
                 <Layers className="w-5 h-5 mb-0.5" />
                 {tasks.length > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-black text-[9px] font-bold">
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-purple-600 text-white dark:bg-white dark:text-black text-[9px] font-bold">
                     {tasks.length}
                   </span>
                 )}
@@ -563,19 +608,19 @@ export function App() {
               <span>Tracked</span>
             </button>
 
-            {/* 3. Pull Requests */}
+            {/* 4. Pull Requests */}
             <button
               onClick={() => setActiveTab('prs')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
                 activeTab === 'prs'
-                  ? 'text-teal-600 bg-teal-50 border border-teal-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  ? 'text-teal-600 bg-teal-50 border border-teal-200 dark:text-white dark:bg-white/10 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
             >
               <div className="relative">
                 <GitPullRequest className="w-5 h-5 mb-0.5" />
                 {totalPRs > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-black text-[9px] font-bold">
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-teal-600 text-white dark:bg-white dark:text-black text-[9px] font-bold">
                     {totalPRs}
                   </span>
                 )}
@@ -583,59 +628,38 @@ export function App() {
               <span>PRs</span>
             </button>
 
-            {/* 4. Timeline */}
+            {/* 5. More Menu Drawer Toggle */}
             <button
-              onClick={() => setActiveTab('history')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                activeTab === 'history'
-                  ? 'text-amber-600 bg-amber-50 border border-amber-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
+                ['history', 'runners', 'billing', 'settings'].includes(activeTab) || isMobileDrawerOpen
+                  ? 'text-blue-600 bg-blue-50 border border-blue-200 dark:text-white dark:bg-white/10 dark:border-white/20 font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
+              title="More views, settings, and device runners"
             >
-              <History className="w-5 h-5 mb-0.5" />
-              <span>Timeline</span>
-            </button>
-
-            {/* 5. Runners */}
-            <button
-              onClick={() => setActiveTab('runners')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                activeTab === 'runners'
-                  ? 'text-cyan-600 bg-cyan-50 border border-cyan-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
-              }`}
-            >
-              <Cpu className="w-5 h-5 mb-0.5" />
-              <span>Runners</span>
-            </button>
-
-            {/* 6. Billing */}
-            <button
-              onClick={() => setActiveTab('billing')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                activeTab === 'billing'
-                  ? 'text-rose-600 bg-rose-50 border border-rose-200 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
-              }`}
-            >
-              <CreditCard className="w-5 h-5 mb-0.5" />
-              <span>Billing</span>
-            </button>
-
-            {/* 7. Settings */}
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                activeTab === 'settings'
-                  ? 'text-slate-900 bg-slate-200 border border-slate-300 dark:text-white dark:bg-neutral-900 dark:border-white/20 font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
-              }`}
-            >
-              <SettingsIcon className="w-5 h-5 mb-0.5" />
-              <span>Settings</span>
+              <div className="relative">
+                <Menu className="w-5 h-5 mb-0.5" />
+                {['history', 'runners', 'billing', 'settings'].includes(activeTab) && (
+                  <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white dark:ring-black" />
+                )}
+              </div>
+              <span>More</span>
             </button>
           </div>
         </nav>
+
+        {/* Mobile Slide-Over Navigation Drawer */}
+        <MobileDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab as any}
+          isInstallable={isInstallable}
+          onInstallPWA={handleInstallPWA}
+          onLock={api.logout}
+          planTier={planTier}
+        />
       </div>
 
         {/* Issue Details Modal */}
