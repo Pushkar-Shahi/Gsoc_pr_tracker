@@ -22,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRefreshDiscovery,
   isSyncing,
   onLock,
+  activeTab,
   setActiveTab,
   isInstallable,
   onInstallPWA,
@@ -113,14 +114,18 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setIsMenuOpen(prev => !prev)}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:border-white/10 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white transition active:scale-95 shadow-sm flex items-center justify-center"
-            title="Account & Settings menu"
+            className={`w-8 h-8 rounded-full border transition active:scale-95 shadow-sm flex items-center justify-center ${
+              activeTab === 'settings' || activeTab === 'billing'
+                ? 'bg-blue-50 border-blue-400 text-blue-600 dark:bg-blue-600/20 dark:border-blue-500/50 dark:text-blue-400 ring-2 ring-blue-500/30'
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:border-white/10 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="Account & Profile (Settings, Billing, Logout)"
           >
             <UserIcon className="w-4 h-4" />
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-2 shadow-2xl z-50 animate-fade-in space-y-1">
+            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-2 shadow-2xl z-50 animate-fade-in space-y-1">
               {/* User Header */}
               <div className="px-3 py-2.5 border-b border-slate-100 dark:border-white/10 mb-1">
                 <div className="flex items-center gap-2.5">
@@ -129,28 +134,55 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{username}</span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">● Active Session</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">Founder Beta</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Navigation Actions */}
+              {/* Profile & Preferences Section */}
+              <div className="px-3 pt-1 pb-0.5">
+                <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-slate-400 dark:text-neutral-500">
+                  Profile & Preferences
+                </span>
+              </div>
+
+              {/* Settings */}
               <button
                 type="button"
                 onClick={() => handleOpenTab('settings')}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition font-medium text-left"
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition text-left ${
+                  activeTab === 'settings'
+                    ? 'bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/10 font-medium'
+                }`}
               >
-                <Settings className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                <span>Platform Settings</span>
+                <div className="flex items-center gap-2.5">
+                  <Settings className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                  <span>Settings</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 dark:text-neutral-500">Tokens & AI</span>
               </button>
 
+              {/* Billing */}
               <button
                 type="button"
                 onClick={() => handleOpenTab('billing')}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition font-medium text-left"
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition text-left ${
+                  activeTab === 'billing'
+                    ? 'bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/10 font-medium'
+                }`}
               >
-                <CreditCard className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-                <span>Billing & Plans</span>
+                <div className="flex items-center gap-2.5">
+                  <CreditCard className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                  <span>Billing</span>
+                </div>
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
+                  FREE BETA
+                </span>
               </button>
 
               {/* Divider */}

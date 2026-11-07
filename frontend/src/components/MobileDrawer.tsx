@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   X, Cpu, History, CreditCard, Settings, Download, 
-  Sun, Moon, LogOut, Sparkles, ArrowRight, ExternalLink
+  Sun, Moon, LogOut, Sparkles, ArrowRight, ExternalLink, User
 } from 'lucide-react';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
@@ -30,6 +30,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   planTier = 'pro',
 }) => {
   const { isDark, toggleTheme } = useTheme();
+  const username = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
 
   if (!isOpen) return null;
 
@@ -38,7 +39,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     onClose();
   };
 
-  const menuItems = [
+  const workflowItems = [
     {
       id: 'runners',
       label: 'Local Hybrid Runners',
@@ -53,6 +54,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       icon: History,
       desc: 'Chronological triage and PR event logs'
     },
+  ];
+
+  const profileItems = [
+    {
+      id: 'settings',
+      label: 'Platform Settings',
+      icon: Settings,
+      desc: 'AI tokens, GitHub sync, and triage policies'
+    },
     {
       id: 'billing',
       label: 'Billing & Early Adopter Perks',
@@ -61,13 +71,45 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       badgeColor: 'blue',
       desc: 'Founder Beta tier and feature entitlements'
     },
-    {
-      id: 'settings',
-      label: 'Platform Settings',
-      icon: Settings,
-      desc: 'AI tokens, GitHub sync, and triage policies'
-    },
   ];
+
+  const renderNavCard = (item: any) => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.id;
+    return (
+      <button
+        key={item.id}
+        onClick={() => handleSelectTab(item.id)}
+        className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition active:scale-95 ${
+          isActive
+            ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-white dark:border-blue-500/30 font-bold'
+            : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${
+            isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500 dark:text-neutral-400'
+          }`} />
+          <div>
+            <div className="text-xs font-semibold">{item.label}</div>
+            <div className="text-[10px] text-slate-500 dark:text-neutral-400">{item.desc}</div>
+          </div>
+        </div>
+
+        {item.badge && (
+          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full shrink-0 ${
+            item.badgeColor === 'emerald'
+              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+              : item.badgeColor === 'blue'
+              ? 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-400/30'
+              : 'bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300'
+          }`}>
+            {item.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 md:hidden animate-fade-in">
@@ -134,48 +176,26 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           </div>
         )}
 
-        {/* Navigation Items */}
-        <div className="space-y-1.5 py-3">
+        {/* Workflow & Fleet Views */}
+        <div className="space-y-1.5 py-3 border-b border-slate-100 dark:border-white/5">
           <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 dark:text-neutral-500 mb-1 block font-semibold">
-            More Views
+            Workflow & Fleet
           </span>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleSelectTab(item.id)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition active:scale-95 ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-white dark:border-blue-500/30 font-bold'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${
-                    isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500 dark:text-neutral-400'
-                  }`} />
-                  <div>
-                    <div className="text-xs font-semibold">{item.label}</div>
-                    <div className="text-[10px] text-slate-500 dark:text-neutral-400">{item.desc}</div>
-                  </div>
-                </div>
+          {workflowItems.map(renderNavCard)}
+        </div>
 
-                {item.badge && (
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                    item.badgeColor === 'emerald'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
-                      : item.badgeColor === 'blue'
-                      ? 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-400/30'
-                      : 'bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        {/* Profile & Account Views */}
+        <div className="space-y-1.5 py-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 dark:text-neutral-500 font-semibold">
+              Profile & Account
+            </span>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-neutral-300 font-medium">
+              <User className="w-3.5 h-3.5 text-blue-500" />
+              <span>{username}</span>
+            </div>
+          </div>
+          {profileItems.map(renderNavCard)}
         </div>
 
         {/* Footer Actions */}

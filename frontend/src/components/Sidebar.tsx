@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Search, Trophy, Bookmark, GitPullRequest, 
-  Clock, Play, CreditCard, Settings as SettingsIcon,
+  Clock, Play,
   Zap, ArrowRight, PanelLeftClose, PanelLeft, Sparkles
 } from 'lucide-react';
 import { BrandIcon } from './BrandIcon';
@@ -34,8 +34,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'prs', label: 'Pull Requests', icon: GitPullRequest, badge: totalPRs > 0 ? String(totalPRs) : undefined },
     { id: 'history', label: 'Timeline', icon: Clock },
     { id: 'runners', label: 'Runners', icon: Play },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   return (
