@@ -1462,16 +1462,17 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         </div>
       )}
 
-      {/* Floating Back-to-Top Button */}
+      {/* Floating Back-to-Top Button (Safely elevated above mobile bottom nav bar) */}
       {showBackToTop && (
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full bg-white hover:bg-neutral-200 text-black shadow-2xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 group cursor-pointer"
+          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full bg-white hover:bg-slate-100 text-slate-800 dark:bg-[#121927] dark:hover:bg-[#1a2336] dark:text-white border border-slate-200 dark:border-white/15 shadow-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-90 hover:scale-105 group cursor-pointer"
           title="Scroll back to top"
+          aria-label="Scroll back to top"
         >
-          <ArrowUp className="w-3.5 h-3.5 text-black group-hover:-translate-y-0.5 transition-transform shrink-0" />
-          <span>Back to Top</span>
+          <ArrowUp className="w-4 h-4 text-slate-700 dark:text-neutral-200 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+          <span className="hidden md:inline">Back to Top</span>
         </button>
       )}
     </div>

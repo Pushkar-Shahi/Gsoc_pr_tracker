@@ -93,9 +93,9 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Toast Notification */}
+      {/* Toast Notification (Safely elevated above mobile bottom nav bar) */}
       {successToast && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-40 px-4 py-3 rounded-2xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-bounce">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{successToast}</span>
         </div>
