@@ -43,8 +43,7 @@ async def list_issues(
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Issue).options(
-        selectinload(Issue.repository),
-        selectinload(Issue.tasks)
+        selectinload(Issue.repository)
     )
 
     # Join repository if filtering by language, stars, or repo name
@@ -430,8 +429,7 @@ async def get_issue(
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Issue).options(
-        selectinload(Issue.repository),
-        selectinload(Issue.tasks)
+        selectinload(Issue.repository)
     ).where(Issue.id == issue_id)
     
     result = await db.execute(stmt)
@@ -759,8 +757,7 @@ async def complete_issue(issue_id: str, db: AsyncSession = Depends(get_db)):
     Mark an issue as completed, removing it from the open eligible inbox.
     """
     stmt = select(Issue).options(
-        selectinload(Issue.repository),
-        selectinload(Issue.tasks)
+        selectinload(Issue.repository)
     ).where(Issue.id == issue_id)
     result = await db.execute(stmt)
     issue = result.scalar_one_or_none()

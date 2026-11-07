@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Integer, Float, Boolean, DateTime,
-    ForeignKey, BigInteger, JSON, UniqueConstraint
+    ForeignKey, BigInteger, JSON, UniqueConstraint, Index
 )
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -154,6 +154,11 @@ class Issue(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    __table_args__ = (
+        Index("idx_issues_state_eligible", "state", "is_eligible"),
+        Index("idx_issues_repo_state", "repository_id", "state"),
+    )
+
     repository = relationship("Repository", back_populates="issues")
     tasks = relationship("Task", back_populates="issue", cascade="all, delete-orphan")
     organization = relationship("Organization", primaryjoin="Issue.tenant_id == Organization.id", foreign_keys=[tenant_id])
@@ -203,6 +208,12 @@ class Task(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_tasks_tenant_updated", "tenant_id", "updated_at"),
+        Index("idx_tasks_workflow_tenant", "workflow_state", "tenant_id"),
+        Index("idx_tasks_user_updated", "user_id", "updated_at"),
+    )
 
     issue = relationship("Issue", back_populates="tasks")
     audit_logs = relationship("AuditLog", back_populates="task", cascade="all, delete-orphan")

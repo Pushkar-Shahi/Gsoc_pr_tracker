@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { 
   Layers, GitPullRequest, ShieldCheck, Search, 
   Coins, Menu, Share2, X
@@ -10,19 +10,30 @@ import * as api from './api';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { IssueInbox } from './components/IssueInbox';
-import { IssueDetailsModal } from './components/IssueDetailsModal';
-import { TrackedIssuesView } from './components/TrackedIssuesView';
-import { PullRequestsView } from './components/PullRequestsView';
-import { ActivityHistoryView } from './components/ActivityHistoryView';
-import { RunnersView } from './components/RunnersView';
-import { BillingView } from './components/BillingView';
-import { UpgradeModal } from './components/UpgradeModal';
-import { BountiesView } from './components/BountiesView';
-import { SettingsView } from './components/SettingsView';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { MobileDrawer } from './components/MobileDrawer';
 import { promptPWAInstall } from './registerSW';
 import { useOverscrollBounce } from './hooks/useOverscrollBounce';
+
+// Lazy-loaded secondary views for high performance & minimal bundle size
+const TrackedIssuesView = lazy(() => import('./components/TrackedIssuesView').then(m => ({ default: m.TrackedIssuesView })));
+const PullRequestsView = lazy(() => import('./components/PullRequestsView').then(m => ({ default: m.PullRequestsView })));
+const ActivityHistoryView = lazy(() => import('./components/ActivityHistoryView').then(m => ({ default: m.ActivityHistoryView })));
+const RunnersView = lazy(() => import('./components/RunnersView').then(m => ({ default: m.RunnersView })));
+const BillingView = lazy(() => import('./components/BillingView').then(m => ({ default: m.BillingView })));
+const BountiesView = lazy(() => import('./components/BountiesView').then(m => ({ default: m.BountiesView })));
+const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
+const IssueDetailsModal = lazy(() => import('./components/IssueDetailsModal').then(m => ({ default: m.IssueDetailsModal })));
+const UpgradeModal = lazy(() => import('./components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
+
+function TabLoadingSkeleton() {
+  return (
+    <div className="w-full py-20 flex flex-col items-center justify-center space-y-3 animate-fade-in">
+      <div className="w-8 h-8 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+      <span className="text-xs font-mono text-slate-400 dark:text-neutral-500">Loading module...</span>
+    </div>
+  );
+}
 
 export function App() {
   const bounceStyle = useOverscrollBounce();
@@ -464,75 +475,77 @@ export function App() {
 
           {/* Main Content Container */}
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 pb-28 md:pb-12">
-          {activeTab === 'issues' && (
-            <IssueInbox
-              issues={issues}
-              loading={loadingIssues}
-              loadingMore={loadingMoreIssues}
-              hasMore={issues.length < totalIssues}
-              onLoadMore={handleLoadMoreIssues}
-              pageSize={pageSize}
-              onPageSizeChange={handlePageSizeChange}
-              totalIssues={totalIssues}
-              onSelectIssue={handleSelectIssue}
-              onOpenDetails={(issue) => setSelectedIssueModal(issue)}
-              onCompleteIssue={handleCompleteIssue}
-              onFilterChange={handleFilterChange}
-            />
-          )}
+            <Suspense fallback={<TabLoadingSkeleton />}>
+              {activeTab === 'issues' && (
+                <IssueInbox
+                  issues={issues}
+                  loading={loadingIssues}
+                  loadingMore={loadingMoreIssues}
+                  hasMore={issues.length < totalIssues}
+                  onLoadMore={handleLoadMoreIssues}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange}
+                  totalIssues={totalIssues}
+                  onSelectIssue={handleSelectIssue}
+                  onOpenDetails={(issue) => setSelectedIssueModal(issue)}
+                  onCompleteIssue={handleCompleteIssue}
+                  onFilterChange={handleFilterChange}
+                />
+              )}
 
-          {activeTab === 'bounties' && (
-            <BountiesView
-              onNavigateToTracker={() => setActiveTab('tracker')}
-              onStartBountyWork={(_res) => {
-                refreshTasks();
-                setActiveTab('tracker');
-              }}
-            />
-          )}
+              {activeTab === 'bounties' && (
+                <BountiesView
+                  onNavigateToTracker={() => setActiveTab('tracker')}
+                  onStartBountyWork={(_res) => {
+                    refreshTasks();
+                    setActiveTab('tracker');
+                  }}
+                />
+              )}
 
-          {activeTab === 'tracker' && (
-            <TrackedIssuesView
-              tasks={tasks}
-              onTrackUrl={handleTrackUrl}
-              onSyncItem={handleSyncItem}
-              onUntrackItem={handleUntrackItem}
-              onImportAuthorPRs={handleImportAuthorPRs}
-            />
-          )}
+              {activeTab === 'tracker' && (
+                <TrackedIssuesView
+                  tasks={tasks}
+                  onTrackUrl={handleTrackUrl}
+                  onSyncItem={handleSyncItem}
+                  onUntrackItem={handleUntrackItem}
+                  onImportAuthorPRs={handleImportAuthorPRs}
+                />
+              )}
 
-          {activeTab === 'prs' && (
-            <PullRequestsView
-              tasks={tasks}
-              onRefreshTasks={refreshTasks}
-              onUntrackItem={handleUntrackItem}
-              onImportAuthorPRs={handleImportAuthorPRs}
-            />
-          )}
+              {activeTab === 'prs' && (
+                <PullRequestsView
+                  tasks={tasks}
+                  onRefreshTasks={refreshTasks}
+                  onUntrackItem={handleUntrackItem}
+                  onImportAuthorPRs={handleImportAuthorPRs}
+                />
+              )}
 
-          {activeTab === 'history' && (
-            <ActivityHistoryView logs={auditLogs} />
-          )}
+              {activeTab === 'history' && (
+                <ActivityHistoryView logs={auditLogs} />
+              )}
 
-          {activeTab === 'runners' && (
-            <RunnersView />
-          )}
+              {activeTab === 'runners' && (
+                <RunnersView />
+              )}
 
-          {activeTab === 'billing' && (
-            <BillingView />
-          )}
+              {activeTab === 'billing' && (
+                <BillingView />
+              )}
 
-          {activeTab === 'settings' && (
-            <SettingsView
-              settings={settings}
-              onSaveSettings={async (updated) => {
-                const res = await api.updateSettings(updated);
-                setSettings(res);
-                showToast('✓ Settings updated successfully');
-              }}
-            />
-          )}
-        </main>
+              {activeTab === 'settings' && (
+                <SettingsView
+                  settings={settings}
+                  onSaveSettings={async (updated) => {
+                    const res = await api.updateSettings(updated);
+                    setSettings(res);
+                    showToast('✓ Settings updated successfully');
+                  }}
+                />
+              )}
+            </Suspense>
+          </main>
 
         {/* iOS Safari PWA Install Instruction Banner */}
         {showIosInstallGuide && (
@@ -676,29 +689,31 @@ export function App() {
         />
       </div>
 
-        {/* Issue Details Modal */}
-        {selectedIssueModal && (
-          <IssueDetailsModal
-            issue={selectedIssueModal}
-            onClose={() => setSelectedIssueModal(null)}
-            onSelectIssue={(id) => {
-              handleSelectIssue(id);
-              setSelectedIssueModal(null);
-            }}
-            onCompleteIssue={(id) => {
-              handleCompleteIssue(id);
-              setSelectedIssueModal(null);
-            }}
-          />
-        )}
+        {/* Lazy-Loaded Modals */}
+        <Suspense fallback={null}>
+          {selectedIssueModal && (
+            <IssueDetailsModal
+              issue={selectedIssueModal}
+              onClose={() => setSelectedIssueModal(null)}
+              onSelectIssue={(id) => {
+                handleSelectIssue(id);
+                setSelectedIssueModal(null);
+              }}
+              onCompleteIssue={(id) => {
+                handleCompleteIssue(id);
+                setSelectedIssueModal(null);
+              }}
+            />
+          )}
 
-        {/* Pro Upgrade & Quota Modal */}
-        <UpgradeModal
-          isOpen={upgradeModalOpen}
-          onClose={() => setUpgradeModalOpen(false)}
-          reason={upgradeReason}
-          onNavigateToBilling={() => setActiveTab('billing')}
-        />
+          {/* Pro Upgrade & Quota Modal */}
+          <UpgradeModal
+            isOpen={upgradeModalOpen}
+            onClose={() => setUpgradeModalOpen(false)}
+            reason={upgradeReason}
+            onNavigateToBilling={() => setActiveTab('billing')}
+          />
+        </Suspense>
 
         {/* Notifications Drawer */}
         <NotificationsPanel

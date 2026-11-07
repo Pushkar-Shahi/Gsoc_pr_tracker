@@ -377,6 +377,11 @@ class BackgroundWorkerService:
                     sett_stmt = select(PlatformSettings).where(PlatformSettings.id == 1)
                     res = await db.execute(sett_stmt)
                     sett = res.scalar_one_or_none()
+                    
+                    # Conserve rate limits: if no personal GitHub token is configured, poll every 5 minutes
+                    if not sett or not sett.github_token:
+                        await asyncio.sleep(240)
+
                     gh = GitHubClient(token=sett.github_token if sett else None)
 
                     # Query all active tracked tasks
