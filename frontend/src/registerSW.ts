@@ -29,10 +29,23 @@ export function registerServiceWorker() {
       return;
     }
 
+    // Auto-reload as soon as an updated Service Worker takes control
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        console.log('[PWA] New controller active. Reloading to apply update...');
+        window.location.reload();
+      }
+    });
+
     window.addEventListener('load', () => {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
+          // Check for service worker updates immediately on every page load
+          registration.update().catch(() => {});
+
           // Listen for new worker installation and activate immediately
           registration.onupdatefound = () => {
             const installing = registration.installing;
@@ -40,7 +53,10 @@ export function registerServiceWorker() {
               installing.onstatechange = () => {
                 if (installing.state === 'installed' && navigator.serviceWorker.controller) {
                   console.log('[PWA] New version ready. Reloading for instant update...');
-                  window.location.reload();
+                  if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                  }
                 }
               };
             }

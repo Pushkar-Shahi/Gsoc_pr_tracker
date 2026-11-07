@@ -255,7 +255,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           </div>
         )}
 
-        <div className="text-center pt-3 pb-1 mt-auto">
+        <div className="text-center pt-3 pb-2 shrink-0">
           <span className="text-[10px] font-mono text-slate-400 dark:text-neutral-600">
             Issue-to-PR v1.0.0 • PWA Ready
           </span>

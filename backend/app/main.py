@@ -168,8 +168,28 @@ async def serve_spa(full_path: str):
         return JSONResponse(status_code=404, content={"detail": "API endpoint not found"})
     target = frontend_dist / full_path
     if target.exists() and target.is_file():
+        # Immutable caching for hashed assets (never re-fetched unnecessarily)
+        if "assets/" in full_path:
+            return FileResponse(target, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+        # Never cache sw.js, manifest, or index.html so mobile clients always get latest deployment
+        if full_path in ("sw.js", "manifest.webmanifest", "index.html"):
+            return FileResponse(
+                target,
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                }
+            )
         return FileResponse(target)
     index_file = frontend_dist / "index.html"
     if index_file.exists():
-        return FileResponse(index_file)
+        return FileResponse(
+            index_file,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return JSONResponse(status_code=404, content={"detail": "Frontend bundle not found. Run npm run build."})

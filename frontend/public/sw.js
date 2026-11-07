@@ -1,7 +1,5 @@
-const CACHE_NAME = 'issuetopr-v17-pwa-mobile';
+const CACHE_NAME = 'issuetopr-v20-elevate-drawer-and-fab';
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icons/icon-192.png',
