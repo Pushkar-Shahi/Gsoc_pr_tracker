@@ -2065,6 +2065,7 @@ export async function importAuthorPRs(username?: string): Promise<{
   username: string;
   found_on_github: number;
   imported: number;
+  tasks?: Task[];
 }> {
   let targetUser = username?.trim();
   if (!targetUser) {
@@ -2081,6 +2082,12 @@ export async function importAuthorPRs(username?: string): Promise<{
     });
     if (res.ok) {
       const data = await res.json();
+      if (data.tasks && Array.isArray(data.tasks)) {
+        const existing = getLocalTasks();
+        const importedIds = new Set(data.tasks.map((t: any) => t.id || t.pr_url));
+        const merged = [...data.tasks, ...existing.filter(e => !importedIds.has(e.id) && !importedIds.has(e.pr_url))];
+        saveLocalTasks(merged);
+      }
       return data;
     }
   } catch {

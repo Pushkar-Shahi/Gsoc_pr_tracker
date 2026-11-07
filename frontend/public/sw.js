@@ -1,4 +1,4 @@
-const CACHE_NAME = 'issuetopr-v20-elevate-drawer-and-fab';
+const CACHE_NAME = 'issuetopr-v21-fast-auth-and-pr-import';
 const PRECACHE_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.svg',

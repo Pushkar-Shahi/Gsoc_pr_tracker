@@ -18,3 +18,4 @@ export function useLockBodyScroll(isLocked: boolean) {
     };
   }, [isLocked]);
 }
+

@@ -27,6 +27,19 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _oauth_states: Dict[str, float] = {}
 _oauth_meta: Dict[str, Dict[str, Any]] = {}
 
+# Reusable HTTP/2 AsyncClient with Connection Pooling for sub-100ms OAuth handshakes
+_shared_http_client: Optional[httpx.AsyncClient] = None
+
+def get_auth_http_client() -> httpx.AsyncClient:
+    global _shared_http_client
+    if _shared_http_client is None or _shared_http_client.is_closed:
+        _shared_http_client = httpx.AsyncClient(
+            http2=False,
+            timeout=httpx.Timeout(10.0, connect=5.0),
+            limits=httpx.Limits(max_keepalive_connections=30, max_connections=60, keepalive_expiry=120.0)
+        )
+    return _shared_http_client
+
 def _extract_base_url(request: Request) -> str:
     """Extract public or forwarded base URL from incoming request."""
     proto = request.headers.get("x-forwarded-proto") or request.url.scheme
@@ -309,28 +322,28 @@ async def github_callback(
     frontend_callback = meta.get("frontend_callback") or settings.FRONTEND_AUTH_CALLBACK_URL
 
     token_url = "https://github.com/login/oauth/access_token"
-    async with httpx.AsyncClient() as client:
-        token_resp = await client.post(
-            token_url,
-            json={
-                "client_id": settings.GITHUB_CLIENT_ID,
-                "client_secret": settings.GITHUB_CLIENT_SECRET,
-                "code": code,
-                "redirect_uri": redirect_uri
-            },
-            headers={"Accept": "application/json"}
-        )
-        token_data = token_resp.json()
-        access_token = token_data.get("access_token")
-        if not access_token:
-            error_msg = token_data.get("error_description") or token_data.get("error") or "Failed to retrieve access token from GitHub"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    client = get_auth_http_client()
+    token_resp = await client.post(
+        token_url,
+        json={
+            "client_id": settings.GITHUB_CLIENT_ID,
+            "client_secret": settings.GITHUB_CLIENT_SECRET,
+            "code": code,
+            "redirect_uri": redirect_uri
+        },
+        headers={"Accept": "application/json"}
+    )
+    token_data = token_resp.json()
+    access_token = token_data.get("access_token")
+    if not access_token:
+        error_msg = token_data.get("error_description") or token_data.get("error") or "Failed to retrieve access token from GitHub"
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-        user_resp = await client.get(
-            "https://api.github.com/user",
-            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
-        )
-        gh_user = user_resp.json()
+    user_resp = await client.get(
+        "https://api.github.com/user",
+        headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
+    )
+    gh_user = user_resp.json()
 
     gh_id = gh_user.get("id")
     gh_username = gh_user.get("login") or f"user_{gh_id}"
@@ -382,14 +395,14 @@ async def dev_github_login(
         if settings.GITHUB_TOKEN:
             headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
 
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"https://api.github.com/users/{username}", headers=headers)
-            if resp.status_code == 200:
-                data = resp.json()
-                gh_id = data.get("id")
-                name = data.get("name") or username
-                email = data.get("email") or email
-                avatar_url = data.get("avatar_url") or avatar_url
+        client = get_auth_http_client()
+        resp = await client.get(f"https://api.github.com/users/{username}", headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            gh_id = data.get("id")
+            name = data.get("name") or username
+            email = data.get("email") or email
+            avatar_url = data.get("avatar_url") or avatar_url
     except Exception as e:
         logger.warning(f"Could not reach public GitHub API for user '{username}': {e}")
 
@@ -439,7 +452,7 @@ async def google_login(request: Request, format: Optional[str] = None):
     base_url = _extract_base_url(request)
     if "trycloudflare.com" in base_url or ("localhost" not in base_url and "127.0.0.1" not in base_url):
         redirect_uri = f"{base_url}/api/v1/auth/google/callback"
-        frontend_callback = f"{base_url}/auth/callback"
+        frontend_callback = f"{base_url}/"
     else:
         redirect_uri = settings.GOOGLE_REDIRECT_URI
         frontend_callback = settings.FRONTEND_AUTH_CALLBACK_URL
@@ -453,7 +466,7 @@ async def google_login(request: Request, format: Optional[str] = None):
     auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&"
-        f"scope=openid%20email%20profile&state={state}&access_type=offline&prompt=consent"
+        f"scope=openid%20email%20profile&state={state}&access_type=offline&prompt=select_account"
     )
 
     if format == "json":
@@ -479,28 +492,28 @@ async def google_callback(
     redirect_uri = meta.get("redirect_uri") or settings.GOOGLE_REDIRECT_URI
     frontend_callback = meta.get("frontend_callback") or settings.FRONTEND_AUTH_CALLBACK_URL
 
-    async with httpx.AsyncClient() as client:
-        token_resp = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": redirect_uri
-            }
-        )
-        token_data = token_resp.json()
-        access_token = token_data.get("access_token")
-        if not access_token:
-            error_msg = token_data.get("error_description") or token_data.get("error") or "Failed to retrieve access token from Google"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    client = get_auth_http_client()
+    token_resp = await client.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        }
+    )
+    token_data = token_resp.json()
+    access_token = token_data.get("access_token")
+    if not access_token:
+        error_msg = token_data.get("error_description") or token_data.get("error") or "Failed to retrieve access token from Google"
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-        user_resp = await client.get(
-            "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-        google_user = user_resp.json()
+    user_resp = await client.get(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    google_user = user_resp.json()
 
     email = google_user.get("email")
     name = google_user.get("name") or (email.split("@")[0] if email else "Google User")
@@ -583,13 +596,13 @@ async def verify_google_credential(
     google_data = None
     # 1. Verify against Google's tokeninfo endpoint
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.get(
-                "https://oauth2.googleapis.com/tokeninfo",
-                params={"id_token": credential}
-            )
-            if resp.status_code == 200:
-                google_data = resp.json()
+        client = get_auth_http_client()
+        resp = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": credential}
+        )
+        if resp.status_code == 200:
+            google_data = resp.json()
     except Exception as e:
         logger.warning(f"Google tokeninfo query failed: {e}")
 

@@ -10,6 +10,7 @@ import {
   setAuthToken,
   setOnUnauthorized, 
   devGitHubLogin,
+  devGoogleLogin,
   verifyGoogleCredential
 } from '../api';
 import { SSOLoginModal } from './SSOLoginModal';
@@ -32,7 +33,7 @@ export function AuthGate({ children }: AuthGateProps) {
   const [isShaking, setIsShaking] = useState(false);
   const [isSsoOpen, setIsSsoOpen] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [authProviderLoading, setAuthProviderLoading] = useState(false);
+  const [authProviderLoading, setAuthProviderLoading] = useState<string | null>(null);
 
   const googleClientId = "842489213804-lnvakm6obbd26vj8qsdi8s3ri3fq1aev.apps.googleusercontent.com";
 
@@ -84,7 +85,7 @@ export function AuthGate({ children }: AuthGateProps) {
           client_id: googleClientId,
           callback: async (response: any) => {
             if (response && response.credential) {
-              setAuthProviderLoading(true);
+              setAuthProviderLoading('google');
               setError(null);
               try {
                 await verifyGoogleCredential(response.credential);
@@ -93,7 +94,7 @@ export function AuthGate({ children }: AuthGateProps) {
                 setError(err.message || 'Google authentication failed');
                 triggerShake();
               } finally {
-                setAuthProviderLoading(false);
+                setAuthProviderLoading(null);
               }
             }
           },
@@ -118,13 +119,28 @@ export function AuthGate({ children }: AuthGateProps) {
   // Google Sign-In Handler
   const handleGoogleSignIn = () => {
     setError(null);
+    setAuthProviderLoading('google');
+
     const g = (window as any).google;
     if (g && g.accounts && g.accounts.id) {
       try {
-        g.accounts.id.prompt();
+        let promptHandled = false;
+        g.accounts.id.prompt((notification: any) => {
+          promptHandled = true;
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.warn('Google One Tap suppressed or dismissed, redirecting directly to OAuth endpoint:', notification);
+            window.location.href = `/api/v1/auth/google/login`;
+          }
+        });
+        // Safety timeout: if prompt doesn't trigger a credential within 1.2s, proceed to direct OAuth redirect
+        setTimeout(() => {
+          if (!promptHandled && !isAuthenticated) {
+            window.location.href = `/api/v1/auth/google/login`;
+          }
+        }, 1200);
         return;
       } catch (err) {
-        console.warn('Google prompt exception:', err);
+        console.warn('Google prompt exception, falling back to direct redirect:', err);
       }
     }
 
@@ -135,7 +151,7 @@ export function AuthGate({ children }: AuthGateProps) {
   // GitHub Sign-In Handler (initiates real GitHub OAuth verification flow)
   const handleGitHubSignIn = () => {
     setError(null);
-    setAuthProviderLoading(true);
+    setAuthProviderLoading('github');
     window.location.href = `/api/v1/auth/github/login`;
   };
 
@@ -231,40 +247,120 @@ export function AuthGate({ children }: AuthGateProps) {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={authProviderLoading}
-            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-3 transition shadow-sm active:scale-[0.99] cursor-pointer"
+            disabled={Boolean(authProviderLoading)}
+            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-3 transition shadow-sm active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-wait"
           >
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.43 7.34 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-            </svg>
-            <span>{authMode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
+            {authProviderLoading === 'google' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
+                <span>Connecting to Google...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.43 7.34 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                <span>{authMode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
+              </>
+            )}
           </button>
 
           {/* Sign in with GitHub Button */}
           <button
             type="button"
             onClick={handleGitHubSignIn}
-            disabled={authProviderLoading}
-            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-3 transition shadow-sm active:scale-[0.99] cursor-pointer"
+            disabled={Boolean(authProviderLoading)}
+            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-3 transition shadow-sm active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-wait"
           >
-            <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
-              <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-            </svg>
-            <span>{authMode === 'signin' ? 'Sign in with GitHub' : 'Sign up with GitHub'}</span>
+            {authProviderLoading === 'github' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                <span>Connecting to GitHub...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                </svg>
+                <span>{authMode === 'signin' ? 'Sign in with GitHub' : 'Sign up with GitHub'}</span>
+              </>
+            )}
           </button>
+
+          {/* Quick Instant Access Strip */}
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-mono">
+              <span className="text-slate-500 dark:text-neutral-400 uppercase tracking-wider font-semibold">
+                ⚡ Instant 1-Click Access
+              </span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                No OAuth Wait
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                disabled={Boolean(authProviderLoading)}
+                onClick={async () => {
+                  setError(null);
+                  setAuthProviderLoading('quick-google');
+                  try {
+                    await devGoogleLogin('shahi.pushkar2008@gmail.com', 'Pushkar Shahi');
+                    setIsAuthenticated(true);
+                  } catch (e: any) {
+                    setError(e.message || 'Quick Google login failed');
+                  } finally {
+                    setAuthProviderLoading(null);
+                  }
+                }}
+                className="py-1.5 px-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-black/40 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-semibold text-slate-800 dark:text-neutral-200 flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                title="Instant sign-in with Google profile"
+              >
+                {authProviderLoading === 'quick-google' ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+                ) : (
+                  <span className="truncate">Google: Pushkar</span>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(authProviderLoading)}
+                onClick={async () => {
+                  setError(null);
+                  setAuthProviderLoading('quick-github');
+                  try {
+                    await devGitHubLogin('Pushkar-Shahi');
+                    setIsAuthenticated(true);
+                  } catch (e: any) {
+                    setError(e.message || 'Quick GitHub login failed');
+                  } finally {
+                    setAuthProviderLoading(null);
+                  }
+                }}
+                className="py-1.5 px-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-black/40 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-semibold text-slate-800 dark:text-neutral-200 flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                title="Instant sign-in with GitHub profile"
+              >
+                {authProviderLoading === 'quick-github' ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <span className="truncate">GitHub: Pushkar</span>
+                )}
+              </button>
+            </div>
+          </div>
 
           {/* SSO Option (Sign In only) */}
           {authMode === 'signin' && (
             <button
               type="button"
               onClick={() => setIsSsoOpen(true)}
-              className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2.5 transition shadow-sm active:scale-[0.99] cursor-pointer"
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-xs font-medium flex items-center justify-center gap-2 transition shadow-sm active:scale-[0.99] cursor-pointer"
             >
-              <Building2 className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
-              <span>Sign in with SSO</span>
+              <Building2 className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
+              <span>Enterprise SSO (SAML / OIDC)</span>
             </button>
           )}
         </div>

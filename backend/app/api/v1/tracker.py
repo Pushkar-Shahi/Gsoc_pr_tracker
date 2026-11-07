@@ -441,31 +441,18 @@ async def import_author_prs(
             repo_res = await db.execute(repo_stmt)
             repository = repo_res.scalar_one_or_none()
             if not repository:
-                repo_data = None
-                try:
-                    repo_data = await gh.get_repository(owner, repo_name)
-                except Exception:
-                    pass
-                
                 repository = Repository(
-                    owner=repo_data["owner"]["login"] if (repo_data and "owner" in repo_data) else owner,
-                    name=repo_data.get("name", repo_name) if repo_data else repo_name,
-                    full_name=repo_data.get("full_name", full_name) if repo_data else full_name,
-                    html_url=repo_data.get("html_url", f"https://github.com/{full_name}") if repo_data else f"https://github.com/{full_name}",
-                    default_branch=repo_data.get("default_branch", "main") if repo_data else "main",
-                    primary_language=repo_data.get("language", "Python") if repo_data else "Python",
-                    stars_count=repo_data.get("stargazers_count", 0) if repo_data else 0,
-                    open_issues_count=repo_data.get("open_issues_count", 0) if repo_data else 0
+                    owner=owner,
+                    name=repo_name,
+                    full_name=full_name,
+                    html_url=f"https://github.com/{full_name}",
+                    default_branch="main",
+                    primary_language="Python",
+                    stars_count=0,
+                    open_issues_count=0
                 )
                 db.add(repository)
-                await db.commit()
-                await db.refresh(repository)
-
-            pr_data = None
-            try:
-                pr_data = await gh.get_pull_request(owner, repo_name, item_number)
-            except Exception:
-                pass
+                await db.flush()
 
             issue_stmt = select(Issue).where(
                 Issue.repository_id == repository.id,
@@ -475,33 +462,37 @@ async def import_author_prs(
             issue = i_res.scalar_one_or_none()
 
             item_state = item.get("state", "open")
-            title = (pr_data.get("title") if pr_data else item.get("title")) or f"Pull Request #{item_number}"
-            body = (pr_data.get("body") if pr_data else item.get("body")) or ""
-            author = (pr_data.get("user", {}).get("login") if pr_data else item.get("user", {}).get("login")) or username
-            pr_state = (pr_data.get("state") if pr_data else item_state) or "open"
-            is_merged = pr_data.get("merged", False) if pr_data else (item_state == "closed")
-            branch_name = (pr_data.get("head", {}).get("ref") if pr_data else f"pr-{item_number}") or f"pr-{item_number}"
+            title = item.get("title") or f"Pull Request #{item_number}"
+            body = item.get("body") or ""
+            author = (item.get("user", {}) or {}).get("login") or username
+            is_merged = (item_state == "closed")
+            pr_state = item_state
+            branch_name = f"pr-{item_number}"
+
+            raw_labels = item.get("labels", [])
+            parsed_labels = [l.get("name") if isinstance(l, dict) else str(l) for l in raw_labels]
+            raw_assignees = item.get("assignees", [])
+            parsed_assignees = [a.get("login") if isinstance(a, dict) else str(a) for a in raw_assignees]
 
             if not issue:
                 issue = Issue(
                     repository_id=repository.id,
-                    github_id=pr_data.get("id", item.get("id", item_number)) if pr_data else item.get("id", item_number),
+                    github_id=item.get("id", item_number),
                     issue_number=item_number,
                     title=title,
                     body=body,
                     author=author,
                     html_url=pr_html_url,
-                    state="closed" if (is_merged or pr_state == "closed") else "open",
-                    labels=pr_data.get("labels", item.get("labels", [])) if pr_data else item.get("labels", []),
-                    assignees=pr_data.get("assignees", item.get("assignees", [])) if pr_data else item.get("assignees", []),
-                    comments_count=pr_data.get("comments", item.get("comments", 0)) if pr_data else item.get("comments", 0)
+                    state="closed" if is_merged else "open",
+                    labels=parsed_labels,
+                    assignees=parsed_assignees,
+                    comments_count=item.get("comments", 0)
                 )
                 db.add(issue)
-                await db.commit()
-                await db.refresh(issue)
+                await db.flush()
             else:
                 issue.title = title
-                issue.state = "closed" if (is_merged or pr_state == "closed") else "open"
+                issue.state = "closed" if is_merged else "open"
 
             # Check existing task for this tenant or unassigned
             task_cond = [Task.issue_id == issue.id]
@@ -511,7 +502,7 @@ async def import_author_prs(
             t_res = await db.execute(task_stmt)
             task = t_res.scalar_one_or_none()
 
-            workflow_state = "MERGED_OR_CLOSED" if (is_merged or pr_state == "closed") else "PR_CREATED"
+            workflow_state = "MERGED_OR_CLOSED" if is_merged else "PR_CREATED"
             if not task:
                 task = Task(
                     tenant_id=tenant_id,
@@ -525,8 +516,7 @@ async def import_author_prs(
                     workflow_state=workflow_state
                 )
                 db.add(task)
-                await db.commit()
-                await db.refresh(task)
+                await db.flush()
             else:
                 if tenant_id and not task.tenant_id:
                     task.tenant_id = tenant_id
@@ -538,21 +528,32 @@ async def import_author_prs(
                 task.branch_name = branch_name
                 task.workflow_state = workflow_state
 
-            try:
-                await sync_task_pr_status(task, db, gh)
-            except Exception:
-                pass
-
             imported_tasks.append(task.id)
         except Exception as e:
             logger.error(f"Error importing PR {pr_html_url}: {e}")
 
     await db.commit()
+
+    # Query full objects to return directly to the caller
+    tasks_payload = []
+    if imported_tasks:
+        try:
+            t_stmt = select(Task).options(
+                selectinload(Task.issue).selectinload(Issue.repository)
+            ).where(Task.id.in_(imported_tasks)).order_by(desc(Task.updated_at))
+            t_res = await db.execute(t_stmt)
+            imported_objs = t_res.scalars().all()
+            for t in imported_objs:
+                tasks_payload.append(TaskRead.model_validate(t).model_dump(mode="json"))
+        except Exception as e:
+            logger.warning(f"Could not serialize tasks for return: {e}")
+
     return {
         "status": "success",
         "username": username,
         "found_on_github": len(items),
-        "imported": len(imported_tasks)
+        "imported": len(imported_tasks),
+        "tasks": tasks_payload
     }
 
 @router.delete("/{task_id}")
