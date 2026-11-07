@@ -110,6 +110,10 @@ export async function verifyAuth(): Promise<boolean> {
       clearAuthToken();
       return false;
     }
+    const me = await res.json().catch(() => ({}));
+    if (me.username && me.username !== 'admin') {
+      try { localStorage.setItem('issuetopr_gh_user', me.username); } catch {}
+    }
     return true;
   } catch {
     return true; // Static hosting / offline fallback
@@ -1453,6 +1457,9 @@ export async function fetchTasks(state?: string): Promise<Task[]> {
           }
         } catch {}
       }
+      try {
+        localStorage.setItem('issuetopr_tasks', JSON.stringify(serverTasks));
+      } catch {}
       return serverTasks;
     }
   } catch {
@@ -1661,7 +1668,14 @@ export async function syncPRStatus(taskId: string): Promise<Task> {
 export async function fetchSettings(): Promise<PlatformSettings> {
   try {
     const res = await authedFetch(`${API_BASE}/settings`);
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.github_username && data.github_username !== 'admin') {
+        try { localStorage.setItem('issuetopr_gh_user', data.github_username); } catch {}
+      }
+      try { localStorage.setItem('issuetopr_client_settings', JSON.stringify(data)); } catch {}
+      return data;
+    }
   } catch {
     // Hosted Vercel fallback
   }

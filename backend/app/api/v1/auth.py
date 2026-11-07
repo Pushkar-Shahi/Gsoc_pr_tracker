@@ -130,51 +130,106 @@ async def _provision_user_and_token(
     """
     Common helper to upsert User, find or create personal Organization workspace,
     and generate JWT session token with tenant context.
+    Unifies all owner logins (Google, GitHub, master password) into the primary workspace.
     """
+    OWNER_EMAILS = {
+        "riseinspirethrive2008@gmail.com",
+        "shahi.pushkar2008@gmail.com",
+        "pushkar-shahi@users.noreply.github.com"
+    }
+    OWNER_USERNAMES = {
+        "pushkar-shahi",
+        "pushkar_shahi",
+        "riseinspirethrive2008",
+        "shahi_pushkar2008",
+        "admin",
+        "default-user"
+    }
+
+    norm_email = (email or "").lower().strip()
+    norm_gh_user = (gh_username or "").lower().strip()
+    is_owner = (norm_email in OWNER_EMAILS) or (norm_gh_user in OWNER_USERNAMES)
+
     user = None
-    if gh_id:
+    if is_owner:
+        owner_stmt = select(User).where(
+            or_(
+                User.id == "default-user",
+                User.github_username.ilike("Pushkar-Shahi"),
+                User.github_username.ilike("pushkar_shahi"),
+                User.email.in_(OWNER_EMAILS)
+            )
+        )
+        owner_res = await db.execute(owner_stmt)
+        user = owner_res.scalars().first()
+
+    if not user and gh_id:
         u_res = await db.execute(select(User).where(User.github_id == gh_id))
         user = u_res.scalar_one_or_none()
-    if not user:
+    if not user and gh_username:
         u_res2 = await db.execute(select(User).where(User.github_username == gh_username))
         user = u_res2.scalar_one_or_none()
+    if not user and email:
+        u_res3 = await db.execute(select(User).where(User.email == email))
+        user = u_res3.scalar_one_or_none()
 
     if user:
-        if email:
+        if email and not user.email:
             user.email = email
-        if avatar_url:
+        if avatar_url and not user.avatar_url:
             user.avatar_url = avatar_url
-        if name:
+        if name and not user.name:
             user.name = name
+        if is_owner:
+            user.github_username = "Pushkar-Shahi"
+            user.name = "Pushkar Shahi"
+            if not user.avatar_url:
+                user.avatar_url = "https://github.com/Pushkar-Shahi.png"
     else:
-        u_id = f"usr-{uuid.uuid4().hex[:12]}"
+        u_id = "default-user" if is_owner else f"usr-{uuid.uuid4().hex[:12]}"
         user = User(
             id=u_id,
             github_id=gh_id,
-            github_username=gh_username,
-            email=email or f"{gh_username.lower()}@platform.dev",
-            name=name or gh_username,
-            avatar_url=avatar_url or f"https://github.com/{gh_username}.png"
+            github_username="Pushkar-Shahi" if is_owner else gh_username,
+            email=email or ("riseinspirethrive2008@gmail.com" if is_owner else f"{gh_username.lower()}@platform.dev"),
+            name="Pushkar Shahi" if is_owner else (name or gh_username),
+            avatar_url=avatar_url or (f"https://github.com/{user.github_username if is_owner else gh_username}.png")
         )
         db.add(user)
         await db.flush()
 
     # Look up or create personal organization workspace
-    mem_stmt = select(Membership).options(selectinload(Membership.organization)).where(Membership.user_id == user.id)
-    mem_res = await db.execute(mem_stmt)
-    membership = mem_res.scalars().first()
+    target_org_id = "default-org" if is_owner else None
+    membership = None
+
+    if target_org_id:
+        mem_stmt = select(Membership).options(selectinload(Membership.organization)).where(
+            Membership.user_id == user.id,
+            Membership.org_id == target_org_id
+        )
+        membership = (await db.execute(mem_stmt)).scalars().first()
 
     if not membership:
-        o_id = f"org-{uuid.uuid4().hex[:12]}"
-        org = Organization(
-            id=o_id,
-            name=f"{gh_username}'s Workspace",
-            slug=f"org-{gh_username.lower()}-{uuid.uuid4().hex[:6]}",
-            is_personal=True,
-            billing_tier=getattr(settings, "DEFAULT_ORG_TIER", "pro")
-        )
-        db.add(org)
-        await db.flush()
+        mem_stmt2 = select(Membership).options(selectinload(Membership.organization)).where(Membership.user_id == user.id)
+        membership = (await db.execute(mem_stmt2)).scalars().first()
+
+    if not membership:
+        o_id = target_org_id or f"org-{uuid.uuid4().hex[:12]}"
+        org_name = "Pushkar-Shahi's Workspace" if is_owner else f"{gh_username}'s Workspace"
+        org_slug = "pushkar-shahi-workspace" if is_owner else f"org-{gh_username.lower()}-{uuid.uuid4().hex[:6]}"
+        
+        org_stmt = select(Organization).where(Organization.id == o_id)
+        org = (await db.execute(org_stmt)).scalar_one_or_none()
+        if not org:
+            org = Organization(
+                id=o_id,
+                name=org_name,
+                slug=org_slug,
+                is_personal=True,
+                billing_tier="pro" if is_owner else getattr(settings, "DEFAULT_ORG_TIER", "pro")
+            )
+            db.add(org)
+            await db.flush()
 
         membership = Membership(
             id=f"mem-{uuid.uuid4().hex[:8]}",
@@ -185,10 +240,10 @@ async def _provision_user_and_token(
         db.add(membership)
         await db.flush()
         tenant_id = org.id
-        tier = getattr(settings, "DEFAULT_ORG_TIER", "pro")
+        tier = org.billing_tier
     else:
         tenant_id = membership.org_id
-        tier = membership.organization.billing_tier if (membership.organization and membership.organization.billing_tier) else "starter"
+        tier = membership.organization.billing_tier if (membership.organization and membership.organization.billing_tier) else "pro"
 
     await db.commit()
 
@@ -257,7 +312,14 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect password. Access denied."
         )
-    token = generate_session_token("admin")
+    token, user, tenant_id, role, tier = await _provision_user_and_token(
+        db=db,
+        gh_id=None,
+        gh_username="Pushkar-Shahi",
+        email="riseinspirethrive2008@gmail.com",
+        name="Pushkar Shahi",
+        avatar_url="https://github.com/Pushkar-Shahi.png"
+    )
     return LoginResponse(token=token)
 
 @router.get("/github/login")

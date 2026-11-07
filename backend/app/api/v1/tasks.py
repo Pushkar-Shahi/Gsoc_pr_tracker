@@ -66,7 +66,9 @@ async def list_tasks(
     ).where(
         or_(
             Task.tenant_id == ctx.organization.id,
-            Task.tenant_id.is_(None)
+            Task.tenant_id.is_(None),
+            Task.tenant_id == "default-org",
+            Task.user_id == ctx.user.id
         )
     ).order_by(desc(Task.updated_at))
 
@@ -91,7 +93,9 @@ async def get_task(
         Task.id == task_id,
         or_(
             Task.tenant_id == ctx.organization.id,
-            Task.tenant_id.is_(None)
+            Task.tenant_id.is_(None),
+            Task.tenant_id == "default-org",
+            Task.user_id == ctx.user.id
         )
     )
     result = await db.execute(stmt)

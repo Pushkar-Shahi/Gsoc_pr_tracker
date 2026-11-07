@@ -77,7 +77,7 @@ async def get_settings(
 
     return PlatformSettingsRead(
         github_token_configured=bool(s.github_token and s.github_token.strip()),
-        github_username=s.github_username,
+        github_username=(ctx.user.github_username if ctx.user and ctx.user.github_username != "admin" else (s.github_username or "Pushkar-Shahi")),
         auto_publish_pr=u_sett.auto_publish_pr if u_sett.auto_publish_pr is not None else s.auto_publish_pr,
         workspace_root=u_sett.workspace_root or s.workspace_root or str(app_settings.WORKSPACE_ROOT),
         antigravity_app_path=u_sett.antigravity_app_path or s.antigravity_app_path,
@@ -273,7 +273,7 @@ async def update_settings(
 
     return PlatformSettingsRead(
         github_token_configured=bool(s.github_token and s.github_token.strip()),
-        github_username=s.github_username,
+        github_username=(ctx.user.github_username if ctx.user and ctx.user.github_username != "admin" else (s.github_username or "Pushkar-Shahi")),
         auto_publish_pr=u_sett.auto_publish_pr if u_sett.auto_publish_pr is not None else s.auto_publish_pr,
         workspace_root=u_sett.workspace_root or s.workspace_root or str(app_settings.WORKSPACE_ROOT),
         antigravity_app_path=u_sett.antigravity_app_path or s.antigravity_app_path,
