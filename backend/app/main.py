@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -59,13 +60,13 @@ async def lifespan(app: FastAPI):
     await seed_initial_data_if_needed()
     
     session_factory = await get_session_factory()
-    # Phase 5: Reconcile interrupted tasks and check filesystem/GitHub integrity
+    # Phase 5: Reconcile interrupted tasks non-blockingly so the server binds and passes healthchecks instantly
     from app.services.background_worker import (
         reconcile_tasks_on_startup,
         BackgroundWorkerService,
         set_background_worker,
     )
-    await reconcile_tasks_on_startup(session_factory)
+    asyncio.create_task(reconcile_tasks_on_startup(session_factory))
 
     # Start background worker for PR sync and 2-hour discovery cron
     worker_service = BackgroundWorkerService(

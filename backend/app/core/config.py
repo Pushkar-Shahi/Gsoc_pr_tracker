@@ -99,6 +99,24 @@ class Settings:
     GOOGLE_CLIENT_SECRET: Optional[str] = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/google/callback")
 
+    @property
+    def EFFECTIVE_GOOGLE_CLIENT_ID(self) -> str:
+        canonical = "842489213804-lnvakm6obbd26vj8qsdi8s3ri3fq1aev.apps.googleusercontent.com"
+        raw = (self.GOOGLE_CLIENT_ID or "").strip()
+        if raw.startswith("GOCSPX-") or not raw:
+            return canonical
+        return raw
+
+    @property
+    def EFFECTIVE_GOOGLE_CLIENT_SECRET(self) -> str:
+        raw_sec = (self.GOOGLE_CLIENT_SECRET or "").strip()
+        raw_id = (self.GOOGLE_CLIENT_ID or "").strip()
+        if raw_sec.startswith("GOCSPX-"):
+            return raw_sec
+        if raw_id.startswith("GOCSPX-"):
+            return raw_id
+        return raw_sec
+
     # GitLab OAuth Integration
     GITLAB_CLIENT_ID: Optional[str] = os.getenv("GITLAB_CLIENT_ID", "")
     GITLAB_CLIENT_SECRET: Optional[str] = os.getenv("GITLAB_CLIENT_SECRET", "")

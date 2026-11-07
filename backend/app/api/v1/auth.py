@@ -455,6 +455,14 @@ class DevGoogleLoginRequest(BaseModel):
     name: Optional[str] = "Pushkar Shahi"
 
 
+def _resolve_google_credentials() -> Tuple[str, str]:
+    """
+    Intelligently resolves Google Client ID and Client Secret, auto-repairing
+    in case they were swapped or the secret (GOCSPX-*) was entered into the ID field.
+    """
+    return settings.EFFECTIVE_GOOGLE_CLIENT_ID, settings.EFFECTIVE_GOOGLE_CLIENT_SECRET
+
+
 @router.get("/google/login")
 async def google_login(request: Request, format: Optional[str] = None):
     """Initiates Google OAuth 2.0 authorization code flow."""
@@ -479,7 +487,7 @@ async def google_login(request: Request, format: Optional[str] = None):
         "frontend_callback": frontend_callback
     }
 
-    client_id = settings.GOOGLE_CLIENT_ID or "mock_google_client_id.apps.googleusercontent.com"
+    client_id, _ = _resolve_google_credentials()
     auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&"
@@ -517,15 +525,17 @@ async def google_callback(
     username = None
     avatar_url = None
 
-    # If live GOOGLE_CLIENT_SECRET is provided in environment, exchange code with Google
-    if code and settings.GOOGLE_CLIENT_SECRET:
+    client_id, client_secret = _resolve_google_credentials()
+
+    # If live client_secret is available, exchange code with Google
+    if code and client_secret:
         try:
             client = get_auth_http_client()
             token_resp = await client.post(
                 "https://oauth2.googleapis.com/token",
                 data={
-                    "client_id": settings.GOOGLE_CLIENT_ID,
-                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
                     "code": code,
                     "grant_type": "authorization_code",
                     "redirect_uri": redirect_uri
@@ -542,6 +552,8 @@ async def google_callback(
                 email = google_user.get("email")
                 name = google_user.get("name")
                 avatar_url = google_user.get("picture")
+            else:
+                logger.warning(f"Google token response error: {token_data}")
         except Exception as e:
             logger.warning(f"Google live token exchange attempt note: {e}")
 
