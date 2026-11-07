@@ -1431,7 +1431,24 @@ export async function fetchTasks(state?: string): Promise<Task[]> {
   try {
     const query = state ? `?state=${encodeURIComponent(state)}` : '';
     const res = await authedFetch(`${API_BASE}/tasks${query}`);
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const serverTasks: Task[] = await res.json();
+      const local = localStorage.getItem('issuetopr_tasks');
+      if (local) {
+        try {
+          const localTasks: Task[] = JSON.parse(local);
+          const prUrls = new Set(serverTasks.map(t => t.pr_url || t.id));
+          for (const lt of localTasks) {
+            const key = lt.pr_url || lt.id;
+            if (key && !prUrls.has(key)) {
+              serverTasks.push(lt);
+              prUrls.add(key);
+            }
+          }
+        } catch {}
+      }
+      return serverTasks;
+    }
   } catch {
     // Hosted Vercel fallback
   }

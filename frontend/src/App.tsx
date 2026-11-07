@@ -336,7 +336,8 @@ export function App() {
     try {
       showToast('Searching GitHub for your pull requests...');
       const res = await api.importAuthorPRs(username);
-      await refreshTasks();
+      const updatedTasks = await api.fetchTasks();
+      setTasks(updatedTasks);
       showToast(`✓ Found ${res.found_on_github} PRs, imported ${res.imported} to dashboard!`);
       api.fetchAuditLogs().then(setAuditLogs).catch(() => {});
     } catch (err: any) {

@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -63,7 +63,12 @@ async def list_tasks(
     ctx = _resolve_tenant_ctx(ctx)
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.tenant_id == ctx.organization.id).order_by(desc(Task.updated_at))
+    ).where(
+        or_(
+            Task.tenant_id == ctx.organization.id,
+            Task.tenant_id.is_(None)
+        )
+    ).order_by(desc(Task.updated_at))
 
     if state:
         stmt = stmt.where(Task.workflow_state == state)
@@ -82,7 +87,13 @@ async def get_task(
     ctx = _resolve_tenant_ctx(ctx)
     stmt = select(Task).options(
         selectinload(Task.issue).selectinload(Issue.repository)
-    ).where(Task.id == task_id, Task.tenant_id == ctx.organization.id)
+    ).where(
+        Task.id == task_id,
+        or_(
+            Task.tenant_id == ctx.organization.id,
+            Task.tenant_id.is_(None)
+        )
+    )
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
     if not task:

@@ -388,12 +388,16 @@ async def untrack_all_items(
 @router.post("/import-author")
 async def import_author_prs(
     username: Optional[str] = Query(None, description="GitHub username to search PRs for"),
+    ctx: TenantContext = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Searches GitHub for all pull requests authored by the specified user
     and tracks them in the platform.
     """
+    tenant_id = ctx.organization.id if (ctx and ctx.organization) else None
+    user_id = ctx.user.id if (ctx and ctx.user) else None
+
     if not username:
         s_stmt = select(PlatformSettings).where(PlatformSettings.id == 1)
         s_res = await db.execute(s_stmt)
@@ -437,26 +441,31 @@ async def import_author_prs(
             repo_res = await db.execute(repo_stmt)
             repository = repo_res.scalar_one_or_none()
             if not repository:
-                repo_data = await gh.get_repository(owner, repo_name)
-                if not repo_data:
-                    continue
+                repo_data = None
+                try:
+                    repo_data = await gh.get_repository(owner, repo_name)
+                except Exception:
+                    pass
+                
                 repository = Repository(
-                    owner=repo_data["owner"]["login"],
-                    name=repo_data["name"],
-                    full_name=repo_data["full_name"],
-                    html_url=repo_data["html_url"],
-                    default_branch=repo_data.get("default_branch", "main"),
-                    primary_language=repo_data.get("language"),
-                    stars_count=repo_data.get("stargazers_count", 0),
-                    open_issues_count=repo_data.get("open_issues_count", 0)
+                    owner=repo_data["owner"]["login"] if (repo_data and "owner" in repo_data) else owner,
+                    name=repo_data.get("name", repo_name) if repo_data else repo_name,
+                    full_name=repo_data.get("full_name", full_name) if repo_data else full_name,
+                    html_url=repo_data.get("html_url", f"https://github.com/{full_name}") if repo_data else f"https://github.com/{full_name}",
+                    default_branch=repo_data.get("default_branch", "main") if repo_data else "main",
+                    primary_language=repo_data.get("language", "Python") if repo_data else "Python",
+                    stars_count=repo_data.get("stargazers_count", 0) if repo_data else 0,
+                    open_issues_count=repo_data.get("open_issues_count", 0) if repo_data else 0
                 )
                 db.add(repository)
                 await db.commit()
                 await db.refresh(repository)
 
-            pr_data = await gh.get_pull_request(owner, repo_name, item_number)
-            if not pr_data:
-                continue
+            pr_data = None
+            try:
+                pr_data = await gh.get_pull_request(owner, repo_name, item_number)
+            except Exception:
+                pass
 
             issue_stmt = select(Issue).where(
                 Issue.repository_id == repository.id,
@@ -465,26 +474,27 @@ async def import_author_prs(
             i_res = await db.execute(issue_stmt)
             issue = i_res.scalar_one_or_none()
 
-            title = pr_data.get("title", f"Pull Request #{item_number}")
-            body = pr_data.get("body", "")
-            author = pr_data.get("user", {}).get("login", username)
-            pr_state = pr_data.get("state", "open")
-            is_merged = pr_data.get("merged", False)
-            branch_name = pr_data.get("head", {}).get("ref") or f"pr-{item_number}"
+            item_state = item.get("state", "open")
+            title = (pr_data.get("title") if pr_data else item.get("title")) or f"Pull Request #{item_number}"
+            body = (pr_data.get("body") if pr_data else item.get("body")) or ""
+            author = (pr_data.get("user", {}).get("login") if pr_data else item.get("user", {}).get("login")) or username
+            pr_state = (pr_data.get("state") if pr_data else item_state) or "open"
+            is_merged = pr_data.get("merged", False) if pr_data else (item_state == "closed")
+            branch_name = (pr_data.get("head", {}).get("ref") if pr_data else f"pr-{item_number}") or f"pr-{item_number}"
 
             if not issue:
                 issue = Issue(
                     repository_id=repository.id,
-                    github_id=pr_data.get("id", item_number),
+                    github_id=pr_data.get("id", item.get("id", item_number)) if pr_data else item.get("id", item_number),
                     issue_number=item_number,
                     title=title,
                     body=body,
                     author=author,
                     html_url=pr_html_url,
                     state="closed" if (is_merged or pr_state == "closed") else "open",
-                    labels=pr_data.get("labels", []),
-                    assignees=pr_data.get("assignees", []),
-                    comments_count=pr_data.get("comments", 0)
+                    labels=pr_data.get("labels", item.get("labels", [])) if pr_data else item.get("labels", []),
+                    assignees=pr_data.get("assignees", item.get("assignees", [])) if pr_data else item.get("assignees", []),
+                    comments_count=pr_data.get("comments", item.get("comments", 0)) if pr_data else item.get("comments", 0)
                 )
                 db.add(issue)
                 await db.commit()
@@ -493,13 +503,19 @@ async def import_author_prs(
                 issue.title = title
                 issue.state = "closed" if (is_merged or pr_state == "closed") else "open"
 
-            task_stmt = select(Task).where(Task.issue_id == issue.id)
+            # Check existing task for this tenant or unassigned
+            task_cond = [Task.issue_id == issue.id]
+            if tenant_id:
+                task_cond.append(or_(Task.tenant_id == tenant_id, Task.tenant_id.is_(None)))
+            task_stmt = select(Task).where(*task_cond)
             t_res = await db.execute(task_stmt)
             task = t_res.scalar_one_or_none()
 
             workflow_state = "MERGED_OR_CLOSED" if (is_merged or pr_state == "closed") else "PR_CREATED"
             if not task:
                 task = Task(
+                    tenant_id=tenant_id,
+                    user_id=user_id,
                     issue_id=issue.id,
                     pr_number=item_number,
                     pr_url=pr_html_url,
@@ -512,6 +528,9 @@ async def import_author_prs(
                 await db.commit()
                 await db.refresh(task)
             else:
+                if tenant_id and not task.tenant_id:
+                    task.tenant_id = tenant_id
+                    task.user_id = user_id
                 task.pr_number = item_number
                 task.pr_url = pr_html_url
                 task.pr_state = pr_state
