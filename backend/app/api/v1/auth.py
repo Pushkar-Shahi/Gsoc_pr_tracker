@@ -274,7 +274,7 @@ async def github_login(request: Request, format: Optional[str] = None):
     base_url = _extract_base_url(request)
     if "trycloudflare.com" in base_url or ("localhost" not in base_url and "127.0.0.1" not in base_url):
         redirect_uri = f"{base_url}/api/v1/auth/github/callback"
-        frontend_callback = f"{base_url}/auth/callback"
+        frontend_callback = f"{base_url}/"
     else:
         redirect_uri = settings.GITHUB_REDIRECT_URI
         frontend_callback = settings.FRONTEND_AUTH_CALLBACK_URL
