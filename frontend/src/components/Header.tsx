@@ -3,6 +3,7 @@ import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut, Download, Me
 import { DiscoveryStatus, PlatformSettings } from '../types';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
 interface HeaderProps {
   discoveryStatus?: DiscoveryStatus | null;
@@ -31,6 +32,9 @@ export const Header: React.FC<HeaderProps> = ({
   const { isDark, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Lock scrolling when Profile Menu is open
+  useLockBodyScroll(isMenuOpen);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -125,7 +129,13 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-2 shadow-2xl z-50 animate-fade-in space-y-1">
+            <>
+              {/* Mobile Backdrop: Locks touches and closes on background tap */}
+              <div 
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
+                onClick={() => setIsMenuOpen(false)}
+              />
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-2 shadow-2xl z-50 animate-fade-in space-y-1">
               {/* User Header */}
               <div className="px-3 py-2.5 border-b border-slate-100 dark:border-white/10 mb-1">
                 <div className="flex items-center gap-2.5">
@@ -197,7 +207,8 @@ export const Header: React.FC<HeaderProps> = ({
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>
               </button>
-            </div>
+              </div>
+            </>
           )}
         </div>
 

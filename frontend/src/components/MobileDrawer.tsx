@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -31,6 +32,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const username = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
+
+  // Lock background body scrolling whenever the Mobile Drawer is open
+  useLockBodyScroll(isOpen);
 
   if (!isOpen) return null;
 

@@ -37,6 +37,12 @@
     -webkit-overflow-scrolling: touch;
     touch-action: manipulation;
   }
+
+  body.scroll-locked {
+    overflow: hidden !important;
+    touch-action: none !important;
+    overscroll-behavior: none !important;
+  }
 }
 
 /* 120fps Mobile Virtualization & Layout Optimization */

@@ -22,12 +22,23 @@ export function useOverscrollBounce() {
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
+      if (document.body.classList.contains('scroll-locked') || document.body.style.overflow === 'hidden') {
+        startYRef.current = null;
+        return;
+      }
       startYRef.current = e.touches[0].clientY;
       isPullingRef.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (startYRef.current === null || e.touches.length !== 1) return;
+      if (document.body.classList.contains('scroll-locked') || document.body.style.overflow === 'hidden') {
+        if (isPullingRef.current) {
+          isPullingRef.current = false;
+          setBounceStyle({ transform: 'translate3d(0, 0, 0)', transition: 'none' });
+        }
+        return;
+      }
       const currentY = e.touches[0].clientY;
       const rawDelta = currentY - startYRef.current;
       const scrollY = window.scrollY || document.documentElement.scrollTop;

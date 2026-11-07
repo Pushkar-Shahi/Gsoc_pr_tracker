@@ -4,6 +4,7 @@ import {
   AlertTriangle, Clock, Star, GitBranch, ArrowRight, User, Check 
 } from 'lucide-react';
 import { Issue } from '../types';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
 interface IssueDetailsModalProps {
   issue: Issue | null;
@@ -18,10 +19,12 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   onSelectIssue,
   onCompleteIssue,
 }) => {
-  if (!issue) return null;
+  useLockBodyScroll(Boolean(issue));
 
   const [activeTab, setActiveTab] = useState<'problem' | 'ranking' | 'policy'>('problem');
-  const breakdown = issue.ranking_breakdown;
+  const breakdown = issue?.ranking_breakdown;
+
+  if (!issue) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
