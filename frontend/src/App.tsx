@@ -22,8 +22,10 @@ import { SettingsView } from './components/SettingsView';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { MobileDrawer } from './components/MobileDrawer';
 import { promptPWAInstall } from './registerSW';
+import { useOverscrollBounce } from './hooks/useOverscrollBounce';
 
 export function App() {
+  const bounceStyle = useOverscrollBounce();
   const [activeTab, setActiveTab] = useState<'issues' | 'bounties' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -402,9 +404,12 @@ export function App() {
   const unreadNotificationsCount = auditLogs.filter(l => !readLogIds.has(l.id)).length;
 
   return (
-    <div className="min-h-screen bg-[#080c14] text-neutral-100 flex font-sans selection:bg-blue-500 selection:text-white relative overflow-x-hidden">
-        {/* Atmospheric Liquid Ambient Glow Orbs */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" style={{ contain: 'strict' }}>
+    <div 
+      className="min-h-screen bg-[#080c14] text-neutral-100 flex font-sans selection:bg-blue-500 selection:text-white relative overflow-x-clip"
+      style={bounceStyle}
+    >
+        {/* Atmospheric Liquid Ambient Glow Orbs (Desktop Only - Disabled on mobile to lock 120 FPS) */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 hidden md:block" style={{ contain: 'strict' }}>
           <div className="ambient-orb-indigo -top-32 -left-32 opacity-25" />
           <div className="ambient-orb-cyan top-1/4 -right-32 opacity-20" />
           <div className="ambient-orb-emerald -bottom-32 left-1/3 opacity-15" />
@@ -548,8 +553,8 @@ export function App() {
           </aside>
         )}
 
-        {/* Mobile Bottom Navigation Bar (iOS / Android Ergonomic 5-Tab Bar) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#030303]/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl shadow-slate-900/10 dark:shadow-black">
+        {/* Mobile Bottom Navigation Bar (iOS / Android Ergonomic 5-Tab Bar - GPU Accelerated) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#030303]/95 backdrop-blur-md border-t border-slate-200 dark:border-white/10 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg shadow-slate-900/5 dark:shadow-black/40 transform-gpu gpu-layer">
           <div className="grid grid-cols-5 gap-1 text-[11px] font-medium text-center">
             {/* 1. Find Issues */}
             <button

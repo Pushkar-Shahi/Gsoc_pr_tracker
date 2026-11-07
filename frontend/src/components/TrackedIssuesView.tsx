@@ -283,7 +283,7 @@ export const TrackedIssuesView: React.FC<TrackedIssuesViewProps> = ({
             return (
               <div
                 key={task.id}
-                className={`bg-[#0c101a] border rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0f1422] ${
+                className={`mobile-card-render bg-[#0c101a] border rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0f1422] ${
                   isMerged
                     ? 'border-purple-500/30 hover:border-purple-500/50'
                     : 'border-white/10 hover:border-white/25'

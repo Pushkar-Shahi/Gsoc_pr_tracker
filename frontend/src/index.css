@@ -23,8 +23,49 @@
     color-scheme: dark;
   }
 
+  html {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
   body {
     @apply bg-[#edf2f7] text-slate-900 dark:bg-[#080c14] dark:text-neutral-100 font-sans antialiased min-h-screen selection:bg-indigo-500 selection:text-white;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+}
+
+/* 120fps Mobile Virtualization & Layout Optimization */
+.mobile-card-render {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 160px;
+}
+
+/* Hardware Accelerated Compositing Layer */
+.gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Mobile GPU Optimization: Disable off-screen expensive blurs to lock 120 FPS */
+@media (max-width: 768px) {
+  .ambient-orb-indigo,
+  .ambient-orb-cyan,
+  .ambient-orb-emerald,
+  .ambient-orb-rose {
+    display: none !important;
+  }
+
+  .liquid-glass,
+  .liquid-glass-header,
+  .liquid-glass-card {
+    backdrop-filter: blur(8px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
   }
 }
 

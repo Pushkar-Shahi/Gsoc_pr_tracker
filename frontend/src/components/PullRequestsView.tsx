@@ -213,7 +213,7 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
     return (
       <div
         key={task.id}
-        className={`bg-[#0c101a] border rounded-2xl shadow-xl transition-all duration-200 space-y-3.5 hover:shadow-2xl hover:bg-[#0f1422] ${
+        className={`mobile-card-render bg-[#0c101a] border rounded-2xl shadow-xl transition-all duration-200 space-y-3.5 hover:shadow-2xl hover:bg-[#0f1422] ${
           isMerged 
             ? 'border-purple-500/30' 
             : isChangesRequested 
