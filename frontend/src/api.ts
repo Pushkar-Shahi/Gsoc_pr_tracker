@@ -119,8 +119,14 @@ export async function verifyAuth(): Promise<boolean> {
 export function logout() {
   clearAuthToken();
   if (onUnauthorizedCallback) {
-    onUnauthorizedCallback();
+    try {
+      onUnauthorizedCallback();
+    } catch (e) {
+      console.warn("onUnauthorizedCallback error:", e);
+    }
   }
+  // Immediately redirect and reload to guarantee clean return to login screen
+  window.location.replace('/');
 }
 
 // ==========================================

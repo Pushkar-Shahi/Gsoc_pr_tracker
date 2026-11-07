@@ -6,6 +6,7 @@ import {
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import { logout } from '../api';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -206,19 +207,21 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           </div>
 
           {/* Sign Out Button */}
-          {onLock && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              if (onLock) {
                 onLock();
-              }}
-              className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/30 border border-rose-200/60 dark:border-rose-500/20 text-xs font-semibold transition active:scale-95"
-            >
-              <LogOut className="w-3.5 h-3.5 shrink-0" />
-              <span>Sign Out of Platform</span>
-            </button>
-          )}
+              } else {
+                logout();
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/30 border border-rose-200/60 dark:border-rose-500/20 text-xs font-semibold transition active:scale-95 cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span>Sign Out of Platform</span>
+          </button>
         </div>
 
         {/* Profile & Account Views */}

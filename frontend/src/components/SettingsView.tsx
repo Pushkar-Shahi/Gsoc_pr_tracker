@@ -168,9 +168,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handleSignOut = () => {
-    if (window.confirm('Sign out of your session on Issue-to-PR?')) {
-      logout();
-    }
+    logout();
   };
 
   const navSections = [

@@ -4,6 +4,7 @@ import { DiscoveryStatus, PlatformSettings } from '../types';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import { logout } from '../api';
 
 interface HeaderProps {
   discoveryStatus?: DiscoveryStatus | null;
@@ -60,10 +61,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleExplicitLogout = () => {
     setIsMenuOpen(false);
-    if (window.confirm('Are you sure you want to sign out of Issue-to-PR?')) {
-      if (onLock) {
-        onLock();
-      }
+    if (onLock) {
+      onLock();
+    } else {
+      logout();
     }
   };
 
@@ -202,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={handleExplicitLogout}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/40 rounded-xl transition font-medium text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/40 rounded-xl transition font-medium text-left cursor-pointer active:scale-98"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>
