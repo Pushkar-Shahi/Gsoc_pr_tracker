@@ -295,7 +295,16 @@ async def reconcile_inbox_issues_upstream(
                     logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (maintainer reserved).")
                     continue
 
-                # 4. Check live linked PRs that will close this issue
+                # 4. Check explicit PR closure or submission intent in issue text
+                full_text = f"{fresh.get('title', '')}\n{fresh.get('body', '')}"
+                has_pr_pattern, pr_reason = AvailabilityInspector.detect_pr_intent_or_closure(full_text)
+                if has_pr_pattern:
+                    await db.delete(issue)
+                    reconciled_closed += 1
+                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted ({pr_reason}).")
+                    continue
+
+                # 5. Check live linked PRs that will close this issue
                 linked_prs = await gh.get_issue_linked_prs(owner, repo, issue.issue_number)
                 if linked_prs and len(linked_prs) > 0:
                     await db.delete(issue)

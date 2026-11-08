@@ -164,3 +164,33 @@ async def test_detect_linked_pr_kornia_6649(monkeypatch):
         linked_prs=prs
     )
     assert status == "PR_OPEN"
+
+
+def test_detect_pr_closure_sentence_exact():
+    """Verifies that the exact screenshot text '1sakshm linked a pull request that will close this issue 7h ago' is detected."""
+    timeline_snippet = "1sakshm linked a pull request that will close this issue 7h ago"
+    has_pr, reason = AvailabilityInspector.detect_pr_intent_or_closure(timeline_snippet)
+    assert has_pr is True
+    assert "linked a pull request that will close this issue" in reason
+
+
+def test_detect_pr_intent_in_issue_body():
+    """Verifies that author intent 'I'll open a PR with the docstring fix' is detected."""
+    body = (
+        "### What happened?\n"
+        "The shear argument of RandomAffine is documented incorrectly.\n"
+        "I searched issues and PRs for the shear docstring and found nothing.\n"
+        "I'll open a PR with the docstring fix."
+    )
+    has_pr, reason = AvailabilityInspector.detect_pr_intent_or_closure(body)
+    assert has_pr is True
+    assert "I'll open a PR" in reason
+
+    # Verifies classify_issue_availability returns PR_OPEN based on body_text
+    status = AvailabilityInspector.classify_issue_availability(
+        assignees=[],
+        is_reserved=False,
+        linked_prs=[],
+        body_text=body
+    )
+    assert status == "PR_OPEN"

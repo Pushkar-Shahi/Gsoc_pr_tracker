@@ -270,6 +270,14 @@ class DiscoveryService:
                 await self.db.delete(existing_issue)
             return
 
+        # Hard delete if text explicitly states PR is linked or author is submitting PR
+        full_text = f"{item.get('title', '')}\n{item.get('body', '')}"
+        has_pr_text, _ = AvailabilityInspector.detect_pr_intent_or_closure(full_text)
+        if has_pr_text:
+            if existing_issue:
+                await self.db.delete(existing_issue)
+            return
+
         # Query GitHub timeline for linked open PRs
         linked_prs = await self.gh.get_issue_linked_prs(repo_owner, repo_name, issue_number)
         if linked_prs and len(linked_prs) > 0:

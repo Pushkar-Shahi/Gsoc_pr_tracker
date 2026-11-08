@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from datetime import datetime
@@ -156,6 +157,55 @@ async def list_issues(
 
     result = await db.execute(stmt)
     issues = result.scalars().all()
+
+    # Inline Real-Time PR & Availability Verification
+    # Concurrently inspect candidate issues to guarantee 0 active PRs, no maintainer locks, and no assignees
+    gh = GitHubClient(token=settings.GITHUB_TOKEN)
+    clean_issues = []
+    issues_to_purge = []
+
+    async def verify_single_issue(candidate_issue):
+        # 1. Quick regex scan on title & body
+        full_text = f"{candidate_issue.title or ''}\n{candidate_issue.body or ''}"
+        has_pr_pattern, pr_reason = AvailabilityInspector.detect_pr_intent_or_closure(full_text)
+        if has_pr_pattern:
+            return candidate_issue, False, pr_reason
+
+        is_reserved, res_reason = AvailabilityInspector.detect_maintainer_reservation(candidate_issue.title, candidate_issue.body)
+        if is_reserved:
+            return candidate_issue, False, res_reason
+
+        # 2. Check assignees
+        if candidate_issue.assignees and len(candidate_issue.assignees) > 0:
+            return candidate_issue, False, "Issue has assigned contributors"
+
+        # 3. Live check GitHub timeline for linked pull requests
+        if candidate_issue.repository:
+            try:
+                prs = await gh.get_issue_linked_prs(candidate_issue.repository.owner, candidate_issue.repository.name, candidate_issue.issue_number)
+                if prs and len(prs) > 0:
+                    return candidate_issue, False, f"Linked PR #{prs[0]['number']} is open"
+            except Exception as e:
+                logger.debug(f"Failed to check timeline for {candidate_issue.id}: {e}")
+
+        return candidate_issue, True, None
+
+    if issues:
+        verification_results = await asyncio.gather(*[verify_single_issue(i) for i in issues])
+        for issue, is_clean, reason in verification_results:
+            if is_clean:
+                clean_issues.append(issue)
+            else:
+                issues_to_purge.append((issue, reason))
+
+        # Hard-delete any purged issues from DB so they never appear again
+        if issues_to_purge:
+            for p_issue, reason in issues_to_purge:
+                logger.info(f"Purging issue {p_issue.id} (#{p_issue.issue_number}) on the fly: {reason}")
+                await db.delete(p_issue)
+            await db.commit()
+
+        issues = clean_issues
 
     # Enrich active task data if present
     items = []
