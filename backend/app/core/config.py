@@ -37,7 +37,7 @@ def _normalize_database_url() -> str:
     raw_url = os.getenv(
         "DATABASE_URL",
         f"postgresql+asyncpg://{os.getenv('USER', 'shahi')}@localhost:5432/issuetopr"
-    )
+    ).strip()
     if raw_url.startswith("postgres://"):
         return raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
     if raw_url.startswith("postgresql://") and not raw_url.startswith("postgresql+asyncpg://"):
