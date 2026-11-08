@@ -12,7 +12,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Header, Depends, status, Request
 from pydantic import BaseModel
 from starlette.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -430,17 +430,22 @@ async def github_callback(
     name = gh_user.get("name") or gh_username
     avatar_url = gh_user.get("avatar_url")
 
-    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
-        db=db,
-        gh_id=gh_id,
-        gh_username=gh_username,
-        email=email,
-        name=name,
-        avatar_url=avatar_url
-    )
-
-    redirect_target = f"{frontend_callback}?token={session_token}"
-    return RedirectResponse(url=redirect_target, status_code=302)
+    try:
+        session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+            db=db,
+            gh_id=gh_id,
+            gh_username=gh_username,
+            email=email,
+            name=name,
+            avatar_url=avatar_url
+        )
+        redirect_target = f"{frontend_callback}?token={session_token}"
+        return RedirectResponse(url=redirect_target, status_code=302)
+    except Exception as e:
+        logger.error(f"GitHub callback error in user provisioning: {e}", exc_info=True)
+        import urllib.parse
+        err_msg = urllib.parse.quote_plus(f"GitHub sign-in error: {e}")
+        return RedirectResponse(url=f"{frontend_callback}?error={err_msg}", status_code=302)
 
 
 @router.post("/github/dev-login")
@@ -631,17 +636,22 @@ async def google_callback(
         name = name or username.replace("_", " ").title()
         avatar_url = avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={username}&backgroundColor=ea4335,4285f4,34a853,fbbc05"
 
-    session_token, user, tenant_id, role, tier = await _provision_user_and_token(
-        db=db,
-        gh_id=None,
-        gh_username=username,
-        email=email,
-        name=name,
-        avatar_url=avatar_url
-    )
-
-    redirect_target = f"{frontend_callback}?token={session_token}"
-    return RedirectResponse(url=redirect_target, status_code=302)
+    try:
+        session_token, user, tenant_id, role, tier = await _provision_user_and_token(
+            db=db,
+            gh_id=None,
+            gh_username=username,
+            email=email,
+            name=name,
+            avatar_url=avatar_url
+        )
+        redirect_target = f"{frontend_callback}?token={session_token}"
+        return RedirectResponse(url=redirect_target, status_code=302)
+    except Exception as e:
+        logger.error(f"Google callback error in user provisioning: {e}", exc_info=True)
+        import urllib.parse
+        err_msg = urllib.parse.quote_plus(f"Google sign-in error: {e}")
+        return RedirectResponse(url=f"{frontend_callback}?error={err_msg}", status_code=302)
 
 
 @router.post("/google/dev-login")
