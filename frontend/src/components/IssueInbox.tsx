@@ -166,58 +166,25 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     };
   }, []);
 
-  // Dual-trigger infinite auto-load (IntersectionObserver + window scroll fallback with rAF)
+  // High-performance IntersectionObserver for infinite scroll (Zero scroll event listeners / Zero forced reflows)
   useEffect(() => {
     if (!autoLoad || !hasMore || loadingMore || loading || !onLoadMore) return;
 
-    // 1. IntersectionObserver with prefetch rootMargin
     const observer = new IntersectionObserver((entries) => {
       const first = entries[0];
       if (first.isIntersecting && !loadingMore && hasMore) {
         onLoadMore();
       }
     }, {
-      rootMargin: '800px 0px',
+      rootMargin: '600px 0px',
       threshold: 0,
     });
 
     const current = sentinelRef.current;
     if (current) observer.observe(current);
 
-    // 2. Window Scroll and Resize event listener with rAF throttle to prevent forced reflows
-    let ticking = false;
-    let animId: number | null = null;
-    const handleScrollOrResize = () => {
-      if (ticking) return;
-      ticking = true;
-      animId = requestAnimationFrame(() => {
-        ticking = false;
-        if (!autoLoad || !hasMore || loadingMore || loading) return;
-        const scrollHeight = document.documentElement.scrollHeight;
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const clientHeight = window.innerHeight;
-        if (scrollHeight - (scrollTop + clientHeight) < 800) {
-          onLoadMore();
-        }
-      });
-    };
-
-    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
-    window.addEventListener('resize', handleScrollOrResize, { passive: true });
-
-    // 3. Viewport fill check: If issues don't fill tall screen, trigger next page
-    const timer = setTimeout(() => {
-      if (document.documentElement.scrollHeight <= window.innerHeight + 200) {
-        handleScrollOrResize();
-      }
-    }, 300);
-
     return () => {
-      clearTimeout(timer);
-      if (animId) cancelAnimationFrame(animId);
       if (current) observer.unobserve(current);
-      window.removeEventListener('scroll', handleScrollOrResize);
-      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [autoLoad, hasMore, loadingMore, loading, onLoadMore]);
 

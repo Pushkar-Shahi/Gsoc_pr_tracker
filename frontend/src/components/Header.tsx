@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 px-3.5 sm:px-8 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/85 dark:bg-[#080c14]/80 backdrop-blur-md sticky top-0 z-20">
+    <header className="h-16 px-3.5 sm:px-8 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/92 dark:bg-[#080c14]/90 backdrop-blur-sm sticky top-0 z-20 transform-gpu">
       {/* Left: Organization / Account Switcher & Early Access Badge */}
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         <OrganizationSwitcher />

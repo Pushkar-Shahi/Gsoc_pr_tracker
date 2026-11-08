@@ -13,7 +13,6 @@ import { IssueInbox } from './components/IssueInbox';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { MobileDrawer } from './components/MobileDrawer';
 import { promptPWAInstall } from './registerSW';
-import { useOverscrollBounce } from './hooks/useOverscrollBounce';
 
 // Lazy-loaded secondary views for high performance & minimal bundle size
 const TrackedIssuesView = lazy(() => import('./components/TrackedIssuesView').then(m => ({ default: m.TrackedIssuesView })));
@@ -36,7 +35,6 @@ function TabLoadingSkeleton() {
 }
 
 export function App() {
-  const bounceStyle = useOverscrollBounce();
   const [activeTab, setActiveTab] = useState<'issues' | 'bounties' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -456,7 +454,7 @@ export function App() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen" style={bounceStyle}>
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           {/* Top Header */}
           <Header
             discoveryStatus={discoveryStatus}
