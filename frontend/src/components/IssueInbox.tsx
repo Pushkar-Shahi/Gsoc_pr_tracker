@@ -138,7 +138,6 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
-  const [availabilityFilter, setAvailabilityFilter] = useState<'available' | 'pr_open' | 'assigned' | 'all'>('available');
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
   const [autoLoad, setAutoLoad] = useState(true);
@@ -300,10 +299,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     license_status: string;
     sort_by: string;
     gsoc_org: string;
-    availability: 'all' | 'available' | 'pr_open' | 'assigned' | 'reserved';
-    unassigned_only: boolean;
   }> = {}) => {
-    const targetAvailability = overrides.availability !== undefined ? overrides.availability : availabilityFilter;
     onFilterChange({
       query: overrides.query !== undefined ? overrides.query : searchTerm,
       language: overrides.language !== undefined ? overrides.language : selectedLanguage,
@@ -311,8 +307,8 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       license_status: overrides.license_status !== undefined ? overrides.license_status : selectedLicense,
       sort_by: overrides.sort_by !== undefined ? overrides.sort_by : sortBy,
       gsoc_org: overrides.gsoc_org !== undefined ? overrides.gsoc_org : selectedGsocOrg,
-      availability: targetAvailability,
-      unassigned_only: overrides.unassigned_only !== undefined ? overrides.unassigned_only : (targetAvailability === 'available'),
+      availability: 'available',
+      unassigned_only: true,
     });
   };
 
@@ -895,75 +891,13 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         </form>
       </div>
 
-      {/* Row Above Issues List: Availability Status Filters & Sort */}
+      {/* Row Above Issues List: Strict Availability Indicator & Sort */}
       <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Filter: 100% Available & Ready to Work */}
-          <button
-            type="button"
-            onClick={() => {
-              setAvailabilityFilter('available');
-              triggerFilters({ availability: 'available', unassigned_only: true });
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
-              availabilityFilter === 'available'
-                ? 'bg-emerald-500/15 text-emerald-700 border-emerald-400 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 shadow-sm font-bold'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#0c101a] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>🎯 Ready to Work (Unassigned & No PRs)</span>
-          </button>
-
-          {/* Filter: PR in Review */}
-          <button
-            type="button"
-            onClick={() => {
-              setAvailabilityFilter('pr_open');
-              triggerFilters({ availability: 'pr_open', unassigned_only: false });
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
-              availabilityFilter === 'pr_open'
-                ? 'bg-amber-500/15 text-amber-800 border-amber-400 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 shadow-sm font-bold'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#0c101a] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white'
-            }`}
-          >
-            <GitPullRequest className="w-3.5 h-3.5 text-amber-500" />
-            <span>PR in Review</span>
-          </button>
-
-          {/* Filter: Assigned */}
-          <button
-            type="button"
-            onClick={() => {
-              setAvailabilityFilter('assigned');
-              triggerFilters({ availability: 'assigned', unassigned_only: false });
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
-              availabilityFilter === 'assigned'
-                ? 'bg-purple-500/15 text-purple-800 border-purple-400 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40 shadow-sm font-bold'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#0c101a] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white'
-            }`}
-          >
-            <User className="w-3.5 h-3.5 text-purple-500" />
-            <span>Assigned</span>
-          </button>
-
-          {/* Filter: All Issues */}
-          <button
-            type="button"
-            onClick={() => {
-              setAvailabilityFilter('all');
-              triggerFilters({ availability: 'all', unassigned_only: false });
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition ${
-              availabilityFilter === 'all'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-bold'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#0c101a] dark:border-white/10 dark:text-neutral-400 dark:hover:text-white'
-            }`}
-          >
-            <span>All Issues</span>
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-500/30 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>🎯 Verified Open & Unassigned • 0 Active PRs</span>
+          </span>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-neutral-400">
@@ -1081,32 +1015,6 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                       <span>{issue.repository?.license_spdx || 'MIT'}</span>
                     </span>
                   )}
-
-                  {/* Availability / Linked PR / Maintainer Badge */}
-                  {issue.is_reserved ? (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-500/30">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Reserved</span>
-                    </span>
-                  ) : issue.has_open_pr ? (
-                    <span 
-                      className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-500/30"
-                      title={issue.linked_prs?.[0] ? `PR #${issue.linked_prs[0].number} by @${issue.linked_prs[0].author}` : 'PR in review'}
-                    >
-                      <GitPullRequest className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      <span>PR #{issue.linked_prs?.[0]?.number || 'Open'} in Review</span>
-                    </span>
-                  ) : issue.assignees && issue.assignees.length > 0 ? (
-                    <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-xl bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-500/30">
-                      <User className="w-3.5 h-3.5" />
-                      <span>Assigned ({issue.assignees.length})</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-500/30">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Ready for PR</span>
-                    </span>
-                  )}
                 </div>
 
                 {/* Suitability Score Gauge */}
@@ -1135,34 +1043,6 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   </a>
                 </h2>
               </div>
-
-              {/* Active Linked PR or Maintainer Reserved Alert Strip */}
-              {issue.is_reserved ? (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-800 dark:text-rose-300">
-                  <Lock className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-                  <span className="font-semibold truncate">
-                    {issue.reservation_reason || 'Reserved for maintainer implementation — outside PRs will be closed'}
-                  </span>
-                </div>
-              ) : issue.has_open_pr && issue.linked_prs && issue.linked_prs.length > 0 ? (
-                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <GitPullRequest className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                    <span className="truncate">
-                      PR #{issue.linked_prs[0].number} (&ldquo;{issue.linked_prs[0].title}&rdquo;) submitted by @{issue.linked_prs[0].author}
-                    </span>
-                  </div>
-                  <a
-                    href={issue.linked_prs[0].html_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="underline font-semibold shrink-0 text-amber-700 dark:text-amber-400 hover:opacity-80 ml-2"
-                  >
-                    View PR &rarr;
-                  </a>
-                </div>
-              ) : null}
 
               {/* Description Excerpt */}
               <p className="text-xs text-slate-600 dark:text-neutral-400 line-clamp-2 leading-relaxed">
@@ -1339,7 +1219,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             ) : (
               <div className="py-2 text-center text-xs text-slate-600 dark:text-neutral-300 flex items-center justify-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>All {totalIssues.toLocaleString()} {availabilityFilter === 'available' ? 'unassigned & PR-free' : availabilityFilter === 'pr_open' ? 'PR in review' : availabilityFilter === 'assigned' ? 'assigned' : 'open'} issues loaded cleanly.</span>
+                <span>All {totalIssues.toLocaleString()} unassigned & PR-free issues loaded cleanly.</span>
               </div>
             )}
           </div>

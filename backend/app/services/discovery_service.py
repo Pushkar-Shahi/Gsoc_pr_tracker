@@ -249,7 +249,7 @@ class DiscoveryService:
             body=item.get("body", "")
         )
 
-        # 5. Insert or update Issue
+        # 5. Check assignees, maintainer reservations & active linked PRs (Strict Unassigned & PR-free enforcement)
         issue_number = item["number"]
         issue_stmt = select(Issue).where(
             Issue.repository_id == repository.id,
@@ -257,6 +257,26 @@ class DiscoveryService:
         )
         res = await self.db.execute(issue_stmt)
         existing_issue = res.scalar_one_or_none()
+
+        # Hard delete if assigned
+        if assignees and len(assignees) > 0:
+            if existing_issue:
+                await self.db.delete(existing_issue)
+            return
+
+        # Hard delete if reserved for maintainers
+        if is_reserved:
+            if existing_issue:
+                await self.db.delete(existing_issue)
+            return
+
+        # Query GitHub timeline for linked open PRs
+        linked_prs = await self.gh.get_issue_linked_prs(repo_owner, repo_name, issue_number)
+        if linked_prs and len(linked_prs) > 0:
+            # An active PR has been submitted to close this issue - hard delete immediately
+            if existing_issue:
+                await self.db.delete(existing_issue)
+            return
 
         github_created_at = None
         if item.get("created_at"):
@@ -266,23 +286,20 @@ class DiscoveryService:
                 pass
 
         if existing_issue:
-            existing_prs = existing_issue.linked_prs or []
-            availability_status = AvailabilityInspector.classify_issue_availability(
-                assignees=assignees,
-                is_reserved=is_reserved,
-                linked_prs=existing_prs
-            )
             existing_issue.title = item.get("title", existing_issue.title)
             existing_issue.body = item.get("body", existing_issue.body)
             existing_issue.state = item.get("state", existing_issue.state)
             existing_issue.labels = raw_labels
-            existing_issue.assignees = assignees
+            existing_issue.assignees = []
             existing_issue.comments_count = item.get("comments", existing_issue.comments_count)
             existing_issue.is_eligible = is_eligible
             existing_issue.ineligibility_reason = ineligibility_reason
-            existing_issue.is_reserved = is_reserved
-            existing_issue.reservation_reason = reservation_reason
-            existing_issue.availability_status = availability_status
+            existing_issue.is_reserved = False
+            existing_issue.reservation_reason = None
+            existing_issue.has_open_pr = False
+            existing_issue.linked_pr_count = 0
+            existing_issue.linked_prs = []
+            existing_issue.availability_status = "AVAILABLE"
             existing_issue.ranking_score = ranking_result["ranking_score"]
             existing_issue.difficulty_estimate = ranking_result["difficulty_estimate"]
             existing_issue.estimated_effort_hours = ranking_result["estimated_effort_hours"]
@@ -290,11 +307,6 @@ class DiscoveryService:
             existing_issue.ai_summary = ranking_result["ai_summary"]
             existing_issue.last_verified_at = datetime.utcnow()
         else:
-            availability_status = AvailabilityInspector.classify_issue_availability(
-                assignees=assignees,
-                is_reserved=is_reserved,
-                linked_prs=[]
-            )
             new_issue = Issue(
                 repository_id=repository.id,
                 github_id=item["id"],
@@ -305,14 +317,14 @@ class DiscoveryService:
                 html_url=item.get("html_url", ""),
                 state=item.get("state", "open"),
                 labels=raw_labels,
-                assignees=assignees,
+                assignees=[],
                 comments_count=item.get("comments", 0),
                 github_created_at=github_created_at,
                 is_eligible=is_eligible,
                 ineligibility_reason=ineligibility_reason,
-                is_reserved=is_reserved,
-                reservation_reason=reservation_reason,
-                availability_status=availability_status,
+                is_reserved=False,
+                reservation_reason=None,
+                availability_status="AVAILABLE",
                 has_open_pr=False,
                 linked_pr_count=0,
                 linked_prs=[],

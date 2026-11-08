@@ -73,3 +73,4 @@ class AvailabilityInspector:
                 return "PR_OPEN"
 
         return "AVAILABLE"
+

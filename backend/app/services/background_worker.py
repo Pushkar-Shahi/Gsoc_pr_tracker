@@ -11,6 +11,7 @@ from app.models.models import Task, Issue, Repository, PlatformSettings, AuditLo
 from app.services.github_client import GitHubClient
 from app.services.discovery_service import DiscoveryService
 from app.services.queue_service import queue_service
+from app.services.availability_inspector import AvailabilityInspector
 
 logger = logging.getLogger(__name__)
 
@@ -269,23 +270,48 @@ async def reconcile_inbox_issues_upstream(
                 upstream_assignees = fresh.get("assignees", [])
                 is_pr = "pull_request" in fresh
 
+                # 1. Check if closed upstream or is itself a PR
                 if upstream_state != "open" or is_pr:
-                    issue.state = upstream_state
-                    issue.is_eligible = False
-                    issue.ineligibility_reason = "Issue is a pull request." if is_pr else f"Closed upstream on GitHub (state: {upstream_state})."
-                    issue.last_verified_at = datetime.utcnow()
+                    await db.delete(issue)
                     reconciled_closed += 1
-                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} pruned from inbox (closed/pr upstream).")
-                elif len(upstream_assignees) > 0:
-                    issue.assignees = upstream_assignees
-                    issue.is_eligible = False
-                    assigned_logins = [a.get("login") for a in upstream_assignees if isinstance(a, dict)]
-                    issue.ineligibility_reason = f"Assigned to {', '.join(assigned_logins)} upstream on GitHub."
-                    issue.last_verified_at = datetime.utcnow()
+                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (closed/PR upstream).")
+                    continue
+
+                # 2. Check if assigned upstream
+                if len(upstream_assignees) > 0:
+                    await db.delete(issue)
                     reconciled_closed += 1
-                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} pruned from inbox (assigned upstream).")
-                else:
-                    issue.last_verified_at = datetime.utcnow()
+                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (assigned upstream).")
+                    continue
+
+                # 3. Check maintainer reservation
+                is_reserved, res_reason = AvailabilityInspector.detect_maintainer_reservation(
+                    fresh.get("title", ""),
+                    fresh.get("body", "")
+                )
+                if is_reserved:
+                    await db.delete(issue)
+                    reconciled_closed += 1
+                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (maintainer reserved).")
+                    continue
+
+                # 4. Check live linked PRs that will close this issue
+                linked_prs = await gh.get_issue_linked_prs(owner, repo, issue.issue_number)
+                if linked_prs and len(linked_prs) > 0:
+                    await db.delete(issue)
+                    reconciled_closed += 1
+                    logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (has active PR #{linked_prs[0]['number']}).")
+                    continue
+
+                # Issue is pristine: 0 assignees, 0 open PRs, not reserved
+                issue.has_open_pr = False
+                issue.linked_pr_count = 0
+                issue.linked_prs = []
+                issue.is_reserved = False
+                issue.reservation_reason = None
+                issue.availability_status = "AVAILABLE"
+                issue.assignees = []
+                issue.last_verified_at = datetime.utcnow()
             except Exception as e:
                 logger.debug(f"Failed to check upstream status for {issue.id}: {e}")
 
@@ -295,7 +321,13 @@ async def reconcile_inbox_issues_upstream(
         if purge:
             tasks_subquery = select(Task.issue_id).distinct()
             stale_issues_stmt = select(Issue).where(
-                or_(Issue.state != "open", Issue.is_eligible == False),
+                or_(
+                    Issue.state != "open",
+                    Issue.is_eligible == False,
+                    Issue.has_open_pr == True,
+                    Issue.is_reserved == True,
+                    Issue.availability_status != "AVAILABLE"
+                ),
                 Issue.id.not_in(tasks_subquery)
             )
             stale_res = await db.execute(stale_issues_stmt)

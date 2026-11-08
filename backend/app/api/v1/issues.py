@@ -57,29 +57,16 @@ async def list_issues(
     if state != "all":
         filters.append(Issue.state == state)
 
-    # Filter by issue availability & linked PR status
-    if unassigned_only or availability == "available":
-        filters.append(Issue.is_eligible.is_(True))
-        filters.append(Issue.has_open_pr.is_(False))
-        filters.append(Issue.is_reserved.is_(False))
-        # Ensure availability status is AVAILABLE
-        filters.append(
-            or_(
-                Issue.availability_status == "AVAILABLE",
-                and_(
-                    Issue.has_open_pr.is_(False),
-                    Issue.is_reserved.is_(False)
-                )
-            )
+    # Strictly enforce: Only unassigned, PR-free, non-reserved, eligible open issues
+    filters.append(Issue.is_eligible.is_(True))
+    filters.append(Issue.has_open_pr.is_(False))
+    filters.append(Issue.is_reserved.is_(False))
+    filters.append(
+        or_(
+            Issue.availability_status == "AVAILABLE",
+            Issue.availability_status.is_(None)
         )
-    elif availability == "pr_open":
-        filters.append(Issue.has_open_pr.is_(True))
-    elif availability == "assigned":
-        filters.append(Issue.availability_status == "ASSIGNED")
-    elif availability == "reserved":
-        filters.append(Issue.is_reserved.is_(True))
-    elif eligible_only:
-        filters.append(Issue.is_eligible.is_(True))
+    )
 
     # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
     focus_owners = list(FOCUS_GSOC_OWNERS)
@@ -768,6 +755,50 @@ async def import_issue(
             pass
 
     ineligibility_reason = "; ".join(reasons) if not is_eligible else None
+
+    # Hard-delete from database if ineligible (has open PR, assigned, reserved, or closed)
+    if not is_eligible or has_open_pr or not is_unassigned or is_reserved:
+        if existing_issue:
+            await db.delete(existing_issue)
+            await db.commit()
+        # Return preflight check report without persisting to database
+        transient_issue = Issue(
+            repository_id=repository.id,
+            github_id=issue_data["id"],
+            issue_number=issue_number,
+            title=issue_data.get("title", ""),
+            body=issue_data.get("body", ""),
+            author=author_login,
+            html_url=issue_data.get("html_url", f"https://github.com/{repo_full_name}/issues/{issue_number}"),
+            state=issue_state,
+            labels=raw_labels,
+            assignees=assignees,
+            comments_count=issue_data.get("comments", 0),
+            github_created_at=github_created_at,
+            is_eligible=False,
+            ineligibility_reason=ineligibility_reason,
+            license_status=license_status,
+            policy_status=policy_eval["workflow_state"],
+            has_open_pr=has_open_pr,
+            linked_pr_count=len(linked_prs),
+            linked_prs=linked_prs,
+            is_reserved=is_reserved,
+            reservation_reason=reservation_reason,
+            availability_status=availability_status,
+            ranking_score=ranking_eval["ranking_score"],
+            difficulty_estimate=ranking_eval["difficulty_estimate"],
+            estimated_effort_hours=ranking_eval["estimated_effort_hours"],
+            ranking_breakdown=ranking_eval["ranking_breakdown"],
+            ai_summary=ranking_eval["ai_summary"],
+            last_verified_at=datetime.utcnow()
+        )
+        transient_issue.repository = repository
+        conditions_checked["reasons"] = reasons
+        return IssueImportResponse(
+            issue=IssueRead.model_validate(transient_issue),
+            conditions_checked=conditions_checked,
+            meets_all_conditions=False
+        )
 
     if existing_issue:
         existing_issue.title = issue_data.get("title", existing_issue.title)

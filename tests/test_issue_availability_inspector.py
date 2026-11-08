@@ -117,3 +117,50 @@ async def test_github_client_get_issue_linked_prs_from_timeline(monkeypatch):
     assert prs[0]["number"] == 6628
     assert prs[0]["author"] == "Debcode2006"
     assert prs[0]["state"] == "open"
+
+
+@pytest.mark.asyncio
+async def test_detect_linked_pr_kornia_6649(monkeypatch):
+    """Verifies that issue #6649 is correctly flagged as having linked PR #6650 by 1sakshm."""
+    mock_timeline = [
+        {
+            "event": "cross-referenced",
+            "source": {
+                "issue": {
+                    "number": 6650,
+                    "title": "docs(augmentation): a (a, b) shear is sampled from (a, b)",
+                    "html_url": "https://github.com/kornia/kornia/pull/6650",
+                    "state": "open",
+                    "pull_request": {"url": "https://api.github.com/repos/kornia/kornia/pulls/6650"},
+                    "user": {"login": "1sakshm", "avatar_url": "https://github.com/1sakshm.png"}
+                }
+            }
+        }
+    ]
+
+    import httpx
+    async def mock_get(self, url, headers=None, params=None):
+        class MockResp:
+            status_code = 200
+            headers = {}
+            def json(self):
+                if "timeline" in url:
+                    return mock_timeline
+                return {"items": []}
+        return MockResp()
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+
+    client = GitHubClient(token="mock_token")
+    prs = await client.get_issue_linked_prs("kornia", "kornia", 6649)
+
+    assert len(prs) == 1
+    assert prs[0]["number"] == 6650
+    assert prs[0]["author"] == "1sakshm"
+
+    status = AvailabilityInspector.classify_issue_availability(
+        assignees=[],
+        is_reserved=False,
+        linked_prs=prs
+    )
+    assert status == "PR_OPEN"
