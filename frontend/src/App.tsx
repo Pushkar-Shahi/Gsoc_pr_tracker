@@ -20,7 +20,6 @@ const PullRequestsView = lazy(() => import('./components/PullRequestsView').then
 const ActivityHistoryView = lazy(() => import('./components/ActivityHistoryView').then(m => ({ default: m.ActivityHistoryView })));
 const RunnersView = lazy(() => import('./components/RunnersView').then(m => ({ default: m.RunnersView })));
 const BillingView = lazy(() => import('./components/BillingView').then(m => ({ default: m.BillingView })));
-const BountiesView = lazy(() => import('./components/BountiesView').then(m => ({ default: m.BountiesView })));
 const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
 const IssueDetailsModal = lazy(() => import('./components/IssueDetailsModal').then(m => ({ default: m.IssueDetailsModal })));
 const UpgradeModal = lazy(() => import('./components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
@@ -35,7 +34,7 @@ function TabLoadingSkeleton() {
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'issues' | 'bounties' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
+  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [planTier, setPlanTier] = useState<string>('pro');
@@ -490,16 +489,6 @@ export function App() {
                 />
               )}
 
-              {activeTab === 'bounties' && (
-                <BountiesView
-                  onNavigateToTracker={() => setActiveTab('tracker')}
-                  onStartBountyWork={(_res) => {
-                    refreshTasks();
-                    setActiveTab('tracker');
-                  }}
-                />
-              )}
-
               {activeTab === 'tracker' && (
                 <TrackedIssuesView
                   tasks={tasks}
@@ -571,9 +560,9 @@ export function App() {
           </aside>
         )}
 
-        {/* Mobile Bottom Navigation Bar (iOS / Android Ergonomic 5-Tab Bar - GPU Accelerated) */}
+        {/* Mobile Bottom Navigation Bar (iOS / Android Ergonomic 4-Tab Bar - GPU Accelerated) */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#030303]/95 backdrop-blur-md border-t border-slate-200 dark:border-white/10 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg shadow-slate-900/5 dark:shadow-black/40 transform-gpu gpu-layer">
-          <div className="grid grid-cols-5 gap-1 text-[11px] font-medium text-center">
+          <div className="grid grid-cols-4 gap-1 text-[11px] font-medium text-center">
             {/* 1. Find Issues */}
             <button
               onClick={() => setActiveTab('issues')}
@@ -594,25 +583,7 @@ export function App() {
               <span>Issues</span>
             </button>
 
-            {/* 2. Bounties */}
-            <button
-              onClick={() => setActiveTab('bounties')}
-              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                activeTab === 'bounties'
-                  ? 'text-amber-600 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-500/30 font-bold'
-                  : 'text-slate-500 hover:text-amber-600 dark:text-neutral-400 dark:hover:text-amber-300'
-              }`}
-            >
-              <div className="relative">
-                <Coins className="w-5 h-5 mb-0.5 text-amber-500 dark:text-amber-400" />
-                <span className="absolute -top-1 -right-2.5 px-1 py-0.2 rounded-full bg-amber-400 text-slate-900 font-extrabold text-[8px]">
-                  $$$
-                </span>
-              </div>
-              <span>Bounties</span>
-            </button>
-
-            {/* 3. Tracked Items */}
+            {/* 2. Tracked Items */}
             <button
               onClick={() => setActiveTab('tracker')}
               className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${

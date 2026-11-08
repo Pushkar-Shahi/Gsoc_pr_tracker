@@ -58,7 +58,7 @@ export function UpgradeModal({
           </div>
           <div className="flex items-start gap-2.5 text-xs text-slate-800 dark:text-neutral-200">
             <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-            <span><strong>Real-time webhook discovery</strong> & Algora/Polar bounty tracking</span>
+            <span><strong>Real-time webhook discovery</strong> & GSoC organization issue tracking</span>
           </div>
           <div className="flex items-start gap-2.5 text-xs text-slate-800 dark:text-neutral-200">
             <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
