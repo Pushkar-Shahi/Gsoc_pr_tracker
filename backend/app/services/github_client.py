@@ -1,5 +1,7 @@
 import httpx
 import logging
+import re
+import json
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 from app.core.config import settings
@@ -152,9 +154,66 @@ class GitHubClient:
     async def get_issue_linked_prs(self, owner: str, repo: str, issue_number: int) -> List[Dict[str, Any]]:
         """
         Probes for active/open pull requests that link to or attempt to close this issue.
-        Checks GitHub Issue Timeline events and falls back to targeted PR search.
+        Checks GitHub's direct webpage payload (closedByPullRequestsReferences & linkedPullRequests)
+        as well as REST Timeline API events and fallback search.
         """
         linked_prs: Dict[int, Dict[str, Any]] = {}
+
+        # 1. Primary Inspection: Fast token-independent inspection of closedByPullRequestsReferences & linkedPullRequests
+        try:
+            issue_url = f"https://github.com/{owner}/{repo}/issues/{issue_number}"
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as web_client:
+                web_resp = await web_client.get(issue_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"})
+                if web_resp.status_code == 200:
+                    text = web_resp.text
+                    # Check closedByPullRequestsReferences (exact structure behind "linked a pull request that will close this issue")
+                    m_closed = re.findall(r'\"closedByPullRequestsReferences\":\s*\{\"nodes\":\s*(\[.*?\])\}', text)
+                    if m_closed:
+                        try:
+                            nodes = json.loads(m_closed[0])
+                            for n in nodes:
+                                if n.get("state", "").upper() == "OPEN":
+                                    num = n.get("number")
+                                    if num:
+                                        linked_prs[num] = {
+                                            "number": num,
+                                            "title": n.get("title", f"PR #{num}"),
+                                            "html_url": n.get("url", f"https://github.com/{owner}/{repo}/pull/{num}"),
+                                            "author": n.get("author", {}).get("login", "contributor") if isinstance(n.get("author"), dict) else "contributor",
+                                            "author_avatar": None,
+                                            "state": "open",
+                                            "created_at": n.get("createdAt"),
+                                            "updated_at": None
+                                        }
+                        except Exception as ex:
+                            logger.debug(f"Error parsing closedByPullRequestsReferences: {ex}")
+
+                    # Check linkedPullRequests
+                    m_linked = re.findall(r'\"linkedPullRequests\":\s*\{\"nodes\":\s*(\[.*?\])\}', text)
+                    if m_linked:
+                        try:
+                            nodes = json.loads(m_linked[0])
+                            for n in nodes:
+                                if n.get("state", "").upper() == "OPEN":
+                                    num = n.get("number")
+                                    if num and num not in linked_prs:
+                                        linked_prs[num] = {
+                                            "number": num,
+                                            "title": n.get("title", f"PR #{num}"),
+                                            "html_url": n.get("url", f"https://github.com/{owner}/{repo}/pull/{num}"),
+                                            "author": n.get("owner", {}).get("login", "contributor") if isinstance(n.get("owner"), dict) else "contributor",
+                                            "author_avatar": None,
+                                            "state": "open",
+                                            "created_at": n.get("createdAt"),
+                                            "updated_at": None
+                                        }
+                        except Exception as ex:
+                            logger.debug(f"Error parsing linkedPullRequests: {ex}")
+
+                    if linked_prs:
+                        return list(linked_prs.values())
+        except Exception as e:
+            logger.debug(f"Web inspection error for {owner}/{repo}#{issue_number}: {e}")
 
         async with httpx.AsyncClient(timeout=12.0) as client:
             # 1. Inspect timeline events (cross-referenced and connected events)

@@ -508,7 +508,21 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     }
   };
 
-  const visibleIssues = issues.filter(i => !completedIds.has(i.id) && !isIssueCompleted(i));
+  const isPrOrClaimed = (i: Issue) => {
+    if (i.has_open_pr) return true;
+    if (i.linked_pr_count && i.linked_pr_count > 0) return true;
+    if (i.linked_prs && i.linked_prs.length > 0) return true;
+    if (i.is_reserved) return true;
+    if (i.assignees && i.assignees.length > 0) return true;
+    if (i.availability_status && i.availability_status !== 'AVAILABLE') return true;
+    // Client-side regex verification for active PR closures and intent
+    const text = `${i.title || ''} ${i.body || ''}`;
+    if (/linked\s+a\s+pull\s+request/i.test(text)) return true;
+    if (/I(?:'ll|\s+will|'ve|\s+have)\s+open(?:ed)?\s+a\s+PR/i.test(text)) return true;
+    return false;
+  };
+
+  const visibleIssues = issues.filter(i => !completedIds.has(i.id) && !isIssueCompleted(i) && !isPrOrClaimed(i));
   const progressPercent = totalIssues > 0 ? Math.min(100, Math.round((visibleIssues.length / totalIssues) * 100)) : 100;
 
   return (
