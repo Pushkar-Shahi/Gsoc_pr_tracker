@@ -425,7 +425,6 @@ export function App() {
   return (
     <div 
       className="min-h-screen bg-[#080c14] text-neutral-100 flex font-sans selection:bg-blue-500 selection:text-white relative overflow-x-clip"
-      style={bounceStyle}
     >
         {/* Atmospheric Liquid Ambient Glow Orbs (Desktop Only - Disabled on mobile to lock 120 FPS) */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 hidden md:block" style={{ contain: 'strict' }}>
@@ -442,8 +441,8 @@ export function App() {
           </div>
         )}
 
-        {/* Persistent Left Sidebar (Desktop) - Collapsible & Locked */}
-        <div className={`hidden md:block transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        {/* Persistent Left Sidebar (Desktop) - Collapsible & Viewport-Locked */}
+        <div className={`hidden md:block transition-all duration-300 ease-in-out shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
           <Sidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -457,7 +456,7 @@ export function App() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen" style={bounceStyle}>
           {/* Top Header */}
           <Header
             discoveryStatus={discoveryStatus}

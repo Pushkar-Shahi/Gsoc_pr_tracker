@@ -1,18 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 export function useOverscrollBounce() {
-  const [bounceStyle, setBounceStyle] = useState<{
-    transform: string;
-    transition: string;
-    willChange?: string;
-  }>({
-    transform: 'translate3d(0, 0, 0)',
-    transition: 'none',
-  });
+  const [bounceStyle, setBounceStyle] = useState<React.CSSProperties>({});
 
   const startYRef = useRef<number | null>(null);
   const isPullingRef = useRef<boolean>(false);
   const animFrameRef = useRef<number | null>(null);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Only apply on touch devices (phones and tablets)
@@ -20,12 +14,20 @@ export function useOverscrollBounce() {
       return;
     }
 
+    const clearResetTimer = () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = null;
+      }
+    };
+
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       if (document.body.classList.contains('scroll-locked') || document.body.style.overflow === 'hidden') {
         startYRef.current = null;
         return;
       }
+      clearResetTimer();
       startYRef.current = e.touches[0].clientY;
       isPullingRef.current = false;
     };
@@ -35,7 +37,7 @@ export function useOverscrollBounce() {
       if (document.body.classList.contains('scroll-locked') || document.body.style.overflow === 'hidden') {
         if (isPullingRef.current) {
           isPullingRef.current = false;
-          setBounceStyle({ transform: 'translate3d(0, 0, 0)', transition: 'none' });
+          setBounceStyle({});
         }
         return;
       }
@@ -59,11 +61,16 @@ export function useOverscrollBounce() {
             transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
             willChange: 'transform',
           });
+          clearResetTimer();
+          resetTimerRef.current = setTimeout(() => {
+            setBounceStyle({});
+          }, 420);
         }
         return;
       }
 
       if (isPullingRef.current) {
+        clearResetTimer();
         // Logarithmic rubber-band spring dampening (physical Android 12 / iOS stretch curve)
         const damped = Math.sign(rawDelta) * Math.min(85, Math.pow(Math.abs(rawDelta), 0.72) * 2.2);
 
@@ -93,6 +100,10 @@ export function useOverscrollBounce() {
           transition: 'transform 0.48s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
           willChange: 'transform',
         });
+        clearResetTimer();
+        resetTimerRef.current = setTimeout(() => {
+          setBounceStyle({});
+        }, 500);
       }
     };
 
@@ -107,6 +118,7 @@ export function useOverscrollBounce() {
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('touchcancel', onTouchEnd);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      clearResetTimer();
     };
   }, []);
 
