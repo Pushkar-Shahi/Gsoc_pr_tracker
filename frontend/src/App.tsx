@@ -443,7 +443,7 @@ export function App() {
         )}
 
         {/* Persistent Left Sidebar (Desktop) - Collapsible & Locked */}
-        <div className={`hidden md:block transition-all duration-300 ease-in-out shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className={`hidden md:block transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
           <Sidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}

@@ -38,7 +38,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`bg-white dark:bg-[#080c14] border-r border-slate-200 dark:border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 select-none z-30 transition-all duration-300 ease-in-out ${
+      onWheel={(e) => e.stopPropagation()}
+      style={{ overscrollBehavior: 'none' }}
+      className={`bg-white dark:bg-[#080c14] border-r border-slate-200 dark:border-white/10 flex flex-col h-screen fixed left-0 top-0 bottom-0 select-none z-30 overflow-hidden overscroll-none transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-20 p-3 items-center' : 'w-64 p-4'
       }`}
     >
@@ -83,8 +85,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* Main Navigation Links */}
-      <nav className={`space-y-1.5 flex-1 overflow-y-auto no-scrollbar w-full ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
+      {/* Main Navigation Links - Scroll-locked */}
+      <nav className={`space-y-1.5 flex-1 overflow-hidden w-full select-none ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
