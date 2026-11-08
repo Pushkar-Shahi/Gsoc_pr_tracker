@@ -136,7 +136,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
                 onClick={() => setIsMenuOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-2 shadow-2xl z-50 animate-fade-in space-y-1">
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/15 p-2 shadow-2xl z-50 animate-dropdown space-y-1">
               {/* User Header */}
               <div className="px-3 py-2.5 border-b border-slate-100 dark:border-white/10 mb-1">
                 <div className="flex items-center gap-2.5">

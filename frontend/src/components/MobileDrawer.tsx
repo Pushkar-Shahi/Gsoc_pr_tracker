@@ -37,8 +37,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   // Lock background body scrolling whenever the Mobile Drawer is open
   useLockBodyScroll(isOpen);
 
-  if (!isOpen) return null;
-
   const handleSelectTab = (tab: string) => {
     setActiveTab(tab);
     onClose();
@@ -117,15 +115,26 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden animate-fade-in">
+    <div 
+      className={`fixed inset-0 z-50 md:hidden transition-all duration-250 ease-out ${
+        isOpen ? 'pointer-events-auto visible opacity-100' : 'pointer-events-none invisible opacity-0 delay-150'
+      }`}
+      aria-hidden={!isOpen}
+    >
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm transition-opacity"
+        className={`fixed inset-0 bg-black/60 dark:bg-black/80 transition-opacity duration-200 ease-out ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
-      {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white dark:bg-[#080c14] border-l border-slate-200 dark:border-white/10 shadow-2xl flex flex-col z-50 p-4 sm:p-5 overflow-y-auto">
+      {/* Slide-over panel with GPU hardware acceleration */}
+      <div 
+        className={`fixed inset-y-0 right-0 w-full max-w-xs bg-white dark:bg-[#080c14] border-l border-slate-200 dark:border-white/10 shadow-2xl flex flex-col z-50 p-4 sm:p-5 overflow-y-auto transform-gpu will-change-transform transition-transform duration-250 ease-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         {/* Header with Quick Theme Toggle and Close */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
           <div className="flex items-center gap-2">

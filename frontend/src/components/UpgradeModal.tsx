@@ -17,9 +17,9 @@ export function UpgradeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs animate-fade-in">
       <div 
-        className="relative w-full max-w-lg overflow-hidden bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8"
+        className="relative w-full max-w-lg overflow-hidden bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow ambient background */}

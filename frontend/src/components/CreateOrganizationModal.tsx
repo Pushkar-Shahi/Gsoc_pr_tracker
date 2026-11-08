@@ -52,12 +52,12 @@ export const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/75 backdrop-blur-xl animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/75 backdrop-blur-xs animate-fade-in">
       {/* Ambient liquid glow behind the modal */}
       <div className="absolute w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none" />
       <div className="absolute w-80 h-80 rounded-full bg-cyan-600/15 blur-3xl pointer-events-none translate-x-24 -translate-y-16" />
 
-      <div className="relative w-full max-w-md rounded-2xl liquid-glass p-6 shadow-2xl space-y-5 backdrop-blur-2xl">
+      <div className="relative w-full max-w-md rounded-2xl liquid-glass p-6 shadow-2xl space-y-5 animate-scale-up">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-2.5">

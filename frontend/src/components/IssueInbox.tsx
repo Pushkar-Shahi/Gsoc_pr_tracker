@@ -996,7 +996,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           return (
             <div
               key={issue.id}
-              className="mobile-card-render p-5 rounded-2xl bg-white dark:bg-[#0c101a] hover:bg-slate-50 dark:hover:bg-[#0e1320] border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm dark:shadow-xl transition space-y-3.5"
+              className="mobile-card-render p-5 rounded-2xl bg-white dark:bg-[#0c101a] hover:bg-slate-50 dark:hover:bg-[#0e1320] border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm dark:shadow-xl transition-colors duration-150 space-y-3.5"
             >
               {/* Top Badges & Suitability Gauge */}
               <div className="flex items-start justify-between gap-4">

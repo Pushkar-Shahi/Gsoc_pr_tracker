@@ -42,9 +42,33 @@ export default {
           '50%': { opacity: '0.9' },
           '100%': { transform: 'translateY(100%)', opacity: '0.2' },
         },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
         'fade-in-up': {
-          '0%': { opacity: '0', transform: 'translateY(8px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0', transform: 'translate3d(0, 8px, 0)' },
+          '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+        },
+        'scale-up': {
+          '0%': { opacity: '0', transform: 'scale(0.97)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        'slide-left': {
+          '0%': { transform: 'translate3d(100%, 0, 0)' },
+          '100%': { transform: 'translate3d(0, 0, 0)' },
+        },
+        'slide-right': {
+          '0%': { transform: 'translate3d(-100%, 0, 0)' },
+          '100%': { transform: 'translate3d(0, 0, 0)' },
+        },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translate3d(0, 16px, 0)' },
+          '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+        },
+        'dropdown': {
+          '0%': { opacity: '0', transform: 'translate3d(0, -6px, 0) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'translate3d(0, 0, 0) scale(1)' },
         },
         'monochrome-glow': {
           '0%, 100%': { boxShadow: '0 0 15px rgba(255, 255, 255, 0.08)' },
@@ -53,7 +77,13 @@ export default {
       },
       animation: {
         'scanner': 'scanner-beam 2s ease-in-out infinite',
-        'fade-in-up': 'fade-in-up 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fade-in': 'fade-in 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-in-up': 'fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'scale-up': 'scale-up 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-left': 'slide-left 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-right': 'slide-right 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-up': 'slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'dropdown': 'dropdown 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'monochrome-glow': 'monochrome-glow 3s ease-in-out infinite',
       }
     },
