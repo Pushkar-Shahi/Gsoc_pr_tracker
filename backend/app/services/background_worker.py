@@ -247,7 +247,8 @@ async def reconcile_inbox_issues_upstream(
             selectinload(Issue.repository)
         ).where(
             Issue.state == "open",
-            Issue.is_eligible == True
+            Issue.is_eligible == True,
+            or_(Issue.bounty_amount == None, Issue.bounty_amount == 0)
         )
         if max_issues:
             issues_stmt = issues_stmt.limit(max_issues)

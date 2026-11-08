@@ -361,6 +361,28 @@ class BountyService:
         issue = res.scalar_one_or_none()
 
         if not issue:
+            # Fallback 1: check if issue exists under any tenant (e.g. personal vs default-org)
+            stmt_any = (
+                select(Issue)
+                .options(selectinload(Issue.repository))
+                .where(Issue.id == issue_id)
+            )
+            res_any = await db.execute(stmt_any)
+            issue = res_any.scalar_one_or_none()
+            if issue:
+                issue.tenant_id = tenant_id
+                issue.user_id = user_id
+                await db.flush()
+
+        if not issue:
+            # Fallback 2: auto-resync bounty catalog if records were purged or unseeded
+            synced = await BountyService.sync_bounties_to_database(db, tenant_id, user_id)
+            for s_iss in synced:
+                if s_iss.id == issue_id:
+                    issue = s_iss
+                    break
+
+        if not issue:
             raise ValueError(f"Bounty issue {issue_id} not found.")
 
         # Update Issue bounty status

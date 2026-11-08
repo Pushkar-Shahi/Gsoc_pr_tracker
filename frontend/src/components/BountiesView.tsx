@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Compass, TrendingUp, Bookmark, Box, ExternalLink, Search, 
-  RefreshCw, Clock, ArrowRight, CheckCircle2
+  RefreshCw, Clock, ArrowRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { Issue, BountyStats } from '../types';
 import * as api from '../api';
@@ -25,6 +25,7 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
   const [sortBy, setSortBy] = useState<string>('amount_desc');
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const loadBounties = useCallback(async () => {
     try {
@@ -81,7 +82,9 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
         await loadBounties();
       }
     } catch (err: any) {
-      alert(`Could not claim bounty: ${err.message}`);
+      setErrorToast(err.message || 'Could not claim bounty');
+      setTimeout(() => setErrorToast(null), 5000);
+      await loadBounties();
     } finally {
       setClaimingId(null);
     }
@@ -98,6 +101,13 @@ export const BountiesView: React.FC<BountiesViewProps> = ({
         <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-40 px-4 py-3 rounded-2xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-bounce">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{successToast}</span>
+        </div>
+      )}
+
+      {errorToast && (
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-40 px-4 py-3 rounded-2xl bg-rose-950/90 border border-rose-500/40 text-rose-300 text-xs font-semibold shadow-2xl flex items-center gap-2 animate-bounce">
+          <AlertCircle className="w-4 h-4 text-rose-400" />
+          <span>{errorToast}</span>
         </div>
       )}
 
