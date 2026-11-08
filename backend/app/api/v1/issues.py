@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc, asc, or_
+from sqlalchemy import select, func, desc, asc, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,6 +15,7 @@ from app.services.github_client import GitHubClient
 from app.services.ranking_service import RankingService
 from app.services.discovery_service import DiscoveryService
 from app.services.policy_inspector import PolicyInspector
+from app.services.availability_inspector import AvailabilityInspector
 from app.core.config import settings
 from app.core.gsoc_orgs import ALL_GSOC_OWNERS, FOCUS_GSOC_OWNERS, FOCUS_GSOC_ORGS, get_gsoc_info, is_gsoc_org, is_focus_gsoc_org
 from app.core.tenant import TenantContext, get_current_tenant
@@ -35,6 +36,7 @@ async def list_issues(
     state: str = Query("open", pattern="^(open|closed|all)$"),
     eligible_only: bool = Query(False),
     unassigned_only: bool = Query(False),
+    availability: Optional[str] = Query("all", pattern="^(all|available|pr_open|assigned|reserved)$"),
     gsoc_only: bool = Query(True),
     gsoc_org: Optional[str] = None,
     sort_by: str = Query("created", pattern="^(rank|created|stars|effort)$"),
@@ -55,8 +57,28 @@ async def list_issues(
     if state != "all":
         filters.append(Issue.state == state)
 
-    # Exclude ineligible or already-assigned issues only when unassigned_only is requested
-    if unassigned_only or eligible_only:
+    # Filter by issue availability & linked PR status
+    if unassigned_only or availability == "available":
+        filters.append(Issue.is_eligible.is_(True))
+        filters.append(Issue.has_open_pr.is_(False))
+        filters.append(Issue.is_reserved.is_(False))
+        # Ensure availability status is AVAILABLE
+        filters.append(
+            or_(
+                Issue.availability_status == "AVAILABLE",
+                and_(
+                    Issue.has_open_pr.is_(False),
+                    Issue.is_reserved.is_(False)
+                )
+            )
+        )
+    elif availability == "pr_open":
+        filters.append(Issue.has_open_pr.is_(True))
+    elif availability == "assigned":
+        filters.append(Issue.availability_status == "ASSIGNED")
+    elif availability == "reserved":
+        filters.append(Issue.is_reserved.is_(True))
+    elif eligible_only:
         filters.append(Issue.is_eligible.is_(True))
 
     # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
@@ -463,6 +485,66 @@ async def get_issue(
     return res
 
 
+@router.get("/{issue_id}/live-availability", response_model=IssueRead)
+async def get_live_issue_availability(
+    issue_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Performs real-time GitHub Timeline and PR inspection for an issue,
+    updating and returning its linked pull requests and availability status.
+    """
+    stmt = select(Issue).options(
+        selectinload(Issue.repository),
+        selectinload(Issue.tasks)
+    ).where(Issue.id == issue_id)
+    res = await db.execute(stmt)
+    issue = res.scalar_one_or_none()
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    owner = issue.repository.owner
+    repo = issue.repository.name
+    
+    # Fetch platform github token if configured
+    sett_stmt = select(PlatformSettings).where(PlatformSettings.id == 1)
+    sett_res = await db.execute(sett_stmt)
+    saved_settings = sett_res.scalar_one_or_none()
+    token = saved_settings.github_token if saved_settings else None
+    
+    gh = GitHubClient(token=token)
+    
+    # 1. Probe for linked PRs
+    linked_prs = await gh.get_issue_linked_prs(owner, repo, issue.issue_number)
+    
+    # 2. Check maintainer reservation
+    is_reserved, reservation_reason = AvailabilityInspector.detect_maintainer_reservation(
+        title=issue.title,
+        body=issue.body
+    )
+    
+    # 3. Classify availability
+    availability_status = AvailabilityInspector.classify_issue_availability(
+        assignees=issue.assignees,
+        is_reserved=is_reserved,
+        linked_prs=linked_prs
+    )
+    
+    # 4. Update issue in DB
+    issue.has_open_pr = (len(linked_prs) > 0)
+    issue.linked_pr_count = len(linked_prs)
+    issue.linked_prs = linked_prs
+    issue.is_reserved = is_reserved
+    issue.reservation_reason = reservation_reason
+    issue.availability_status = availability_status
+    issue.last_verified_at = datetime.utcnow()
+    
+    await db.commit()
+    await db.refresh(issue)
+    
+    return IssueRead.model_validate(issue)
+
+
 @router.post("/import", response_model=IssueImportResponse)
 async def import_issue(
     payload: IssueImportRequest,
@@ -582,6 +664,34 @@ async def import_issue(
     if license_status == "NO_LICENSE":
         reasons.append("Caution: Repository does not contain a standard OSI open-source license.")
 
+    # Condition: Maintainer Reservation Check (e.g. kornia#6640)
+    is_reserved, reservation_reason = AvailabilityInspector.detect_maintainer_reservation(
+        title=issue_data.get("title", ""),
+        body=issue_data.get("body", "")
+    )
+    conditions_checked["not_reserved"] = not is_reserved
+    if is_reserved:
+        is_eligible = False
+        reasons.append(f"Issue is reserved for maintainer implementation: {reservation_reason}")
+
+    # Condition: Linked Pull Requests Check (e.g. Debcode2006 on kornia#6621)
+    linked_prs = await gh.get_issue_linked_prs(owner, repo_name, issue_number)
+    has_open_pr = (len(linked_prs) > 0)
+    conditions_checked["has_no_open_prs"] = not has_open_pr
+    conditions_checked["linked_prs"] = linked_prs
+    conditions_checked["linked_pr_count"] = len(linked_prs)
+    if has_open_pr:
+        is_eligible = False
+        pr_summaries = [f"#{p['number']} by @{p.get('author', 'unknown')}" for p in linked_prs]
+        reasons.append(f"Issue has active open pull request(s) waiting for maintainer review: {', '.join(pr_summaries)}.")
+
+    availability_status = AvailabilityInspector.classify_issue_availability(
+        assignees=assignees,
+        is_reserved=is_reserved,
+        linked_prs=linked_prs
+    )
+    conditions_checked["availability_status"] = availability_status
+
     # 2. Ranking & Skill Match Condition
     ranking_service = RankingService(user_skills=user_skills)
     ranking_eval = ranking_service.evaluate_issue(
@@ -670,6 +780,12 @@ async def import_issue(
         existing_issue.ineligibility_reason = ineligibility_reason
         existing_issue.license_status = license_status
         existing_issue.policy_status = policy_eval["workflow_state"]
+        existing_issue.has_open_pr = has_open_pr
+        existing_issue.linked_pr_count = len(linked_prs)
+        existing_issue.linked_prs = linked_prs
+        existing_issue.is_reserved = is_reserved
+        existing_issue.reservation_reason = reservation_reason
+        existing_issue.availability_status = availability_status
         existing_issue.ranking_score = ranking_eval["ranking_score"]
         existing_issue.difficulty_estimate = ranking_eval["difficulty_estimate"]
         existing_issue.estimated_effort_hours = ranking_eval["estimated_effort_hours"]
@@ -695,6 +811,12 @@ async def import_issue(
             ineligibility_reason=ineligibility_reason,
             license_status=license_status,
             policy_status=policy_eval["workflow_state"],
+            has_open_pr=has_open_pr,
+            linked_pr_count=len(linked_prs),
+            linked_prs=linked_prs,
+            is_reserved=is_reserved,
+            reservation_reason=reservation_reason,
+            availability_status=availability_status,
             ranking_score=ranking_eval["ranking_score"],
             difficulty_estimate=ranking_eval["difficulty_estimate"],
             estimated_effort_hours=ranking_eval["estimated_effort_hours"],

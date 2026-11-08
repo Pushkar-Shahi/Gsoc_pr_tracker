@@ -149,6 +149,80 @@ class GitHubClient:
                 logger.error(f"Error fetching issue #{issue_number}: {e}")
                 return None
 
+    async def get_issue_linked_prs(self, owner: str, repo: str, issue_number: int) -> List[Dict[str, Any]]:
+        """
+        Probes for active/open pull requests that link to or attempt to close this issue.
+        Checks GitHub Issue Timeline events and falls back to targeted PR search.
+        """
+        linked_prs: Dict[int, Dict[str, Any]] = {}
+
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            # 1. Inspect timeline events (cross-referenced and connected events)
+            try:
+                timeline_url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/timeline"
+                resp = await client.get(
+                    timeline_url,
+                    headers={**self._get_headers(), "Accept": "application/vnd.github+json"}
+                )
+                self._update_rate_limits(resp)
+                if resp.status_code == 200:
+                    events = resp.json()
+                    if isinstance(events, list):
+                        for ev in events:
+                            event_type = ev.get("event")
+                            if event_type in ("cross-referenced", "connected", "referenced"):
+                                source = ev.get("source", {})
+                                issue_ref = source.get("issue") or ev.get("subject")
+                                if issue_ref and isinstance(issue_ref, dict) and "pull_request" in issue_ref:
+                                    pr_num = issue_ref.get("number")
+                                    pr_state = (issue_ref.get("state") or "open").lower()
+                                    if pr_num and pr_state == "open":
+                                        author_info = issue_ref.get("user") or {}
+                                        linked_prs[pr_num] = {
+                                            "number": pr_num,
+                                            "title": issue_ref.get("title", ""),
+                                            "html_url": issue_ref.get("html_url", f"https://github.com/{owner}/{repo}/pull/{pr_num}"),
+                                            "author": author_info.get("login", "unknown"),
+                                            "author_avatar": author_info.get("avatar_url"),
+                                            "state": "open",
+                                            "created_at": issue_ref.get("created_at"),
+                                            "updated_at": issue_ref.get("updated_at")
+                                        }
+            except Exception as e:
+                logger.debug(f"Timeline check error for {owner}/{repo}#{issue_number}: {e}")
+
+            # 2. Targeted search query for open PRs referencing this issue
+            try:
+                search_query = f"repo:{owner}/{repo} is:pr is:open {issue_number}"
+                search_resp = await client.get(
+                    f"{self.base_url}/search/issues",
+                    headers=self._get_headers(),
+                    params={"q": search_query, "per_page": 10}
+                )
+                self._update_rate_limits(search_resp)
+                if search_resp.status_code == 200:
+                    search_data = search_resp.json()
+                    items = search_data.get("items", [])
+                    if isinstance(items, list):
+                        for item in items:
+                            pr_num = item.get("number")
+                            if pr_num and pr_num != issue_number and item.get("state", "").lower() == "open":
+                                author_info = item.get("user") or {}
+                                linked_prs[pr_num] = {
+                                    "number": pr_num,
+                                    "title": item.get("title", ""),
+                                    "html_url": item.get("html_url", f"https://github.com/{owner}/{repo}/pull/{pr_num}"),
+                                    "author": author_info.get("login", "unknown"),
+                                    "author_avatar": author_info.get("avatar_url"),
+                                    "state": "open",
+                                    "created_at": item.get("created_at"),
+                                    "updated_at": item.get("updated_at")
+                                }
+            except Exception as e:
+                logger.debug(f"PR search fallback error for {owner}/{repo}#{issue_number}: {e}")
+
+        return list(linked_prs.values())
+
     async def get_file_content(self, owner: str, repo: str, path: str) -> Optional[str]:
         """Fetch text content of a repository file (e.g. CONTRIBUTING.md, README.md)."""
         async with httpx.AsyncClient(timeout=10.0) as client:

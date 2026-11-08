@@ -94,6 +94,24 @@ async def create_tables():
             except Exception:
                 pass
 
+        # Safe migration for availability and linked PR columns on issues table
+        issue_cols_to_add = [
+            ("has_open_pr", "BOOLEAN DEFAULT FALSE"),
+            ("linked_pr_count", "INTEGER DEFAULT 0"),
+            ("linked_prs", "JSON DEFAULT '[]'::json" if is_pg else "TEXT"),
+            ("is_reserved", "BOOLEAN DEFAULT FALSE"),
+            ("reservation_reason", "VARCHAR(512)"),
+            ("availability_status", "VARCHAR(32) DEFAULT 'AVAILABLE'")
+        ]
+        for col_name, col_type in issue_cols_to_add:
+            try:
+                if is_pg:
+                    await conn.execute(text(f"ALTER TABLE issues ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+                else:
+                    await conn.execute(text(f"ALTER TABLE issues ADD COLUMN {col_name} {col_type};"))
+            except Exception:
+                pass
+
         # Safe migration for multi-tenant columns across tables
         multi_tenant_cols = [
             ("repositories", "tenant_id", "VARCHAR(36)"),

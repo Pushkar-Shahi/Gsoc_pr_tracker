@@ -70,7 +70,7 @@ export function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [selectedIssueModal, setSelectedIssueModal] = useState<Issue | null>(null);
-  const [issueFilters, setIssueFilters] = useState<Record<string, any>>({});
+  const [issueFilters, setIssueFilters] = useState<Record<string, any>>({ availability: 'available', unassigned_only: true });
 
   // Sync and UI state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -221,7 +221,7 @@ export function App() {
 
   useEffect(() => {
     loadInitialData();
-    loadIssues();
+    loadIssues({ availability: 'available', unassigned_only: true });
 
     // PWA Install listener
     const onInstallable = () => setIsInstallable(true);

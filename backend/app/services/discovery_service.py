@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.models import Repository, Issue, DiscoveryCheckpoint, AuditLog
 from app.services.github_client import GitHubClient
 from app.services.ranking_service import RankingService
+from app.services.availability_inspector import AvailabilityInspector
 from app.core.config import settings
 from app.core.gsoc_orgs import get_gsoc_info
 
@@ -234,7 +235,7 @@ class DiscoveryService:
             license_spdx=repository.license_spdx
         )
 
-        # 4. Check license status
+        # 4. Check license status & maintainer reservation
         license_status = "UNKNOWN"
         if repository.license_spdx and repository.license_spdx not in ("NOASSERTION", None):
             license_status = "VERIFIED_OSI"
@@ -242,6 +243,11 @@ class DiscoveryService:
             license_status = "UNKNOWN"
         else:
             license_status = "NO_LICENSE"
+
+        is_reserved, reservation_reason = AvailabilityInspector.detect_maintainer_reservation(
+            title=item.get("title", ""),
+            body=item.get("body", "")
+        )
 
         # 5. Insert or update Issue
         issue_number = item["number"]
@@ -260,6 +266,12 @@ class DiscoveryService:
                 pass
 
         if existing_issue:
+            existing_prs = existing_issue.linked_prs or []
+            availability_status = AvailabilityInspector.classify_issue_availability(
+                assignees=assignees,
+                is_reserved=is_reserved,
+                linked_prs=existing_prs
+            )
             existing_issue.title = item.get("title", existing_issue.title)
             existing_issue.body = item.get("body", existing_issue.body)
             existing_issue.state = item.get("state", existing_issue.state)
@@ -268,6 +280,9 @@ class DiscoveryService:
             existing_issue.comments_count = item.get("comments", existing_issue.comments_count)
             existing_issue.is_eligible = is_eligible
             existing_issue.ineligibility_reason = ineligibility_reason
+            existing_issue.is_reserved = is_reserved
+            existing_issue.reservation_reason = reservation_reason
+            existing_issue.availability_status = availability_status
             existing_issue.ranking_score = ranking_result["ranking_score"]
             existing_issue.difficulty_estimate = ranking_result["difficulty_estimate"]
             existing_issue.estimated_effort_hours = ranking_result["estimated_effort_hours"]
@@ -275,6 +290,11 @@ class DiscoveryService:
             existing_issue.ai_summary = ranking_result["ai_summary"]
             existing_issue.last_verified_at = datetime.utcnow()
         else:
+            availability_status = AvailabilityInspector.classify_issue_availability(
+                assignees=assignees,
+                is_reserved=is_reserved,
+                linked_prs=[]
+            )
             new_issue = Issue(
                 repository_id=repository.id,
                 github_id=item["id"],
@@ -290,6 +310,12 @@ class DiscoveryService:
                 github_created_at=github_created_at,
                 is_eligible=is_eligible,
                 ineligibility_reason=ineligibility_reason,
+                is_reserved=is_reserved,
+                reservation_reason=reservation_reason,
+                availability_status=availability_status,
+                has_open_pr=False,
+                linked_pr_count=0,
+                linked_prs=[],
                 license_status=license_status,
                 ranking_score=ranking_result["ranking_score"],
                 difficulty_estimate=ranking_result["difficulty_estimate"],

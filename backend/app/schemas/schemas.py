@@ -106,6 +106,14 @@ class IssueRead(BaseModel):
     ai_summary: Optional[str] = None
     last_verified_at: Optional[datetime] = None
 
+    # Availability & Linked Pull Requests
+    has_open_pr: bool = False
+    linked_pr_count: int = 0
+    linked_prs: List[Dict[str, Any]] = []
+    is_reserved: bool = False
+    reservation_reason: Optional[str] = None
+    availability_status: str = "AVAILABLE"  # AVAILABLE, PR_OPEN, ASSIGNED, RESERVED
+
     # Phase 4 Bounty Fields
     bounty_amount: Optional[float] = 0.0
     bounty_currency: Optional[str] = "USD"

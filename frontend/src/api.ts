@@ -1035,6 +1035,8 @@ export async function fetchIssues(params: {
   repository?: string;
   difficulty?: string;
   license_status?: string;
+  unassigned_only?: boolean;
+  availability?: 'all' | 'available' | 'pr_open' | 'assigned' | 'reserved';
   gsoc_only?: boolean;
   gsoc_org?: string;
   sort_by?: string;
@@ -1049,6 +1051,8 @@ export async function fetchIssues(params: {
     if (params.repository) query.set('repository', params.repository);
     if (params.difficulty) query.set('difficulty', params.difficulty);
     if (params.license_status) query.set('license_status', params.license_status);
+    if (params.unassigned_only !== undefined) query.set('unassigned_only', params.unassigned_only.toString());
+    if (params.availability) query.set('availability', params.availability);
     if (params.gsoc_only !== undefined) query.set('gsoc_only', params.gsoc_only.toString());
     if (params.gsoc_org) query.set('gsoc_org', params.gsoc_org);
     if (params.sort_by) query.set('sort_by', params.sort_by);
@@ -1081,6 +1085,16 @@ export async function fetchIssue(id: string): Promise<Issue> {
   const found = cached.find(i => i.id === id);
   if (found) return found;
   throw new Error(`Issue ${id} not found`);
+}
+
+export async function fetchLiveIssueAvailability(issueId: string): Promise<Issue> {
+  try {
+    const res = await authedFetch(`${API_BASE}/issues/${issueId}/live-availability`);
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.debug('Failed to fetch live availability:', e);
+  }
+  return await fetchIssue(issueId);
 }
 
 export async function importIssue(url: string): Promise<{

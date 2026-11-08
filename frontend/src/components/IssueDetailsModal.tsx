@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, ExternalLink, Zap, Shield, FileText, CheckCircle2, 
-  AlertTriangle, Clock, Star, GitBranch, ArrowRight, User, Check 
+  AlertTriangle, Clock, Star, GitBranch, ArrowRight, User, Check,
+  Lock, GitPullRequest, RefreshCw, Loader2
 } from 'lucide-react';
 import { Issue } from '../types';
+import { fetchLiveIssueAvailability } from '../api';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
 interface IssueDetailsModalProps {
@@ -14,14 +16,44 @@ interface IssueDetailsModalProps {
 }
 
 export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
-  issue,
+  issue: initialIssue,
   onClose,
   onSelectIssue,
   onCompleteIssue,
 }) => {
-  useLockBodyScroll(Boolean(issue));
+  useLockBodyScroll(Boolean(initialIssue));
 
   const [activeTab, setActiveTab] = useState<'problem' | 'ranking' | 'policy'>('problem');
+  const [issue, setIssue] = useState<Issue | null>(initialIssue);
+  const [isRechecking, setIsRechecking] = useState(false);
+  const [recheckMessage, setRecheckMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIssue(initialIssue);
+    setRecheckMessage(null);
+  }, [initialIssue]);
+
+  const handleLiveRecheck = async () => {
+    if (!issue) return;
+    setIsRechecking(true);
+    setRecheckMessage(null);
+    try {
+      const refreshed = await fetchLiveIssueAvailability(issue.id);
+      setIssue(refreshed);
+      if (refreshed.has_open_pr) {
+        setRecheckMessage(`Detected ${refreshed.linked_pr_count} active open PR(s) pending review.`);
+      } else if (refreshed.is_reserved) {
+        setRecheckMessage('Verified: Issue is reserved for maintainers.');
+      } else {
+        setRecheckMessage('Verified: Issue is clean, unassigned, and open for contributions!');
+      }
+    } catch {
+      setRecheckMessage('Could not connect to GitHub to re-verify.');
+    } finally {
+      setIsRechecking(false);
+    }
+  };
+
   const breakdown = issue?.ranking_breakdown;
 
   if (!issue) return null;
@@ -45,6 +77,15 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleLiveRecheck}
+              disabled={isRechecking}
+              className="text-xs text-neutral-300 hover:text-white flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 transition disabled:opacity-50"
+              title="Query GitHub in real time for new pull requests and maintainer status"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRechecking ? 'animate-spin text-blue-400' : ''}`} />
+              <span className="hidden sm:inline">{isRechecking ? 'Checking GitHub...' : 'Re-check PRs'}</span>
+            </button>
             <a
               href={issue.html_url}
               target="_blank"
@@ -109,8 +150,79 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
 
         {/* Modal Content Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 text-sm text-gray-300">
+          {recheckMessage && (
+            <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/30 text-blue-300 text-xs flex items-center justify-between">
+              <span>{recheckMessage}</span>
+              <button onClick={() => setRecheckMessage(null)} className="text-neutral-400 hover:text-white text-xs">✕</button>
+            </div>
+          )}
+
           {activeTab === 'problem' && (
             <div className="space-y-4">
+              {/* Issue Availability Status Banner */}
+              {issue.is_reserved ? (
+                <div className="bg-rose-950/20 border border-rose-500/40 rounded-xl p-4 text-rose-300 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-rose-400">
+                    <Lock className="w-4 h-4" />
+                    <span>Reserved for Maintainer Implementation</span>
+                  </div>
+                  <p className="text-xs text-rose-200/90 leading-relaxed">
+                    This issue has been marked by maintainers as internal/reserved ({issue.reservation_reason || 'maintainer-only'}). Pull requests submitted by outside contributors will be closed.
+                  </p>
+                </div>
+              ) : issue.has_open_pr && issue.linked_prs && issue.linked_prs.length > 0 ? (
+                <div className="bg-amber-950/25 border border-amber-500/40 rounded-xl p-4 text-amber-200 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                      <GitPullRequest className="w-4 h-4" />
+                      <span>Active Pull Request Pending Review ({issue.linked_prs.length})</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                      PR Already Submitted
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-100/90 leading-relaxed">
+                    A contributor has already submitted an open pull request attempting to close this issue. Maintainers usually close duplicate PRs. Check the existing PR before spending time on this issue:
+                  </p>
+                  <div className="space-y-2 pt-1">
+                    {issue.linked_prs.map((pr) => (
+                      <div key={pr.number} className="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-amber-500/20 text-xs">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <span className="font-mono text-amber-400 font-bold shrink-0">#{pr.number}</span>
+                          <span className="truncate text-white font-medium">{pr.title}</span>
+                          {pr.author && <span className="text-neutral-400 text-[11px] shrink-0">by @{pr.author}</span>}
+                        </div>
+                        <a
+                          href={pr.html_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-3 shrink-0 text-amber-400 hover:text-amber-300 font-semibold underline text-xs inline-flex items-center gap-1"
+                        >
+                          <span>Inspect PR</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : issue.assignees && issue.assignees.length > 0 ? (
+                <div className="bg-purple-950/20 border border-purple-500/30 rounded-xl p-3 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-purple-300 font-medium">
+                    <User className="w-4 h-4 text-purple-400" />
+                    <span>Assigned to {issue.assignees.map((a: any) => typeof a === 'string' ? a : a.login).join(', ')}</span>
+                  </div>
+                  <span className="text-[11px] text-purple-300/80">Check with assignee before starting</span>
+                </div>
+              ) : (
+                <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Ready to Work: Clean, Unassigned, & No Active Pull Requests</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-300/80">Available for PR</span>
+                </div>
+              )}
+
               {/* AI Objective Summary */}
               {issue.ai_summary && (
                 <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4">

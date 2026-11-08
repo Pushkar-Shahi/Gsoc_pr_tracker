@@ -63,6 +63,22 @@ export interface Issue {
   repository?: Repository;
   active_task?: ActiveTaskSummary;
 
+  // Issue Availability & Linked Pull Requests
+  has_open_pr?: boolean;
+  linked_pr_count?: number;
+  linked_prs?: Array<{
+    number: number;
+    title: string;
+    html_url: string;
+    state: string;
+    author?: string;
+    author_avatar?: string;
+    created_at?: string;
+  }>;
+  is_reserved?: boolean;
+  reservation_reason?: string;
+  availability_status?: 'AVAILABLE' | 'PR_OPEN' | 'ASSIGNED' | 'RESERVED' | string;
+
   // Phase 4 Bounty Fields
   bounty_amount?: number;
   bounty_currency?: string;

@@ -143,6 +143,14 @@ class Issue(Base):
     ranking_breakdown = Column(JSON, default=dict)
     ai_summary = Column(Text, nullable=True)
 
+    # Issue Availability & Linked Pull Request Tracking
+    has_open_pr = Column(Boolean, default=False, index=True)
+    linked_pr_count = Column(Integer, default=0)
+    linked_prs = Column(JSON, default=list)  # List of {number, title, html_url, author, author_avatar, state, created_at}
+    is_reserved = Column(Boolean, default=False, index=True)
+    reservation_reason = Column(String(512), nullable=True)
+    availability_status = Column(String(32), default="AVAILABLE", index=True)  # AVAILABLE, PR_OPEN, ASSIGNED, RESERVED
+
     # Phase 4: Bounty Platform Integrations (Polar.sh, Algora, Sponsors)
     bounty_amount = Column(Float, nullable=True, default=0.0, index=True)
     bounty_currency = Column(String(16), default="USD")
@@ -157,6 +165,7 @@ class Issue(Base):
     __table_args__ = (
         Index("idx_issues_state_eligible", "state", "is_eligible"),
         Index("idx_issues_repo_state", "repository_id", "state"),
+        Index("idx_issues_availability", "availability_status", "has_open_pr"),
     )
 
     repository = relationship("Repository", back_populates="issues")
