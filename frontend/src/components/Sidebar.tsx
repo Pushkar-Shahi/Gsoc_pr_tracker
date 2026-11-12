@@ -208,20 +208,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ? 'Free trial ended (5 tasks/mo limit). Upgrade via UPI to restore unlimited Pro workflows.'
                 : 'Curated unassigned issues from official Google Summer of Code organizations.'}
             </p>
-            {(subscriptionInfo?.trial_active || (subscriptionInfo?.tier === 'starter' && !subscriptionInfo?.free_beta_mode)) ? (
+            {(subscriptionInfo?.trial_active || (subscriptionInfo?.tier === 'starter' && !subscriptionInfo?.free_beta_mode)) && (
               <button
                 onClick={() => setActiveTab('billing')}
                 className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white border border-blue-600 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
               >
                 <span>{subscriptionInfo?.trial_active ? 'Lock Pro (₹100/mo)' : 'Upgrade to Pro'}</span>
-                <ArrowRight className="w-3 h-3 text-white" />
-              </button>
-            ) : (
-              <button
-                onClick={() => setActiveTab('issues')}
-                className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white border border-blue-600 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
-              >
-                <span>Explore GSoC Issues</span>
                 <ArrowRight className="w-3 h-3 text-white" />
               </button>
             )}
