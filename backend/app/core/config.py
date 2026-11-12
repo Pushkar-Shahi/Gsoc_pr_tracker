@@ -146,7 +146,7 @@ class Settings:
     FREE_TIER_MONTHLY_TASK_LIMIT: int = int(os.getenv("FREE_TIER_MONTHLY_TASK_LIMIT", "5"))
 
     # Direct UPI Payment & Support Settings
-    UPI_VPA: str = os.getenv("UPI_VPA", "8116710520@ibl")
+    UPI_VPA: str = os.getenv("UPI_VPA", "8116710520@sbi")
     UPI_PAYEE_NAME: str = os.getenv("UPI_PAYEE_NAME", "Pushkar Shahi")
     UPI_QR_IMAGE_PATH: str = os.getenv("UPI_QR_IMAGE_PATH", "/phonepe-upi-qr.jpg")
     

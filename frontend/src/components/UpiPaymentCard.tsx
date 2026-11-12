@@ -51,7 +51,7 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedRecord, setSubmittedRecord] = useState<UpiPaymentRequest | null>(null);
 
-  const upiVpa = upiConfig?.upi_vpa || '8116710520@ibl';
+  const upiVpa = upiConfig?.upi_vpa || '8116710520@sbi';
   const payeeName = upiConfig?.payee_name || 'Pushkar Shahi';
   const qrImageUrl = upiConfig?.qr_image_url || '/phonepe-upi-qr.jpg';
 

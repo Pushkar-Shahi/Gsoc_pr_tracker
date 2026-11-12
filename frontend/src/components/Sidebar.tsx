@@ -161,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onOpenSupportUpi}
-                title="Support GSoC Issue-to-PR via UPI (8116710520@ibl)"
+                title="Support GSoC Issue-to-PR via UPI (8116710520@sbi)"
                 className="w-11 h-11 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-600 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 dark:border-emerald-500/30 dark:text-emerald-400 flex items-center justify-center transition shadow-sm active:scale-95"
               >
                 <Heart className="w-4 h-4" />

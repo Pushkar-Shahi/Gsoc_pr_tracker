@@ -206,7 +206,7 @@ export function BillingView() {
             </h1>
           </div>
           <p className="text-sm text-slate-500 dark:text-neutral-400">
-            Support GSoC Issue-to-PR or upgrade via Direct UPI ({upiConfig?.upi_vpa || '8116710520@ibl'}) with 0% gateway fees.
+            Support GSoC Issue-to-PR or upgrade via Direct UPI ({upiConfig?.upi_vpa || '8116710520@sbi'}) with 0% gateway fees.
           </p>
         </div>
 
@@ -217,7 +217,7 @@ export function BillingView() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition active:scale-95"
           >
             <Heart className="w-3.5 h-3.5" />
-            <span>Support via UPI ({upiConfig?.upi_vpa || '8116710520@ibl'})</span>
+            <span>Support via UPI ({upiConfig?.upi_vpa || '8116710520@sbi'})</span>
           </button>
         </div>
       </div>
@@ -603,7 +603,7 @@ export function BillingView() {
                 Did this GSoC tracker help you find an issue or land a PR?
               </h3>
               <p className="text-xs text-slate-600 dark:text-neutral-300 mt-0.5">
-                Support server & GitHub API hosting costs with a direct 0%-fee UPI tip (<span className="font-mono font-semibold">{upiConfig?.upi_vpa || '8116710520@ibl'}</span>).
+                Support server & GitHub API hosting costs with a direct 0%-fee UPI tip (<span className="font-mono font-semibold">{upiConfig?.upi_vpa || '8116710520@sbi'}</span>).
               </p>
             </div>
           </div>
@@ -684,7 +684,7 @@ export function BillingView() {
                   )}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-neutral-400">
-                  Match UTR IDs in your PhonePe app ({upiConfig?.upi_vpa || '8116710520@ibl'}) and approve to unlock user plans.
+                  Match UTR IDs in your PhonePe app ({upiConfig?.upi_vpa || '8116710520@sbi'}) and approve to unlock user plans.
                 </p>
               </div>
             </div>

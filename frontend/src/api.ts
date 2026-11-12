@@ -2444,7 +2444,7 @@ export async function fetchUpiConfig(): Promise<UpiConfig> {
     console.warn("fetchUpiConfig error:", err);
   }
   return {
-    upi_vpa: '8116710520@ibl',
+    upi_vpa: '8116710520@sbi',
     payee_name: 'Pushkar Shahi',
     qr_image_url: '/phonepe-upi-qr.jpg',
     currency: 'INR',
