@@ -447,3 +447,91 @@ export interface OrganizationMember {
   avatar_url?: string;
   role: 'owner' | 'admin' | 'member';
 }
+
+export interface AdminRuntimeConfig {
+  free_beta_mode: boolean;
+  free_trial_days: number;
+  free_tier_credit_limit: number;
+  upi_vpa: string;
+  github_token_configured?: boolean;
+}
+
+export interface AdminOverview {
+  users: { total: number; active: number; suspended: number; superusers: number };
+  organizations: { total: number; by_tier: Record<string, number>; active_trials: number };
+  issues: {
+    total: number;
+    eligible_open: number;
+    repositories: number;
+    last_scan_at?: string | null;
+    worker_running: boolean;
+  };
+  tasks: { total: number; pr_created: number; merged: number; blocked: number };
+  runners: { total: number; online: number; active_jobs: number };
+  upi: {
+    pending_count: number;
+    approved_count: number;
+    rejected_count: number;
+    plan_revenue_inr: number;
+    support_tips_inr: number;
+    total_revenue_inr: number;
+  };
+  runtime: AdminRuntimeConfig;
+}
+
+export interface AdminWorkspaceSummary {
+  org_id: string;
+  org_name: string;
+  is_personal: boolean;
+  role: string;
+  billing_tier: string;
+  subscription_status: string;
+  trial_active: boolean;
+  trial_expired: boolean;
+  trial_days_remaining: number;
+  tasks_used: number;
+  task_limit: number | null;
+}
+
+export interface AdminUserRecord {
+  id: string;
+  github_username: string;
+  email?: string | null;
+  name?: string | null;
+  avatar_url?: string | null;
+  is_active: boolean;
+  is_superuser: boolean;
+  is_current_admin: boolean;
+  tasks_total: number;
+  workspaces: AdminWorkspaceSummary[];
+  created_at?: string | null;
+}
+
+export interface AdminTaskRecord {
+  id: string;
+  workflow_state: string;
+  issue_number: number;
+  issue_title: string;
+  issue_url: string;
+  repo_full_name: string;
+  username?: string | null;
+  org_id?: string | null;
+  org_name?: string | null;
+  pr_number?: number | null;
+  pr_url?: string | null;
+  pr_merged: boolean;
+  blocked_reason?: string | null;
+  updated_at?: string | null;
+}
+
+export interface AdminAuditRecord {
+  id: string;
+  action: string;
+  actor: string;
+  username?: string | null;
+  org_name?: string | null;
+  tenant_id?: string | null;
+  task_id?: string | null;
+  details: Record<string, any>;
+  created_at?: string | null;
+}

@@ -26,6 +26,7 @@ from app.api.v1.streaming import router as streaming_router
 from app.api.v1.bounties import router as bounties_router
 from app.api.v1.enterprise import router as enterprise_router
 from app.api.v1.organizations import router as organizations_router
+from app.api.v1.admin import router as admin_router
 from app.services.ranking_service import RankingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -37,7 +38,8 @@ async def seed_initial_data_if_needed():
     async with session_factory() as session:
         # Default Platform Settings if not already present
         sett_res = await session.execute(select(PlatformSettings).where(PlatformSettings.id == 1))
-        if not sett_res.scalar_one_or_none():
+        existing_sett = sett_res.scalar_one_or_none()
+        if not existing_sett:
             settings_obj = PlatformSettings(
                 id=1,
                 github_token=None,
@@ -50,6 +52,8 @@ async def seed_initial_data_if_needed():
             )
             session.add(settings_obj)
             await session.commit()
+        elif isinstance(existing_sett.discovery_filters, dict) and "_admin_runtime" in existing_sett.discovery_filters:
+            settings.apply_runtime_overrides(existing_sett.discovery_filters.get("_admin_runtime") or {})
 
         logger.info("Platform settings verified. Ready for PR & Contribution tracking.")
 
@@ -154,6 +158,7 @@ app.include_router(streaming_router, prefix=settings.API_V1_STR)
 app.include_router(bounties_router, prefix=settings.API_V1_STR)
 app.include_router(enterprise_router, prefix=settings.API_V1_STR)
 app.include_router(organizations_router, prefix=settings.API_V1_STR)
+app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 @app.get("/api/health")

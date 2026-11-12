@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut, Download, Menu, Heart } from 'lucide-react';
+import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut, Download, Menu, Heart, ShieldCheck } from 'lucide-react';
 import { DiscoveryStatus, PlatformSettings, SubscriptionInfo } from '../types';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
@@ -228,6 +228,27 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 <span className="text-[10px] font-mono text-slate-400 dark:text-neutral-500">Tokens & AI</span>
               </button>
+
+              {/* Platform Admin Console (Superuser only) */}
+              {subscriptionInfo?.is_admin && (
+                <button
+                  type="button"
+                  onClick={() => handleOpenTab('admin')}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition text-left ${
+                    activeTab === 'admin'
+                      ? 'bg-purple-50 text-purple-700 font-bold dark:bg-purple-950/50 dark:text-purple-200 border border-purple-200 dark:border-purple-500/30'
+                      : 'text-slate-700 hover:text-slate-900 hover:bg-purple-50/70 dark:text-neutral-200 dark:hover:text-white dark:hover:bg-purple-500/10 font-semibold'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                    <span>Admin Console</span>
+                  </div>
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/25 dark:text-purple-200">
+                    GOD MODE
+                  </span>
+                </button>
+              )}
 
               {/* Billing */}
               <button

@@ -21,6 +21,7 @@ const ActivityHistoryView = lazy(() => import('./components/ActivityHistoryView'
 const RunnersView = lazy(() => import('./components/RunnersView').then(m => ({ default: m.RunnersView })));
 const BillingView = lazy(() => import('./components/BillingView').then(m => ({ default: m.BillingView })));
 const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
+const AdminConsoleView = lazy(() => import('./components/AdminConsoleView').then(m => ({ default: m.AdminConsoleView })));
 const IssueDetailsModal = lazy(() => import('./components/IssueDetailsModal').then(m => ({ default: m.IssueDetailsModal })));
 const UpgradeModal = lazy(() => import('./components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 const SupportUpiModal = lazy(() => import('./components/SupportUpiModal').then(m => ({ default: m.SupportUpiModal })));
@@ -35,7 +36,7 @@ function TabLoadingSkeleton() {
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings'>('issues');
+  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings' | 'admin'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [planTier, setPlanTier] = useState<string>('pro');
@@ -572,6 +573,19 @@ export function App() {
                 <BillingView />
               )}
 
+              {activeTab === 'admin' && (
+                <AdminConsoleView
+                  subscriptionInfo={subscriptionInfo}
+                  onSubscriptionUpdated={async (tier) => {
+                    setPlanTier(tier);
+                    const latest = await api.fetchSubscriptionInfo().catch(() => null);
+                    if (latest) {
+                      setSubscriptionInfo(latest);
+                    }
+                  }}
+                />
+              )}
+
               {activeTab === 'settings' && (
                 <SettingsView
                   settings={settings}
@@ -681,7 +695,7 @@ export function App() {
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
               className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                ['history', 'runners', 'billing', 'settings'].includes(activeTab) || isMobileDrawerOpen
+                ['history', 'runners', 'billing', 'settings', 'admin'].includes(activeTab) || isMobileDrawerOpen
                   ? 'text-blue-600 bg-blue-50 border border-blue-200 dark:text-white dark:bg-white/10 dark:border-white/20 font-bold'
                   : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
@@ -689,7 +703,7 @@ export function App() {
             >
               <div className="relative">
                 <Menu className="w-5 h-5 mb-0.5" />
-                {['history', 'runners', 'billing', 'settings'].includes(activeTab) && (
+                {['history', 'runners', 'billing', 'settings', 'admin'].includes(activeTab) && (
                   <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white dark:ring-black" />
                 )}
               </div>

@@ -2,7 +2,8 @@ import {
   Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob,
   BillingPlan, SubscriptionInfo, CheckoutSessionResponse, PortalSessionResponse,
   UpiConfig, UpiPaymentRequest, WebhookSubscription, PrivateRepositorySummary, TeamVelocityReport,
-  BountyStats, SSOConfig, SSOTestResult, Organization, OrganizationMember
+  BountyStats, SSOConfig, SSOTestResult, Organization, OrganizationMember,
+  AdminOverview, AdminUserRecord, AdminTaskRecord, AdminAuditRecord, AdminRuntimeConfig
 } from './types';
 import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
 
@@ -3072,6 +3073,109 @@ export async function verifyEmailCode(email: string, code: string): Promise<any>
     setAuthToken(data.token);
   }
   return data;
+}
+
+// ==========================================
+// Platform Administrator Console APIs
+// ==========================================
+
+async function _adminRequest<T>(path: string, init?: RequestInit, fallbackError = 'Admin request failed'): Promise<T> {
+  const res = await authedFetch(`${API_BASE}/admin${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || fallbackError);
+  }
+  return await res.json();
+}
+
+export function fetchAdminOverview(): Promise<AdminOverview> {
+  return _adminRequest<AdminOverview>('/overview', undefined, 'Failed to fetch platform overview');
+}
+
+export function fetchAdminUsers(query?: string): Promise<AdminUserRecord[]> {
+  const qs = query?.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+  return _adminRequest<AdminUserRecord[]>(`/users${qs}`, undefined, 'Failed to load users');
+}
+
+export function updateAdminUserStatus(
+  userId: string,
+  payload: { is_active?: boolean; is_superuser?: boolean }
+): Promise<{ status: string; user_id: string; is_active: boolean; is_superuser: boolean }> {
+  return _adminRequest(`/users/${encodeURIComponent(userId)}/status`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, 'Failed to update user privileges');
+}
+
+export function overrideAdminOrgPlan(
+  orgId: string,
+  payload: { tier: 'starter' | 'pro' | 'team'; trial_days?: number | null; reset_credits?: boolean }
+): Promise<SubscriptionInfo> {
+  return _adminRequest<SubscriptionInfo>(`/organizations/${encodeURIComponent(orgId)}/plan`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, 'Failed to update organization plan');
+}
+
+export function resetAdminOrgCredits(orgId: string): Promise<{ status: string; org_id: string; tasks_created: number }> {
+  return _adminRequest(`/organizations/${encodeURIComponent(orgId)}/credits/reset`, {
+    method: 'POST',
+  }, 'Failed to reset credits');
+}
+
+export function fetchAdminTasks(params?: { state?: string; q?: string }): Promise<AdminTaskRecord[]> {
+  const sp = new URLSearchParams();
+  if (params?.state) sp.set('state', params.state);
+  if (params?.q) sp.set('q', params.q);
+  const qs = sp.toString() ? `?${sp.toString()}` : '';
+  return _adminRequest<AdminTaskRecord[]>(`/tasks${qs}`, undefined, 'Failed to load platform tasks');
+}
+
+export function forceAdminTaskState(
+  taskId: string,
+  workflowState: string,
+  blockedReason?: string
+): Promise<{ status: string; task_id: string; workflow_state: string }> {
+  return _adminRequest(`/tasks/${encodeURIComponent(taskId)}/force-state`, {
+    method: 'POST',
+    body: JSON.stringify({ workflow_state: workflowState, blocked_reason: blockedReason }),
+  }, 'Failed to update task state');
+}
+
+export function fetchAdminAuditLogs(params?: { action?: string; q?: string }): Promise<AdminAuditRecord[]> {
+  const sp = new URLSearchParams();
+  if (params?.action) sp.set('action', params.action);
+  if (params?.q) sp.set('q', params.q);
+  const qs = sp.toString() ? `?${sp.toString()}` : '';
+  return _adminRequest<AdminAuditRecord[]>(`/audit${qs}`, undefined, 'Failed to load audit logs');
+}
+
+export function triggerAdminGlobalDiscovery(): Promise<{ status: string; total_discovered?: number }> {
+  return _adminRequest('/discovery/run', { method: 'POST' }, 'Failed to trigger global discovery scan');
+}
+
+export function triggerAdminIssueReconcile(purge = true): Promise<{ status: string; summary: any }> {
+  return _adminRequest(`/discovery/reconcile?purge=${purge ? 'true' : 'false'}`, {
+    method: 'POST',
+  }, 'Failed to reconcile upstream issues');
+}
+
+export function updateAdminRuntimeConfig(payload: {
+  free_beta_mode?: boolean;
+  free_trial_days?: number;
+  free_tier_credit_limit?: number;
+  upi_vpa?: string;
+}): Promise<{ status: string; runtime: AdminRuntimeConfig }> {
+  return _adminRequest('/runtime-config', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, 'Failed to save runtime settings');
 }
 
 

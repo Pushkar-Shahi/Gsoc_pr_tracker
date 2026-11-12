@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Search, Bookmark, GitPullRequest, 
   Clock, Play, Heart,
-  ArrowRight, PanelLeftClose, PanelLeft, Sparkles
+  ArrowRight, PanelLeftClose, PanelLeft, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { BrandIcon } from './BrandIcon';
 import { SubscriptionInfo } from '../types';
@@ -37,6 +37,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'prs', label: 'Pull Requests', icon: GitPullRequest, badge: totalPRs > 0 ? String(totalPRs) : undefined },
     { id: 'history', label: 'Timeline', icon: Clock },
     { id: 'runners', label: 'Runners', icon: Play },
+    ...(subscriptionInfo?.is_admin
+      ? [
+          {
+            id: 'admin',
+            label: 'Admin Console',
+            icon: ShieldCheck,
+            badge:
+              (subscriptionInfo.pending_admin_upi_count ?? 0) > 0
+                ? String(subscriptionInfo.pending_admin_upi_count)
+                : 'ADMIN',
+          },
+        ]
+      : []),
   ];
 
   return (

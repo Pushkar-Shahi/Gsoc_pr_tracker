@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   X, Cpu, History, CreditCard, Settings, Download, Heart,
-  Sun, Moon, LogOut, Sparkles, ExternalLink, User
+  Sun, Moon, LogOut, Sparkles, ExternalLink, User, ShieldCheck
 } from 'lucide-react';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
@@ -87,6 +87,21 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         ? `${subscriptionInfo.trial_days_remaining ?? 15} days of free Pro left • Upgrade via UPI`
         : 'Plan quotas, Direct UPI upgrades & feature entitlements'
     },
+    ...(subscriptionInfo?.is_admin
+      ? [
+          {
+            id: 'admin',
+            label: 'Platform Admin Console',
+            icon: ShieldCheck,
+            badge:
+              (subscriptionInfo.pending_admin_upi_count ?? 0) > 0
+                ? `${subscriptionInfo.pending_admin_upi_count} UPI`
+                : 'ADMIN',
+            badgeColor: 'emerald',
+            desc: 'Manage users, grant plans/trials, reset credits, scan issues & config'
+          },
+        ]
+      : []),
   ];
 
   const renderNavCard = (item: any) => {

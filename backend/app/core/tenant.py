@@ -105,6 +105,12 @@ async def get_current_tenant(
         db.add(user)
         await db.flush()
 
+    if user.is_active is False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended by a platform administrator."
+        )
+
     # JIT provision Organization and Membership for claim_tenant_id if provided
     if claim_tenant_id:
         org_stmt = select(Organization).where(Organization.id == claim_tenant_id)

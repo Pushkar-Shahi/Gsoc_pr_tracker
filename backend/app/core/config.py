@@ -123,10 +123,14 @@ class Settings:
     GITLAB_REDIRECT_URI: str = os.getenv("GITLAB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/gitlab/callback")
 
     # Free Beta Launch & 15-Day Reverse Free Trial Monetization Settings
+    _free_beta_mode_override: Optional[bool] = None
+
     @property
     def FREE_BETA_MODE(self) -> bool:
         if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("ENVIRONMENT") == "testing":
             return False
+        if self._free_beta_mode_override is not None:
+            return self._free_beta_mode_override
         return os.getenv("FREE_BETA_MODE", "false").lower() in ("true", "1", "yes")
 
     FREE_TRIAL_DAYS: int = int(os.getenv("FREE_TRIAL_DAYS", "15"))
@@ -149,6 +153,19 @@ class Settings:
     UPI_VPA: str = os.getenv("UPI_VPA", "8116710520@sbi")
     UPI_PAYEE_NAME: str = os.getenv("UPI_PAYEE_NAME", "Pushkar Shahi")
     UPI_QR_IMAGE_PATH: str = os.getenv("UPI_QR_IMAGE_PATH", "/phonepe-upi-qr.jpg")
+
+    def apply_runtime_overrides(self, overrides: dict) -> None:
+        """Applies admin-persisted monetization & UPI runtime overrides in memory."""
+        if not isinstance(overrides, dict):
+            return
+        if "free_beta_mode" in overrides and overrides["free_beta_mode"] is not None:
+            self._free_beta_mode_override = bool(overrides["free_beta_mode"])
+        if "free_trial_days" in overrides and overrides["free_trial_days"] is not None:
+            self.FREE_TRIAL_DAYS = max(0, min(365, int(overrides["free_trial_days"])))
+        if "free_tier_credit_limit" in overrides and overrides["free_tier_credit_limit"] is not None:
+            self.FREE_TIER_MONTHLY_TASK_LIMIT = max(1, min(1000, int(overrides["free_tier_credit_limit"])))
+        if "upi_vpa" in overrides and isinstance(overrides["upi_vpa"], str) and "@" in overrides["upi_vpa"].strip():
+            self.UPI_VPA = overrides["upi_vpa"].strip()
     
     # Workspace & Worktree
     DATA_DIR: Path = DEFAULT_DATA_DIR
