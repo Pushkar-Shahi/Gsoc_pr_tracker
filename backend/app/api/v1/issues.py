@@ -167,9 +167,10 @@ async def list_issues(
     total_res = await db.execute(count_stmt)
     total = total_res.scalar() or 0
 
-    # Paginate
+    # Paginate (over-fetch slightly on page 1 so upstream stale prunes don't leave page 1 empty)
     offset = (page - 1) * page_size
-    stmt = stmt.offset(offset).limit(page_size)
+    fetch_limit = min(60, page_size * 2) if page == 1 else page_size
+    stmt = stmt.offset(offset).limit(fetch_limit)
 
     result = await db.execute(stmt)
     issues = result.scalars().all()
@@ -221,7 +222,7 @@ async def list_issues(
                 await db.delete(p_issue)
             await db.commit()
 
-        issues = clean_issues
+        issues = clean_issues[:page_size]
 
     # Enrich active task data if present
     items = []
@@ -298,7 +299,14 @@ async def get_tracked_organizations(
             Repository.primary_language,
             func.count(Issue.id).label("issue_count")
         )
-        .outerjoin(Issue, (Issue.repository_id == Repository.id) & (Issue.state == "open"))
+        .outerjoin(
+            Issue,
+            (Issue.repository_id == Repository.id)
+            & (Issue.state == "open")
+            & (Issue.is_eligible.is_(True))
+            & (Issue.has_open_pr.is_(False))
+            & (Issue.is_reserved.is_(False)),
+        )
         .where(
             or_(
                 Repository.is_private.is_(False),

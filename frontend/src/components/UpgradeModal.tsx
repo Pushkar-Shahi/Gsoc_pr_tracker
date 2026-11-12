@@ -69,7 +69,7 @@ export function UpgradeModal({
         <div className="bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl p-4 mb-6 space-y-2.5">
           <div className="flex items-start gap-2.5 text-xs text-slate-800 dark:text-neutral-200">
             <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-            <span><strong>Unlimited tasks & PR publications</strong> vs 5 tasks/month on Community Starter</span>
+            <span><strong>Unlimited tasks & PR publications</strong> vs 5 one-time free credits on Community Starter</span>
           </div>
           <div className="flex items-start gap-2.5 text-xs text-slate-800 dark:text-neutral-200">
             <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />

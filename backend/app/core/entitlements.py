@@ -74,7 +74,7 @@ async def enforce_task_creation_quota(ctx: TenantContext, db: AsyncSession) -> N
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail={
-                "message": f"You have reached your free monthly limit of {limit} tasks on Community Starter. Upgrade to Pro for unlimited PR generation.",
+                "message": f"You have used all {limit} one-time free credits on Community Starter. Upgrade to Pro for unlimited PR generation.",
                 "code": "QUOTA_EXCEEDED",
                 "tier": current_tier,
                 "current_usage": usage_count,

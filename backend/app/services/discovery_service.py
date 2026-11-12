@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,65 +57,120 @@ class DiscoveryService:
             ("kornia", "kornia", "Python"),
         ]
 
-        # 1. Sync curated repositories for verified open unassigned issues
-        for owner, repo_name, lang in curated_repos:
-            try:
-                repo_issues = await self.gh.get_repo_issues(owner=owner, repo=repo_name, state="open", assignee="none", per_page=10)
-                for item in repo_issues:
-                    await self._ingest_issue_item(item, lang)
-                    total_discovered += 1
-                await self.db.commit()
-            except Exception as e:
-                logger.warning(f"Failed syncing issues from {owner}/{repo_name}: {e}")
+        http_sem = asyncio.Semaphore(6)
 
-        # 2. Targeted search queries across the 4 organizations
-        focus_orgs = [
-            "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib", "scikit-learn", "sympy",
-            "psf", "python", "pallets", "pypa",
-            "deepchem",
-            "kornia",
+        async def _fetch_repo_batch(owner: str, repo_name: str, lang: str) -> List[Tuple[Dict[str, Any], str]]:
+            async with http_sem:
+                try:
+                    raw = await self.gh.get_repo_issues(owner=owner, repo=repo_name, state="open", assignee="none", per_page=6)
+                    return [(it, lang) for it in raw]
+                except Exception as exc:
+                    logger.warning(f"Failed syncing issues from {owner}/{repo_name}: {exc}")
+                    return []
+
+        repo_batches = await asyncio.gather(*[
+            _fetch_repo_batch(o, r, l) for o, r, l in curated_repos
+        ])
+        raw_candidates: List[Tuple[Dict[str, Any], str]] = [pair for batch in repo_batches for pair in batch]
+
+        # 2. Two grouped Search API queries across focus orgs (avoids 10/min Search rate limit & completes fast)
+        grouped_queries = [
+            (
+                "gsoc:aiml:batch1:open:unassigned",
+                "is:issue is:open no:assignee archived:false (org:numfocus OR org:numpy OR org:scipy OR org:pandas-dev OR org:matplotlib OR org:scikit-learn OR org:sympy OR org:astropy)",
+            ),
+            (
+                "gsoc:aiml:batch2:open:unassigned",
+                "is:issue is:open no:assignee archived:false (org:psf OR org:python OR org:pallets OR org:pypa OR org:deepchem OR org:kornia)",
+            ),
         ]
-        for org in focus_orgs:
-            query_key = f"gsoc:aiml:{org}:open:unassigned"
-            checkpoint_stmt = select(DiscoveryCheckpoint).where(DiscoveryCheckpoint.query_key == query_key)
-            result = await self.db.execute(checkpoint_stmt)
-            checkpoint = result.scalar_one_or_none()
 
+        effective_pages = min(page_limit, 1 if force_refresh else page_limit)
+        for query_key, search_query in grouped_queries:
+            checkpoint_stmt = select(DiscoveryCheckpoint).where(DiscoveryCheckpoint.query_key == query_key)
+            checkpoint = (await self.db.execute(checkpoint_stmt)).scalar_one_or_none()
             if not checkpoint:
                 checkpoint = DiscoveryCheckpoint(query_key=query_key, last_page=1, items_synced=0)
                 self.db.add(checkpoint)
                 await self.db.flush()
 
             page = 1 if force_refresh else checkpoint.last_page
-            query = f"is:issue is:open no:assignee archived:false org:{org}"
-
-            for p in range(page, page + page_limit):
-                logger.info(f"Searching GSoC AI/ML issues: {query} (page {p})")
-                search_data = await self.gh.search_issues(query=query, page=p, per_page=15)
-
+            for p in range(page, page + effective_pages):
+                logger.info(f"Searching GSoC AI/ML issues: {query_key} (page {p})")
+                search_data = await self.gh.search_issues(query=search_query, page=p, per_page=20)
                 if search_data.get("rate_limited"):
-                    errors.append(f"GitHub API Rate Limit reached while scanning {org}.")
+                    errors.append(f"GitHub Search API rate limit reached on {query_key}.")
                     checkpoint.error_message = "Rate limit reached"
                     break
-
                 if "error" in search_data:
-                    errors.append(f"Error for {org}: {search_data['error']}")
+                    errors.append(f"Error for {query_key}: {search_data['error']}")
                     break
-
                 items = search_data.get("items", [])
                 if not items:
                     checkpoint.is_complete = True
                     break
-
-                for item in items:
-                    await self._ingest_issue_item(item, "Python")
-                    total_discovered += 1
-
+                for it in items:
+                    raw_candidates.append((it, "Python"))
                 checkpoint.last_page = p + 1
                 checkpoint.items_synced += len(items)
                 checkpoint.updated_at = datetime.utcnow()
                 checkpoint.is_complete = False
-                await self.db.commit()
+
+        # 3. Pre-filter PRs, assigned/reserved/PR-intent issues & deduplicate before Timeline checks
+        seen_keys = set()
+        pristine_candidates: List[Tuple[Dict[str, Any], str, str, str, int]] = []
+        for item, item_lang in raw_candidates:
+            if "pull_request" in item or item.get("state") != "open":
+                continue
+            assignees = item.get("assignees") or []
+            if assignees:
+                continue
+            repo_url = item.get("repository_url", "")
+            parts = repo_url.rstrip("/").split("/")
+            if len(parts) < 2:
+                continue
+            owner, repo_name = parts[-2], parts[-1]
+            issue_num = item.get("number")
+            if not issue_num:
+                continue
+            dedup_key = (owner.lower(), repo_name.lower(), int(issue_num))
+            if dedup_key in seen_keys:
+                continue
+            seen_keys.add(dedup_key)
+
+            title = item.get("title", "")
+            body = item.get("body", "")
+            is_res, _ = AvailabilityInspector.detect_maintainer_reservation(title=title, body=body)
+            if is_res:
+                continue
+            has_pr_text, _ = AvailabilityInspector.detect_pr_intent_or_closure(f"{title}\n{body}")
+            if has_pr_text:
+                continue
+            pristine_candidates.append((item, item_lang, owner, repo_name, int(issue_num)))
+
+        # Concurrently verify linked PRs for top candidates (bounded to keep full scan ~3-8s)
+        timeline_sem = asyncio.Semaphore(10)
+
+        async def _check_linked_prs(o: str, r: str, n: int) -> List[Dict[str, Any]]:
+            async with timeline_sem:
+                try:
+                    return await self.gh.get_issue_linked_prs(o, r, n)
+                except Exception:
+                    return []
+
+        capped_candidates = pristine_candidates[:45]
+        linked_results = await asyncio.gather(*[
+            _check_linked_prs(o, r, n) for _, _, o, r, n in capped_candidates
+        ])
+
+        for (item, item_lang, _, _, _), prechecked_prs in zip(capped_candidates, linked_results):
+            if prechecked_prs:
+                continue
+            try:
+                await self._ingest_issue_item(item, item_lang, prechecked_linked_prs=prechecked_prs)
+                total_discovered += 1
+            except Exception as exc:
+                logger.warning(f"Skipping issue during discovery ingestion: {exc}")
 
         # Audit event
         audit = AuditLog(
@@ -131,13 +187,19 @@ class DiscoveryService:
         await self.db.commit()
 
         return {
+            "total_discovered": total_discovered,
             "items_synced": total_discovered,
             "errors": errors,
             "rate_limit_remaining": self.gh.rate_limit_remaining,
             "rate_limit_limit": self.gh.rate_limit_limit
         }
 
-    async def _ingest_issue_item(self, item: Dict[str, Any], language: str):
+    async def _ingest_issue_item(
+        self,
+        item: Dict[str, Any],
+        language: str,
+        prechecked_linked_prs: Optional[List[Dict[str, Any]]] = None,
+    ):
         """Processes an individual GitHub issue item into database with ranking and eligibility checks."""
         # Check if item is a PR
         if "pull_request" in item:
@@ -278,8 +340,12 @@ class DiscoveryService:
                 await self.db.delete(existing_issue)
             return
 
-        # Query GitHub timeline for linked open PRs
-        linked_prs = await self.gh.get_issue_linked_prs(repo_owner, repo_name, issue_number)
+        # Query GitHub timeline for linked open PRs unless already prechecked concurrently
+        linked_prs = (
+            prechecked_linked_prs
+            if prechecked_linked_prs is not None
+            else await self.gh.get_issue_linked_prs(repo_owner, repo_name, issue_number)
+        )
         if linked_prs and len(linked_prs) > 0:
             # An active PR has been submitted to close this issue - hard delete immediately
             if existing_issue:

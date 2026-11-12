@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   subscriptionInfo,
 }) => {
   const navItems = [
-    { id: 'issues', label: 'Find Issues', icon: Search, badge: totalIssues > 0 ? String(totalIssues) : '744', badgeType: 'neutral' },
+    { id: 'issues', label: 'Find Issues', icon: Search, badge: totalIssues > 0 ? String(totalIssues) : undefined, badgeType: 'neutral' },
     { id: 'tracker', label: 'Tracked Items', icon: Bookmark, badge: trackedTasksCount > 0 ? String(trackedTasksCount) : undefined },
     { id: 'prs', label: 'Pull Requests', icon: GitPullRequest, badge: totalPRs > 0 ? String(totalPRs) : undefined },
     { id: 'history', label: 'Timeline', icon: Clock },
@@ -205,7 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {subscriptionInfo?.trial_active
                 ? `Pro features unlocked (${subscriptionInfo.trial_days_remaining ?? 15} days left). Lock Pro forever at ₹100/mo.`
                 : subscriptionInfo?.trial_expired && subscriptionInfo?.tier === 'starter'
-                ? 'Free trial ended (5 tasks/mo limit). Upgrade via UPI to restore unlimited Pro workflows.'
+                ? 'Free trial ended (5 one-time credits). Upgrade via UPI to restore unlimited Pro workflows.'
                 : 'Curated unassigned issues from official Google Summer of Code organizations.'}
             </p>
             {(subscriptionInfo?.trial_active || (subscriptionInfo?.tier === 'starter' && !subscriptionInfo?.free_beta_mode)) && (

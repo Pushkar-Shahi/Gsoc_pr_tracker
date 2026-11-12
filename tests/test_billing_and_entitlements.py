@@ -728,3 +728,50 @@ async def test_reverse_free_trial_15_days_onboarding_and_expiration():
         assert relogin_resp.status_code == 200
         assert relogin_resp.json()["tier"] == "starter"
 
+
+@pytest.mark.asyncio
+async def test_starter_credits_are_one_time_lifetime_and_do_not_reset_monthly():
+    """Verify Starter 5 free credits are one-time lifetime credits that persist across months."""
+    session_factory = await get_session_factory()
+    org_id = f"org_life_{uuid.uuid4().hex[:8]}"
+    user_id = f"usr_life_{uuid.uuid4().hex[:8]}"
+    token = get_test_token(user_id=user_id, username="lifetime_user", org_id=org_id, tier="starter")
+
+    async with session_factory() as session:
+        session.add(
+            User(
+                id=user_id,
+                github_username=f"life_{uuid.uuid4().hex[:6]}",
+                name="Lifetime User",
+                email="life@example.com",
+            )
+        )
+        session.add(Organization(id=org_id, name="Life Org", slug=org_id, billing_tier="starter"))
+        # Seed 5 credits used 2 months ago -> must STILL count as exhausted today
+        prev_start = datetime(2025, 1, 1, 0, 0, 0)
+        prev_end = datetime(2025, 1, 31, 23, 59, 59)
+        session.add(
+            UsageMeter(
+                id=str(uuid.uuid4()),
+                tenant_id=org_id,
+                metric_name="tasks_created",
+                period_start=prev_start,
+                period_end=prev_end,
+                usage_count=5,
+                limit_count=5,
+            )
+        )
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        sub_res = await client.get(
+            "/api/v1/billing/subscription",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert sub_res.status_code == 200
+        sub_data = sub_res.json()
+        assert sub_data["tasks_created_this_month"] == 5
+        assert sub_data["monthly_task_limit"] == 5
+
+

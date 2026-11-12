@@ -38,7 +38,7 @@ PLANS_CATALOG = [
         "price_id_annual": "free",
         "quota_tasks": 5,
         "features": [
-            {"name": "5 active tasks per month", "included": True},
+            {"name": "5 one-time free task credits", "included": True},
             {"name": "Public open source repositories", "included": True},
             {"name": "Local hybrid runner execution", "included": True},
             {"name": "Diff secret & credential scanning", "included": True},
@@ -402,24 +402,26 @@ class BillingService:
 
     @staticmethod
     async def get_or_create_task_usage_meter(tenant_id: str, db: AsyncSession) -> UsageMeter:
-        """Finds or initializes the monthly usage meter for a tenant."""
-        start_month, end_month = get_current_month_bounds()
-        stmt = select(UsageMeter).where(
-            UsageMeter.tenant_id == tenant_id,
-            UsageMeter.metric_name == "tasks_created",
-            UsageMeter.period_start == start_month
+        """Finds or initializes the lifetime one-time task credit meter for a tenant."""
+        stmt = (
+            select(UsageMeter)
+            .where(
+                UsageMeter.tenant_id == tenant_id,
+                UsageMeter.metric_name == "tasks_created",
+            )
+            .order_by(desc(UsageMeter.usage_count))
         )
         res = await db.execute(stmt)
-        meter = res.scalar_one_or_none()
+        meter = res.scalars().first()
         if not meter:
             meter = UsageMeter(
                 id=str(uuid.uuid4()),
                 tenant_id=tenant_id,
                 metric_name="tasks_created",
-                period_start=start_month,
-                period_end=end_month,
+                period_start=datetime(2020, 1, 1, 0, 0, 0),
+                period_end=datetime(2099, 12, 31, 23, 59, 59),
                 usage_count=0,
-                limit_count=settings.FREE_TIER_MONTHLY_TASK_LIMIT
+                limit_count=settings.FREE_TIER_MONTHLY_TASK_LIMIT,
             )
             db.add(meter)
             await db.commit()
@@ -516,29 +518,33 @@ class BillingService:
 
     @staticmethod
     async def get_monthly_task_usage(tenant_id: str, db: AsyncSession) -> Tuple[int, Optional[int]]:
-        """Returns (usage_count, limit_count) for the tenant in the current calendar month."""
+        """Returns (total_credits_used, one_time_limit_count) for the tenant without monthly reset."""
+        await BillingService.get_or_create_task_usage_meter(tenant_id, db)
+        total_stmt = select(func.coalesce(func.sum(UsageMeter.usage_count), 0)).where(
+            UsageMeter.tenant_id == tenant_id,
+            UsageMeter.metric_name == "tasks_created",
+        )
+        total_used = int((await db.execute(total_stmt)).scalar() or 0)
+
         if getattr(settings, "FREE_BETA_MODE", False):
-            meter = await BillingService.get_or_create_task_usage_meter(tenant_id, db)
-            return meter.usage_count, None  # Unlimited during Free Beta
+            return total_used, None  # Unlimited during Free Beta
 
         org, _ = await BillingService.sync_trial_expiration(tenant_id, db)
         tier = org.billing_tier if org else "starter"
 
-        meter = await BillingService.get_or_create_task_usage_meter(tenant_id, db)
-
         if tier in ("pro", "team", "enterprise"):
-            return meter.usage_count, None  # Unlimited
-        return meter.usage_count, settings.FREE_TIER_MONTHLY_TASK_LIMIT
+            return total_used, None  # Unlimited
+        return total_used, settings.FREE_TIER_MONTHLY_TASK_LIMIT
 
     @staticmethod
     async def record_task_created(tenant_id: str, db: AsyncSession) -> int:
-        """Increments task creation counter for the tenant and returns new count."""
+        """Increments lifetime task credit counter for the tenant and returns total used."""
         meter = await BillingService.get_or_create_task_usage_meter(tenant_id, db)
         meter.usage_count += 1
         meter.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.commit()
-        await db.refresh(meter)
-        return meter.usage_count
+        total_used, _ = await BillingService.get_monthly_task_usage(tenant_id, db)
+        return total_used
 
     @staticmethod
     async def get_subscription_summary(

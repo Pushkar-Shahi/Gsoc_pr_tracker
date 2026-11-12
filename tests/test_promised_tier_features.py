@@ -954,3 +954,59 @@ async def test_cron_scan_coalescing_and_response_fields():
         assert body["discovered"] == 14
 
 
+@pytest.mark.asyncio
+async def test_fast_discovery_sync_grouped_search_and_returns_total_discovered():
+    """Verify DiscoveryService uses grouped Search queries concurrently & returns total_discovered."""
+    from app.services.discovery_service import DiscoveryService
+
+    session_factory = await get_session_factory()
+    async with session_factory() as db:
+        gh = MagicMock()
+        gh.rate_limit_remaining = 4990
+        gh.rate_limit_limit = 5000
+        gh.get_repo_issues = AsyncMock(return_value=[])
+        unique_gh_id = int(uuid.uuid4().int % 900_000_000) + 100_000_000
+        search_call_count = 0
+
+        async def fake_search(query: str, page: int = 1, per_page: int = 20):
+            nonlocal search_call_count
+            search_call_count += 1
+            if "batch1" in query or "numfocus" in query:
+                return {
+                    "items": [
+                        {
+                            "id": unique_gh_id,
+                            "number": 9876,
+                            "title": "Fix fast numpy broadcast edge case",
+                            "body": "Simple clean fix needed.",
+                            "html_url": "https://github.com/numpy/numpy/issues/9876",
+                            "repository_url": "https://api.github.com/repos/numpy/numpy",
+                            "state": "open",
+                            "user": {"login": "contributor"},
+                            "labels": [{"name": "bug"}],
+                            "assignees": [],
+                            "comments": 1,
+                        }
+                    ]
+                }
+            return {"items": []}
+
+        gh.search_issues = AsyncMock(side_effect=fake_search)
+        gh.get_repository = AsyncMock(
+            return_value={
+                "stargazers_count": 28000,
+                "license": {"spdx_id": "BSD-3-Clause", "name": "BSD 3-Clause"},
+                "archived": False,
+                "default_branch": "main",
+            }
+        )
+        gh.get_issue_linked_prs = AsyncMock(return_value=[])
+
+        svc = DiscoveryService(db=db, github_client=gh)
+        res = await svc.run_discovery_sync(force_refresh=True, page_limit=1)
+        assert search_call_count == 2  # 2 grouped batches instead of 13 separate org searches
+        assert res["total_discovered"] >= 1
+        assert res["items_synced"] == res["total_discovered"]
+
+
+

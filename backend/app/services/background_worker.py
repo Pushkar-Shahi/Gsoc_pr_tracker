@@ -536,12 +536,19 @@ class BackgroundWorkerService:
                 gh = GitHubClient(token=sett.github_token if sett else None)
 
                 discovery = DiscoveryService(db=db, github_client=gh)
-                result = await discovery.run_discovery_sync(force_refresh=True, page_limit=2)
-                discovered_count = int(result.get("total_discovered", 0))
+                result = await discovery.run_discovery_sync(force_refresh=True, page_limit=1)
+                discovered_count = int(result.get("total_discovered") or result.get("items_synced") or 0)
+                errors = result.get("errors") or []
 
-                # Reconcile and purge closed/assigned issues upstream
-                reconcile_res = await reconcile_inbox_issues_upstream(self.session_factory, max_issues=None, purge=True)
-                pruned_count = int(reconcile_res.get("purged", 0)) + int(reconcile_res.get("reconciled_closed", 0))
+                # Run bounded stale-issue cleanup asynchronously so HTTP cron triggers return within seconds
+                try:
+                    asyncio.create_task(
+                        reconcile_inbox_issues_upstream(self.session_factory, max_issues=35, purge=True),
+                        name="cron_post_reconcile",
+                    )
+                except Exception as rec_exc:
+                    logger.debug(f"Could not schedule post-cron reconcile: {rec_exc}")
+                pruned_count = 0
 
                 # Record an audit log for the UI notifications panel
                 audit = AuditLog(
@@ -550,6 +557,7 @@ class BackgroundWorkerService:
                     details={
                         "discovered": discovered_count,
                         "pruned": pruned_count,
+                        "errors": errors,
                         "timestamp": datetime.utcnow().isoformat(),
                         "orgs": self.cron_target_orgs,
                         "message": f"Auto-Scan Cron completed. Discovered {discovered_count} fresh unassigned issues from NumFOCUS, PSF, DeepChem, and Kornia."
@@ -558,17 +566,21 @@ class BackgroundWorkerService:
                 db.add(audit)
                 await db.commit()
 
+                now_utc = datetime.now(timezone.utc)
+                now_epoch = int(now_utc.timestamp())
+                next_cycle_epoch = ((now_epoch // self.discovery_interval_sec) + 1) * self.discovery_interval_sec
                 self.last_cron_discovered = discovered_count
                 self.last_cron_pruned = pruned_count
-                self.last_cron_run_at = datetime.now(timezone.utc)
-                self.next_cron_run_at = self.last_cron_run_at + timedelta(seconds=self.discovery_interval_sec)
-                logger.info(f"2-Hour Auto-Scan Cron completed. Ingested {discovered_count} issues, pruned {pruned_count}.")
+                self.last_cron_run_at = now_utc
+                self.next_cron_run_at = datetime.fromtimestamp(next_cycle_epoch, tz=timezone.utc)
+                logger.info(f"2-Hour Auto-Scan Cron completed. Ingested {discovered_count} issues.")
                 return {
                     "success": True,
                     "status": "success",
                     "discovered": discovered_count,
                     "last_issues_synced": discovered_count,
                     "last_issues_pruned": pruned_count,
+                    "errors": errors,
                     "last_run_at": self.last_cron_run_at.isoformat(),
                     "next_run_at": self.next_cron_run_at.isoformat(),
                 }
@@ -601,10 +613,15 @@ class BackgroundWorkerService:
                 self._active_cron_task = None
 
     async def _discovery_loop(self):
-        """Periodically polls GitHub discovery every 2 hours."""
+        """Synchronizes background 2-hour discovery scans with the exact wall-clock 2h countdown."""
         while self._running:
             try:
-                await asyncio.sleep(self.discovery_interval_sec)
+                now_epoch = int(datetime.now(timezone.utc).timestamp())
+                next_cycle_epoch = ((now_epoch // self.discovery_interval_sec) + 1) * self.discovery_interval_sec
+                sleep_sec = max(5, next_cycle_epoch - now_epoch)
+                await asyncio.sleep(sleep_sec)
+                if not self._running:
+                    break
                 logger.info("2-Hour Scheduled discovery background cron triggering...")
                 await self.trigger_cron_scan()
             except asyncio.CancelledError:

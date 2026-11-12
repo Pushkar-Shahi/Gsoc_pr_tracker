@@ -51,16 +51,19 @@ interface AutonomousEngineTimerProps {
   nextRunAt?: string | null;
   isTriggering: boolean;
   onRefreshStatus: () => void;
+  onTimerExpired?: () => void;
 }
 
 const AutonomousEngineTimer = React.memo(function AutonomousEngineTimer({
   nextRunAt,
   isTriggering,
   onRefreshStatus,
+  onTimerExpired,
 }: AutonomousEngineTimerProps) {
   const [countdownSec, setCountdownSec] = useState<number>(() => {
     return getWebsiteInternalSchedule().countdown_sec;
   });
+  const lastExpiredTriggerRef = React.useRef<number>(0);
 
   useEffect(() => {
     const tick = () => {
@@ -76,15 +79,25 @@ const AutonomousEngineTimer = React.memo(function AutonomousEngineTimer({
         const currentSchedule = getWebsiteInternalSchedule();
         setCountdownSec(currentSchedule.countdown_sec);
 
-        if (currentSchedule.countdown_sec === 0 && !isTriggering) {
-          onRefreshStatus();
+        if (currentSchedule.countdown_sec === 0 && !isTriggering && now - lastExpiredTriggerRef.current > 60000) {
+          lastExpiredTriggerRef.current = now;
+          if (onTimerExpired) {
+            onTimerExpired();
+          } else {
+            onRefreshStatus();
+          }
         }
       } else {
         const diff = Math.max(0, Math.floor((targetMs - now) / 1000));
         setCountdownSec(diff);
 
-        if (diff === 0 && !isTriggering) {
-          onRefreshStatus();
+        if (diff === 0 && !isTriggering && now - lastExpiredTriggerRef.current > 60000) {
+          lastExpiredTriggerRef.current = now;
+          if (onTimerExpired) {
+            onTimerExpired();
+          } else {
+            onRefreshStatus();
+          }
         }
       }
     };
@@ -92,7 +105,7 @@ const AutonomousEngineTimer = React.memo(function AutonomousEngineTimer({
     tick();
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
-  }, [nextRunAt, isTriggering, onRefreshStatus]);
+  }, [nextRunAt, isTriggering, onRefreshStatus, onTimerExpired]);
 
   const countdown = formatCountdownSec(countdownSec);
 
@@ -299,8 +312,11 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     setGsocSyncFeedback(null);
     try {
       const res = await triggerCronRunNow();
-      setGsocSyncFeedback(`✓ 2-Hour Cron scan complete: synced ${res.last_issues_synced} issues, pruned ${res.last_issues_pruned} closed.`);
+      const synced = res.last_issues_synced ?? res.discovered ?? 0;
+      const pruned = res.last_issues_pruned ?? 0;
+      setGsocSyncFeedback(`✓ 2-Hour Cron scan complete: synced ${synced} issues, pruned ${pruned} closed.`);
       await loadCronStatus();
+      await loadTrackedOrgs();
       triggerFilters();
       setTimeout(() => setGsocSyncFeedback(null), 8000);
     } catch (err: any) {
@@ -536,6 +552,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             nextRunAt={cronStatus?.next_run_at}
             isTriggering={isTriggeringCron}
             onRefreshStatus={loadCronStatus}
+            onTimerExpired={handleTriggerCronNow}
           />
 
           {/* Solid White Run 2h Scan Now Button */}

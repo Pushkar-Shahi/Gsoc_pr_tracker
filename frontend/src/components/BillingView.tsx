@@ -258,7 +258,7 @@ export function BillingView() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 dark:text-neutral-300 mt-1 leading-relaxed">
-                      Every Pro capability is unlocked right now with zero card required. After day {totalDays}, your workspace automatically moves to Community Starter (5 tasks/mo) unless you lock in Pro for <strong>₹100/month (~₹3.30/day)</strong> via Direct UPI.
+                      Every Pro capability is unlocked right now with zero card required. After day {totalDays}, your workspace automatically moves to Community Starter (5 one-time free credits) unless you lock in Pro for <strong>₹100/month (~₹3.30/day)</strong> via Direct UPI.
                     </p>
                   </div>
                 </div>
@@ -300,7 +300,7 @@ export function BillingView() {
                   Your 15-Day Pro Trial Has Ended — Moved to Community Starter
                 </h3>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/30">
-                  5 TASKS/MO LIMIT
+                  5 ONE-TIME CREDITS
                 </span>
               </div>
               <p className="text-xs text-slate-600 dark:text-neutral-300 mt-0.5 leading-relaxed">
@@ -398,10 +398,10 @@ export function BillingView() {
         <div className="md:col-span-2 p-5 rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-neutral-400 font-semibold">
-              Monthly Task Quota
+              {isUnlimited ? 'Task Usage' : 'Free Task Credits'}
             </div>
             <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
-              {isUnlimited ? `${usageCount} tasks created (Unlimited)` : `${usageCount} / ${limitCount} tasks used`}
+              {isUnlimited ? `${usageCount} tasks created (Unlimited)` : `${usageCount} / ${limitCount} credits used`}
             </span>
           </div>
 
@@ -421,10 +421,10 @@ export function BillingView() {
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400">
-            <span>Resets on the 1st of next month</span>
+            <span>{isUnlimited ? 'Unlimited tasks on active tier' : 'One-time 5 free credits (does not reset monthly)'}</span>
             {!isUnlimited && usagePct >= 80 && (
               <span className="text-amber-500 font-medium">
-                {limitCount - usageCount <= 0 ? 'Limit reached' : `${limitCount - usageCount} tasks remaining`}
+                {limitCount - usageCount <= 0 ? 'All credits used' : `${limitCount - usageCount} credits remaining`}
               </span>
             )}
           </div>
@@ -825,7 +825,7 @@ export function BillingView() {
             disabled={actionLoading !== null || currentTier === 'starter'}
             className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 transition disabled:opacity-40"
           >
-            Switch to Starter (5 tasks/mo)
+            Switch to Starter (5 one-time credits)
           </button>
           <button
             onClick={() => handleSimulateTier('pro')}
