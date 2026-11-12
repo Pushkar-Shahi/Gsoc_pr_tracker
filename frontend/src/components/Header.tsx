@@ -129,6 +129,26 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           );
         })()}
+        {subscriptionInfo?.is_admin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab?.('admin')}
+            title="Open Platform Admin Console"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold select-none shadow-xs shrink-0 transition active:scale-95 ${
+              activeTab === 'admin'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-500 shadow-purple-500/25'
+                : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:hover:bg-purple-500/25 dark:text-purple-200 dark:border-purple-500/35'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            <span>Admin</span>
+            {(subscriptionInfo.pending_admin_upi_count ?? 0) > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-amber-400 text-slate-950 font-extrabold">
+                {subscriptionInfo.pending_admin_upi_count}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Right Controls: Install App, Theme Toggle, Sync Live, Profile, Mobile Menu */}

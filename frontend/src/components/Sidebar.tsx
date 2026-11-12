@@ -37,19 +37,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'prs', label: 'Pull Requests', icon: GitPullRequest, badge: totalPRs > 0 ? String(totalPRs) : undefined },
     { id: 'history', label: 'Timeline', icon: Clock },
     { id: 'runners', label: 'Runners', icon: Play },
-    ...(subscriptionInfo?.is_admin
-      ? [
-          {
-            id: 'admin',
-            label: 'Admin Console',
-            icon: ShieldCheck,
-            badge:
-              (subscriptionInfo.pending_admin_upi_count ?? 0) > 0
-                ? String(subscriptionInfo.pending_admin_upi_count)
-                : 'ADMIN',
-          },
-        ]
-      : []),
   ];
 
   return (
@@ -164,6 +151,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
+
+        {/* Dedicated Separate Admin Tab (Superuser only) */}
+        {subscriptionInfo?.is_admin && (
+          <div className={`pt-3 mt-2 border-t border-slate-200/80 dark:border-white/10 ${isCollapsed ? 'w-full flex flex-col items-center' : 'space-y-1.5'}`}>
+            {!isCollapsed && (
+              <div className="px-3 text-[10px] font-mono uppercase tracking-wider font-bold text-purple-600 dark:text-purple-400">
+                Platform Admin
+              </div>
+            )}
+            {isCollapsed ? (
+              <button
+                type="button"
+                onClick={() => setActiveTab('admin')}
+                title="Platform Admin Console"
+                className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 ${
+                  activeTab === 'admin'
+                    ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/30'
+                    : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/15 dark:hover:bg-purple-500/25 dark:text-purple-200 dark:border-purple-500/30'
+                }`}
+              >
+                <ShieldCheck className="w-5 h-5" />
+                {(subscriptionInfo.pending_admin_upi_count ?? 0) > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white dark:ring-[#080c14]" />
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveTab('admin')}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 active:scale-95 border ${
+                  activeTab === 'admin'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-500 shadow-md shadow-purple-500/25'
+                    : 'bg-purple-50/80 hover:bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-500/10 dark:hover:bg-purple-500/20 dark:text-purple-200 dark:border-purple-500/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>Admin Console</span>
+                </div>
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    (subscriptionInfo.pending_admin_upi_count ?? 0) > 0
+                      ? 'bg-amber-400 text-slate-950'
+                      : activeTab === 'admin'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-purple-200/80 text-purple-900 dark:bg-purple-500/30 dark:text-purple-100'
+                  }`}
+                >
+                  {(subscriptionInfo.pending_admin_upi_count ?? 0) > 0
+                    ? `${subscriptionInfo.pending_admin_upi_count} UPI`
+                    : 'GOD MODE'}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Bottom Context Card */}

@@ -53,7 +53,7 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "Starting Issue-to-PR Platform on port ${PORT:-8000}..."\n\
 cd /app/backend\n\
-exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --proxy-headers --forwarded-allow-ips "*"\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-1} --proxy-headers --forwarded-allow-ips "*"\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 USER appuser
