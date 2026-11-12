@@ -1,13 +1,18 @@
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.entitlements import require_tier
+from app.core.tenant import TenantContext
 from app.db.database import get_db
-from app.models.models import Issue, PlatformSettings
+from app.models.models import Issue, PlatformSettings, UserSettings
 from app.schemas.schemas import DiscoverySyncRequest, DiscoveryStatusResponse
 from app.services.discovery_service import DiscoveryService
 from app.services.github_client import GitHubClient
+from app.services.ranking_service import RankingService
 
 router = APIRouter(prefix="/discovery", tags=["Discovery"])
 
@@ -128,4 +133,48 @@ async def trigger_cron_run_now(db: AsyncSession = Depends(get_db)):
             "fallback": True,
             "last_run_at": datetime.utcnow().isoformat()
         }
+
+
+class PriorityDiscoveryRequest(BaseModel):
+    language: Optional[str] = None
+    gsoc_only: bool = True
+
+
+@router.post("/priority-sync")
+async def trigger_priority_discovery_sync(
+    payload: Optional[PriorityDiscoveryRequest] = None,
+    ctx: TenantContext = Depends(require_tier("pro")),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    On-demand priority discovery sync using the Pro/Team user's weighted skill matrix
+    instead of waiting for the standard 2-hour community crawl cycle.
+    """
+    p_res = await db.execute(select(PlatformSettings).where(PlatformSettings.id == 1))
+    s = p_res.scalar_one_or_none()
+
+    u_res = await db.execute(select(UserSettings).where(UserSettings.user_id == ctx.user.id))
+    u_sett = u_res.scalar_one_or_none()
+    filters = dict((u_sett.discovery_filters if u_sett else None) or {})
+    ranking_svc = RankingService(
+        user_skills=u_sett.skills_profile if (u_sett and u_sett.skills_profile) else None,
+        skill_weights=filters.get("skill_weights"),
+        tag_weights=filters.get("tag_weights"),
+    )
+
+    gh = GitHubClient(token=s.github_token if s else None)
+    service = DiscoveryService(db=db, github_client=gh, ranking_service=ranking_svc)
+    result = await service.run_discovery_sync(
+        language=payload.language if payload else None,
+        force_refresh=True,
+        page_limit=2,
+        gsoc_only=payload.gsoc_only if payload else True,
+    )
+    return {
+        "status": "priority_synced",
+        "tier": ctx.organization.billing_tier,
+        "discovered": result.get("total_discovered", 0),
+        "errors": result.get("errors", []),
+        "synced_at": datetime.utcnow().isoformat(),
+    }
 

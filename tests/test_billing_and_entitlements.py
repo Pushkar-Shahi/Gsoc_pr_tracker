@@ -3,6 +3,7 @@ import hmac
 import json
 import sys
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -424,4 +425,293 @@ async def test_require_tier_dependency():
     su_ctx = TenantContext(user=SuperUser(), organization=DummyOrg("starter"), membership=None, role="member")
     res_su = await checker(su_ctx)
     assert res_su == su_ctx
+
+
+@pytest.mark.asyncio
+async def test_upi_config_endpoint():
+    """Verify public Direct UPI config exposes merchant VPA, QR asset path, and AutoPay disclosure."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/billing/upi/config")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["upi_vpa"] == "8116710520@ibl"
+        assert data["payee_name"] == "Pushkar Shahi"
+        assert data["qr_image_url"] == "/phonepe-upi-qr.jpg"
+        assert data["currency"] == "INR"
+        assert data["autopay_available"] is False
+        assert data["plan_pricing"]["pro"]["monthly"] == 100
+        assert data["plan_pricing"]["team"]["monthly"] == 300
+
+
+@pytest.mark.asyncio
+async def test_upi_submit_validation_tenant_isolation_and_duplicates():
+    """Verify Direct UPI UTR submission validation, server-side plan pricing, duplicate guard, and isolation."""
+    org_a = f"org_upi_a_{uuid.uuid4().hex[:8]}"
+    user_a = f"usr_upi_a_{uuid.uuid4().hex[:8]}"
+    token_a = get_test_token(user_id=user_a, username="upi_payer_a", org_id=org_a)
+
+    org_b = f"org_upi_b_{uuid.uuid4().hex[:8]}"
+    user_b = f"usr_upi_b_{uuid.uuid4().hex[:8]}"
+    token_b = get_test_token(user_id=user_b, username="upi_payer_b", org_id=org_b)
+
+    utr_plan = f"4312{uuid.uuid4().int % 100000000:08d}"
+    utr_support = f"5312{uuid.uuid4().int % 100000000:08d}"
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # 1. Invalid UTR rejected
+        bad_utr = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {token_a}"},
+            json={
+                "payment_purpose": "support",
+                "amount_inr": 100,
+                "utr_number": "123",
+            },
+        )
+        assert bad_utr.status_code == 400
+
+        # 2. Plan submission enforces authoritative server price even if tampered
+        plan_resp = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {token_a}"},
+            json={
+                "payment_purpose": "plan",
+                "plan_tier": "pro",
+                "billing_cycle": "monthly",
+                "amount_inr": 1,
+                "utr_number": utr_plan,
+                "payer_upi_id": "payer@okaxis",
+            },
+        )
+        assert plan_resp.status_code == 200
+        plan_data = plan_resp.json()
+        assert plan_data["amount_inr"] == 100
+        assert plan_data["status"] == "pending"
+        assert plan_data["utr_number"] == utr_plan
+
+        # 3. Duplicate UTR rejected with 409 Conflict
+        dup_resp = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {token_b}"},
+            json={
+                "payment_purpose": "support",
+                "amount_inr": 100,
+                "utr_number": utr_plan,
+            },
+        )
+        assert dup_resp.status_code == 409
+
+        # 4. Support submission for tenant B
+        sup_resp = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {token_b}"},
+            json={
+                "payment_purpose": "support",
+                "amount_inr": 250,
+                "utr_number": utr_support,
+                "note": "Thanks for GSoC tracker!",
+            },
+        )
+        assert sup_resp.status_code == 200
+        assert sup_resp.json()["amount_inr"] == 250
+
+        # 5. Tenant isolation check on /my-requests
+        list_a = (
+            await client.get(
+                "/api/v1/billing/upi/my-requests",
+                headers={"Authorization": f"Bearer {token_a}"},
+            )
+        ).json()
+        assert all(item["tenant_id"] == org_a for item in list_a)
+        assert any(item["utr_number"] == utr_plan for item in list_a)
+        assert not any(item["utr_number"] == utr_support for item in list_a)
+
+
+@pytest.mark.asyncio
+async def test_upi_admin_review_enforces_superuser_and_activates_tier():
+    """Verify non-admins get 403 and superuser approval upgrades tenant organization tier."""
+    session_factory = await get_session_factory()
+    org_id = f"org_upi_rev_{uuid.uuid4().hex[:8]}"
+    user_id = f"usr_upi_rev_{uuid.uuid4().hex[:8]}"
+    admin_id = f"usr_admin_rev_{uuid.uuid4().hex[:8]}"
+    admin_org = f"org_admin_rev_{uuid.uuid4().hex[:8]}"
+
+    user_token = get_test_token(user_id=user_id, username="regular_user", org_id=org_id)
+    admin_token = get_test_token(user_id=admin_id, username="admin_reviewer", org_id=admin_org)
+
+    # Ensure admin user exists with is_superuser=True in DB
+    async with session_factory() as session:
+        session.add(
+            User(
+                id=admin_id,
+                github_username=f"admin_rev_{uuid.uuid4().hex[:6]}",
+                name="Admin Reviewer",
+                email="adminrev@example.com",
+                is_superuser=True,
+            )
+        )
+        session.add(Organization(id=admin_org, name="Admin Org", slug=admin_org, billing_tier="pro"))
+        await session.commit()
+
+    utr_upgrade = f"6312{uuid.uuid4().int % 100000000:08d}"
+    utr_reject = f"7312{uuid.uuid4().int % 100000000:08d}"
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # User submits Team Annual UPI request (₹3000)
+        sub_resp = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={
+                "payment_purpose": "plan",
+                "plan_tier": "team",
+                "billing_cycle": "annual",
+                "utr_number": utr_upgrade,
+            },
+        )
+        assert sub_resp.status_code == 200
+        req_id = sub_resp.json()["id"]
+        assert sub_resp.json()["amount_inr"] == 3000
+
+        # Also submit a support request to test rejection
+        rej_sub = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={
+                "payment_purpose": "support",
+                "amount_inr": 49,
+                "utr_number": utr_reject,
+            },
+        )
+        assert rej_sub.status_code == 200
+        rej_id = rej_sub.json()["id"]
+
+        # Regular non-superuser must get 403 Forbidden on admin endpoints
+        forbidden_list = await client.get(
+            "/api/v1/billing/upi/admin/requests",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert forbidden_list.status_code == 403
+
+        forbidden_review = await client.post(
+            f"/api/v1/billing/upi/admin/requests/{req_id}/review",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={"action": "approve"},
+        )
+        assert forbidden_review.status_code == 403
+
+        # Superuser fetches admin queue and checks is_admin flag in subscription
+        sub_summary = (
+            await client.get(
+                "/api/v1/billing/subscription",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+        ).json()
+        assert sub_summary["is_admin"] is True
+
+        admin_list = await client.get(
+            "/api/v1/billing/upi/admin/requests?status_filter=pending",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert admin_list.status_code == 200
+        assert any(r["id"] == req_id for r in admin_list.json())
+
+        # Superuser approves -> Organization upgraded to 'team'
+        approve_resp = await client.post(
+            f"/api/v1/billing/upi/admin/requests/{req_id}/review",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"action": "approve", "admin_note": "Verified on PhonePe"},
+        )
+        assert approve_resp.status_code == 200
+        assert approve_resp.json()["status"] == "approved"
+
+        # Superuser rejects second request
+        reject_resp = await client.post(
+            f"/api/v1/billing/upi/admin/requests/{rej_id}/review",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"action": "reject", "admin_note": "UTR not found in statement"},
+        )
+        assert reject_resp.status_code == 200
+        assert reject_resp.json()["status"] == "rejected"
+
+    # Verify DB shows Organization upgraded to team and active subscription
+    async with session_factory() as session:
+        org_obj = (await session.execute(select(Organization).where(Organization.id == org_id))).scalar_one()
+        assert org_obj.billing_tier == "team"
+        sub_obj = (await session.execute(select(Subscription).where(Subscription.tenant_id == org_id))).scalar_one()
+        assert sub_obj.plan_tier == "team"
+        assert sub_obj.status == "active"
+
+
+@pytest.mark.asyncio
+async def test_reverse_free_trial_15_days_onboarding_and_expiration():
+    """
+    Verify new non-owner onboarding automatically grants a 15-day Pro Reverse Free Trial
+    with unlimited quotas & Pro endpoints, then automatically downgrades to Starter
+    with 5 tasks/mo limit after expiration without resetting on subsequent logins.
+    """
+    unique_email = f"trial_user_{uuid.uuid4().hex[:8]}@example.com"
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # 1. Fresh signup provisions 15-day Pro trial
+        login_resp = await client.post(
+            "/api/v1/auth/google/dev-login",
+            json={"email": unique_email, "name": "Trial Contributor"},
+        )
+        assert login_resp.status_code == 200
+        login_data = login_resp.json()
+        assert login_data["tier"] == "pro"
+        token = login_data["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 2. Verify subscription summary reports 15-day active trial
+        sub_resp = await client.get("/api/v1/billing/subscription", headers=headers)
+        assert sub_resp.status_code == 200
+        sub_data = sub_resp.json()
+        assert sub_data["tier"] == "pro"
+        assert sub_data["status"] == "trialing"
+        assert sub_data["trial_active"] is True
+        assert sub_data["trial_expired"] is False
+        assert sub_data["trial_total_days"] == 15
+        assert sub_data["trial_days_remaining"] == 15
+        assert sub_data["monthly_task_limit"] is None
+
+        # 3. Pro-gated feature succeeds during active trial
+        pro_check = await client.get("/api/v1/webhooks/subscriptions", headers=headers)
+        assert pro_check.status_code == 200
+
+        # 4. Expire trial in DB (simulate Day 16)
+        session_factory = await get_session_factory()
+        async with session_factory() as session:
+            user_obj = (
+                await session.execute(select(User).where(User.email == unique_email))
+            ).scalar_one()
+            sub_obj = (
+                await session.execute(select(Subscription).where(Subscription.user_id == user_obj.id))
+            ).scalar_one()
+            sub_obj.current_period_end = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
+            await session.commit()
+
+        # 5. Pro endpoint immediately downgrades & returns 403 once trial expires
+        expired_pro_check = await client.get("/api/v1/webhooks/subscriptions", headers=headers)
+        assert expired_pro_check.status_code == 403
+
+        # 6. Subscription summary now reflects Starter 5-task limit & expired trial banner state
+        expired_sub = (await client.get("/api/v1/billing/subscription", headers=headers)).json()
+        assert expired_sub["tier"] == "starter"
+        assert expired_sub["status"] == "canceled"
+        assert expired_sub["trial_active"] is False
+        assert expired_sub["trial_expired"] is True
+        assert expired_sub["trial_days_remaining"] == 0
+        assert expired_sub["monthly_task_limit"] == 5
+
+        # 7. Signing in again must NOT grant a second free trial
+        relogin_resp = await client.post(
+            "/api/v1/auth/google/dev-login",
+            json={"email": unique_email, "name": "Trial Contributor"},
+        )
+        assert relogin_resp.status_code == 200
+        assert relogin_resp.json()["tier"] == "starter"
 

@@ -16,6 +16,7 @@ from app.schemas.schemas import (
     RunnerRegisterRequest,
     RunnerRegisterResponse,
     RunnerHeartbeatRequest,
+    RunnerJobCreateRequest,
     RunnerJobRead,
     RunnerJobCompleteRequest,
     RunnerRead,
@@ -24,6 +25,17 @@ from app.schemas.schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/runners", tags=["runners"])
+
+TIER_JOB_PRIORITY = {
+    "enterprise": 40,
+    "team": 30,
+    "pro": 20,
+    "starter": 10,
+}
+
+
+def resolve_runner_priority(billing_tier: Optional[str]) -> int:
+    return TIER_JOB_PRIORITY.get((billing_tier or "starter").lower().strip(), 10)
 
 
 def _extract_bearer_token(request: Request) -> str:
@@ -170,14 +182,14 @@ async def poll_runner_jobs(
 
     runner.last_heartbeat_at = datetime.utcnow()
 
-    # Query oldest queued job strictly scoped to runner's tenant
+    # Query highest-priority oldest queued job strictly scoped to runner's tenant
     job_stmt = (
         select(RunnerJob)
         .where(
             RunnerJob.tenant_id == runner.tenant_id,
             RunnerJob.status == "queued"
         )
-        .order_by(RunnerJob.created_at.asc())
+        .order_by(RunnerJob.priority.desc(), RunnerJob.created_at.asc())
         .limit(1)
     )
     job_res = await db.execute(job_stmt)
@@ -283,6 +295,47 @@ async def delete_runner(
 
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/jobs", response_model=RunnerJobRead, status_code=status.HTTP_201_CREATED)
+async def enqueue_runner_job(
+    payload: RunnerJobCreateRequest,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Enqueues a runner job stamped with tier-based queue priority (Team > Pro > Starter)."""
+    priority = resolve_runner_priority(getattr(ctx.organization, "billing_tier", "starter"))
+    job = RunnerJob(
+        id=str(uuid.uuid4()),
+        tenant_id=ctx.organization.id,
+        task_id=payload.task_id,
+        job_type=payload.job_type.strip() or "diagnostic",
+        status="queued",
+        priority=priority,
+        payload=dict(payload.payload or {}),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+    return RunnerJobRead.model_validate(job)
+
+
+@router.get("/jobs", response_model=List[RunnerJobRead])
+async def list_runner_jobs(
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lists recent runner jobs for the requesting organization, ordered by priority and recency."""
+    stmt = (
+        select(RunnerJob)
+        .where(RunnerJob.tenant_id == ctx.organization.id)
+        .order_by(RunnerJob.created_at.desc())
+        .limit(50)
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    return [RunnerJobRead.model_validate(j) for j in rows]
 
 
 @router.get("", response_model=List[RunnerRead])

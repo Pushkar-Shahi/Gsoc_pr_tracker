@@ -8,10 +8,12 @@ to in-memory asyncio.Queue when offline or unconfigured.
 
 import abc
 import asyncio
+import heapq
+import itertools
 import json
 import logging
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -37,40 +39,50 @@ class QueueBackend(abc.ABC):
 
 class InMemoryAsyncQueueBackend(QueueBackend):
     """
-    In-memory async FIFO queue implementation.
-    Zero external dependencies, ideal for single-node deployments, local execution, and fallback.
+    In-memory async priority+FIFO queue implementation.
+    Zero external dependencies, preserving strict FIFO for equal priority.
     """
 
     def __init__(self):
-        self._queues: Dict[str, asyncio.Queue] = {}
+        self._heaps: Dict[str, List[Tuple[int, int, Dict[str, Any]]]] = {}
+        self._seq = itertools.count()
         self._lock = asyncio.Lock()
 
-    def _get_queue(self, queue_name: str) -> asyncio.Queue:
-        if queue_name not in self._queues:
-            self._queues[queue_name] = asyncio.Queue()
-        return self._queues[queue_name]
+    def _get_heap(self, queue_name: str) -> List[Tuple[int, int, Dict[str, Any]]]:
+        if queue_name not in self._heaps:
+            self._heaps[queue_name] = []
+        return self._heaps[queue_name]
 
     async def enqueue(self, queue_name: str, payload: Dict[str, Any]) -> str:
         job_id = payload.get("job_id") or str(uuid.uuid4())
+        priority = int(payload.get("priority", 0) or 0)
         job_payload = {**payload, "job_id": job_id}
-        queue = self._get_queue(queue_name)
-        await queue.put(job_payload)
+        async with self._lock:
+            heap = self._get_heap(queue_name)
+            heapq.heappush(heap, (-priority, next(self._seq), job_payload))
         return job_id
 
     async def dequeue(self, queue_name: str, timeout: float = 0.0) -> Optional[Dict[str, Any]]:
-        queue = self._get_queue(queue_name)
-        if queue.empty():
-            if timeout <= 0:
-                return None
-            try:
-                return await asyncio.wait_for(queue.get(), timeout=timeout)
-            except asyncio.TimeoutError:
-                return None
-        return queue.get_nowait()
+        async with self._lock:
+            heap = self._get_heap(queue_name)
+            if heap:
+                _, _, payload = heapq.heappop(heap)
+                return payload
+        if timeout <= 0:
+            return None
+        deadline = asyncio.get_event_loop().time() + timeout
+        while asyncio.get_event_loop().time() < deadline:
+            await asyncio.sleep(min(0.05, timeout))
+            async with self._lock:
+                heap = self._get_heap(queue_name)
+                if heap:
+                    _, _, payload = heapq.heappop(heap)
+                    return payload
+        return None
 
     async def get_length(self, queue_name: str) -> int:
-        queue = self._get_queue(queue_name)
-        return queue.qsize()
+        async with self._lock:
+            return len(self._get_heap(queue_name))
 
 
 class RedisQueueBackend(QueueBackend):

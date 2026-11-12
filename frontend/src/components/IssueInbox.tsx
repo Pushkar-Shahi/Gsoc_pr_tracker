@@ -968,8 +968,9 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
               {/* Top Badges & Suitability Gauge */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 dark:bg-white/5 dark:border-white/10 dark:text-white">
-                    {issue.repository?.full_name || issue.repository?.name || 'public/repo'}
+                  <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 dark:bg-white/5 dark:border-white/10 dark:text-white inline-flex items-center gap-1.5">
+                    {issue.repository?.is_private && <Lock className="w-3 h-3 text-purple-500 dark:text-purple-400 shrink-0" />}
+                    <span>{issue.repository?.full_name || issue.repository?.name || 'public/repo'}</span>
                   </span>
 
                   {issue.repository?.primary_language && (

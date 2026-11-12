@@ -1,6 +1,7 @@
 import { 
   Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, Runner, RunnerJob,
   BillingPlan, SubscriptionInfo, CheckoutSessionResponse, PortalSessionResponse,
+  UpiConfig, UpiPaymentRequest, WebhookSubscription, PrivateRepositorySummary, TeamVelocityReport,
   BountyStats, SSOConfig, SSOTestResult, Organization, OrganizationMember
 } from './types';
 import { getWebsiteInternalSchedule, recordManualCronScan, formatCountdownSec, TWO_HOURS_SEC } from './utils/cronTimer';
@@ -1709,7 +1710,7 @@ export async function fetchSettings(): Promise<PlatformSettings> {
   };
 }
 
-export async function updateSettings(settings: Partial<PlatformSettings> & { github_token?: string }): Promise<PlatformSettings> {
+export async function updateSettings(settings: Partial<PlatformSettings> & Record<string, any>): Promise<PlatformSettings> {
   if (settings.github_token) {
     localStorage.setItem('issuetopr_github_token', settings.github_token);
   }
@@ -1717,15 +1718,22 @@ export async function updateSettings(settings: Partial<PlatformSettings> & { git
     localStorage.setItem('issuetopr_gh_user', settings.github_username);
   }
 
+  let res: Response | null = null;
   try {
-    const res = await authedFetch(`${API_BASE}/settings`, {
+    res = await authedFetch(`${API_BASE}/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),
     });
-    if (res.ok) return await res.json();
   } catch {
-    // Hosted Vercel fallback
+    // Offline/static fallback
+  }
+
+  if (res) {
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || `Failed to save settings (${res.status})`);
   }
 
   const updated: PlatformSettings = {
@@ -2425,6 +2433,89 @@ export async function simulateTierChange(tier: 'starter' | 'pro' | 'team'): Prom
   return await res.json();
 }
 
+// Direct UPI Payment & Admin Approval API
+export async function fetchUpiConfig(): Promise<UpiConfig> {
+  try {
+    const res = await authedFetch(`${API_BASE}/billing/upi/config`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchUpiConfig error:", err);
+  }
+  return {
+    upi_vpa: '8116710520@ibl',
+    payee_name: 'Pushkar Shahi',
+    qr_image_url: '/phonepe-upi-qr.jpg',
+    currency: 'INR',
+    currency_symbol: '₹',
+    suggested_support_amounts: [49, 100, 250, 500],
+    autopay_available: false,
+    autopay_note:
+      'Direct personal UPI supports instant 0%-fee one-time transfers. Automated monthly UPI AutoPay mandates require a merchant payment gateway (coming soon).',
+  };
+}
+
+export async function submitUpiPayment(payload: {
+  payment_purpose: 'plan' | 'support';
+  plan_tier?: 'pro' | 'team';
+  billing_cycle?: 'monthly' | 'annual' | 'one_time';
+  amount_inr?: number;
+  utr_number: string;
+  payer_upi_id?: string;
+  note?: string;
+}): Promise<UpiPaymentRequest> {
+  const res = await authedFetch(`${API_BASE}/billing/upi/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to submit UPI payment reference');
+  }
+  return await res.json();
+}
+
+export async function fetchMyUpiRequests(): Promise<UpiPaymentRequest[]> {
+  try {
+    const res = await authedFetch(`${API_BASE}/billing/upi/my-requests`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchMyUpiRequests error:", err);
+  }
+  return [];
+}
+
+export async function fetchAdminUpiRequests(statusFilter?: string): Promise<UpiPaymentRequest[]> {
+  const qs = statusFilter && statusFilter !== 'all' ? `?status_filter=${encodeURIComponent(statusFilter)}` : '';
+  const res = await authedFetch(`${API_BASE}/billing/upi/admin/requests${qs}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to fetch admin UPI verification queue');
+  }
+  return await res.json();
+}
+
+export async function reviewAdminUpiRequest(
+  requestId: string,
+  action: 'approve' | 'reject',
+  adminNote?: string
+): Promise<UpiPaymentRequest> {
+  const res = await authedFetch(`${API_BASE}/billing/upi/admin/requests/${encodeURIComponent(requestId)}/review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, admin_note: adminNote }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to review UPI payment submission');
+  }
+  return await res.json();
+}
+
 // ==========================================
 // Phase 4: Bounty Platform Integrations & Enterprise SSO
 // ==========================================
@@ -2651,7 +2742,186 @@ export async function addOrganizationMember(orgId: string, usernameOrEmail: stri
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to add member to organization');
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to add member to organization');
+  }
+  return await res.json();
+}
+
+export async function updateOrganizationMemberRole(orgId: string, memberId: string, role: string): Promise<OrganizationMember> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/members/${memberId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to update member role');
+  }
+  return await res.json();
+}
+
+export async function removeOrganizationMember(orgId: string, memberId: string): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/members/${memberId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to remove member');
+  }
+}
+
+export async function fetchOrgPrivateRepos(orgId: string): Promise<PrivateRepositorySummary[]> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/private-repos`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    const error = new Error(msg || 'Failed to fetch private repositories');
+    (error as any).code = err.detail?.code;
+    throw error;
+  }
+  return await res.json();
+}
+
+export async function syncOrgPrivateRepos(
+  orgId: string,
+  payload?: { repo_full_name?: string; org_name?: string }
+): Promise<{ status: string; synced_repos: number; synced_issues: number }> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/private-repos/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    const error = new Error(msg || 'Failed to sync private repositories');
+    (error as any).code = err.detail?.code;
+    throw error;
+  }
+  return await res.json();
+}
+
+export async function fetchTeamVelocity(orgId: string): Promise<TeamVelocityReport> {
+  const res = await authedFetch(`${API_BASE}/organizations/${orgId}/velocity`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    const error = new Error(msg || 'Failed to load team PR velocity');
+    (error as any).code = err.detail?.code;
+    throw error;
+  }
+  return await res.json();
+}
+
+// ==============================================================================
+// Pro / Team Discovery, Ranking Matrix, Priority Runner Queue & Webhooks
+// ==============================================================================
+
+export async function updateRankingMatrix(
+  skillWeights: Record<string, number>,
+  tagWeights: Record<string, number>
+): Promise<{ status: string; skill_weights: Record<string, number>; tag_weights: Record<string, number> }> {
+  const res = await authedFetch(`${API_BASE}/settings/ranking-matrix`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skill_weights: skillWeights, tag_weights: tagWeights }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to save custom skill & tag weighting matrix');
+  }
+  return await res.json();
+}
+
+export async function rescoreIssues(): Promise<{ status: string; rescored_count: number }> {
+  const res = await authedFetch(`${API_BASE}/issues/rescore`, { method: 'POST' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to re-rank issues');
+  }
+  return await res.json();
+}
+
+export async function triggerPrioritySync(language?: string, gsocOnly: boolean = true): Promise<any> {
+  const res = await authedFetch(`${API_BASE}/discovery/priority-sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ language: language || null, gsoc_only: gsocOnly }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to run priority discovery sync');
+  }
+  return await res.json();
+}
+
+export async function fetchWebhookSubscriptions(): Promise<WebhookSubscription[]> {
+  const res = await authedFetch(`${API_BASE}/webhooks/subscriptions`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    const error = new Error(msg || 'Failed to load webhooks');
+    (error as any).code = err.detail?.code;
+    throw error;
+  }
+  return await res.json();
+}
+
+export async function createWebhookSubscription(repoFullName: string): Promise<WebhookSubscription> {
+  const res = await authedFetch(`${API_BASE}/webhooks/subscriptions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ repo_full_name: repoFullName }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to register webhook subscription');
+  }
+  return await res.json();
+}
+
+export async function deleteWebhookSubscription(subId: string): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/webhooks/subscriptions/${encodeURIComponent(subId)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to remove webhook subscription');
+  }
+}
+
+export async function fetchRunnerJobs(): Promise<RunnerJob[]> {
+  try {
+    const res = await authedFetch(`${API_BASE}/runners/jobs`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {}
+  return [];
+}
+
+export async function enqueueRunnerJob(
+  jobType: string = 'diagnostic',
+  payload: Record<string, any> = {},
+  taskId?: string
+): Promise<RunnerJob> {
+  const res = await authedFetch(`${API_BASE}/runners/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job_type: jobType, payload, task_id: taskId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === 'string' ? err.detail : err.detail?.message;
+    throw new Error(msg || 'Failed to dispatch runner job');
   }
   return await res.json();
 }

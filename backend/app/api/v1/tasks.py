@@ -20,6 +20,7 @@ from app.services.antigravity_handoff import AntigravityHandoffService
 from app.services.validation_service import ValidationService
 from app.services.pr_publisher import PRPublisher
 from app.services.github_client import GitHubClient
+from app.services.settings_resolver import SettingsResolver
 from app.core.entitlements import enforce_task_creation_quota
 from app.services.billing_service import BillingService
 
@@ -52,6 +53,35 @@ async def get_github_client(db: AsyncSession) -> GitHubClient:
     settings_obj = res.scalar_one_or_none()
     token = settings_obj.github_token if settings_obj else None
     return GitHubClient(token=token)
+
+
+async def _analyze_issue_with_byok(
+    db: AsyncSession,
+    ctx: Any,
+    gh: GitHubClient,
+    issue: Issue,
+    body_text: str,
+    labels_val: Any,
+    assignees_val: Any,
+) -> dict:
+    """Resolves user/org BYOK AI key & triage policy and runs IssueAnalyzer."""
+    ai_cfg = await SettingsResolver.resolve_effective_ai_config(db=db, ctx=ctx)
+    analyzer = IssueAnalyzer(github_client=gh)
+    return await analyzer.analyze_issue(
+        owner=issue.repository.owner,
+        repo=issue.repository.name,
+        issue_number=issue.issue_number,
+        title=issue.title,
+        body=body_text or "",
+        labels=labels_val or [],
+        language=issue.repository.primary_language,
+        assignees=assignees_val or [],
+        ai_api_key=ai_cfg.get("api_key"),
+        ai_provider=ai_cfg.get("provider"),
+        custom_endpoint=ai_cfg.get("custom_endpoint"),
+        ai_key_source=ai_cfg.get("key_source"),
+        triage_policy=ai_cfg.get("triage_policy"),
+    )
 
 @router.get("", response_model=List[TaskRead])
 async def list_tasks(
@@ -132,16 +162,14 @@ async def select_issue(
 
     if existing_task:
         if not existing_task.implementation_brief or "executive_summary" not in existing_task.implementation_brief:
-            analyzer = IssueAnalyzer(github_client=gh)
-            brief = await analyzer.analyze_issue(
-                owner=issue.repository.owner,
-                repo=issue.repository.name,
-                issue_number=issue.issue_number,
-                title=issue.title,
-                body=issue.body or "",
-                labels=issue.labels or [],
-                language=issue.repository.primary_language,
-                assignees=issue.assignees or []
+            brief = await _analyze_issue_with_byok(
+                db=db,
+                ctx=ctx,
+                gh=gh,
+                issue=issue,
+                body_text=issue.body or "",
+                labels_val=issue.labels or [],
+                assignees_val=issue.assignees or [],
             )
             existing_task.implementation_brief = brief
             await db.commit()
@@ -186,17 +214,15 @@ async def select_issue(
     await db.flush()
     await BillingService.record_task_created(ctx.organization.id, db)
 
-    # 5. Run automated deep intelligence & policy inspection
-    analyzer = IssueAnalyzer(github_client=gh)
-    brief = await analyzer.analyze_issue(
-        owner=issue.repository.owner,
-        repo=issue.repository.name,
-        issue_number=issue.issue_number,
-        title=issue.title,
-        body=(fresh_issue.get("body") if fresh_issue else issue.body) or "",
-        labels=(fresh_issue.get("labels") if fresh_issue else issue.labels) or [],
-        language=issue.repository.primary_language,
-        assignees=(fresh_issue.get("assignees") if fresh_issue else issue.assignees) or []
+    # 5. Run automated deep intelligence & policy inspection (BYOK AI + Triage Policy)
+    brief = await _analyze_issue_with_byok(
+        db=db,
+        ctx=ctx,
+        gh=gh,
+        issue=issue,
+        body_text=(fresh_issue.get("body") if fresh_issue else issue.body) or "",
+        labels_val=(fresh_issue.get("labels") if fresh_issue else issue.labels) or [],
+        assignees_val=(fresh_issue.get("assignees") if fresh_issue else issue.assignees) or [],
     )
 
     task.implementation_brief = brief
@@ -509,16 +535,14 @@ async def generate_task_briefing(
         raise HTTPException(status_code=404, detail="Task not found")
 
     gh = await get_github_client(db)
-    analyzer = IssueAnalyzer(github_client=gh)
-    brief = await analyzer.analyze_issue(
-        owner=task.issue.repository.owner,
-        repo=task.issue.repository.name,
-        issue_number=task.issue.issue_number,
-        title=task.issue.title,
-        body=task.issue.body or "",
-        labels=task.issue.labels or [],
-        language=task.issue.repository.primary_language,
-        assignees=task.issue.assignees or []
+    brief = await _analyze_issue_with_byok(
+        db=db,
+        ctx=ctx,
+        gh=gh,
+        issue=task.issue,
+        body_text=task.issue.body or "",
+        labels_val=task.issue.labels or [],
+        assignees_val=task.issue.assignees or [],
     )
 
     task.implementation_brief = brief

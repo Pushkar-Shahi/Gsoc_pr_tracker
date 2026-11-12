@@ -1,18 +1,25 @@
 import hashlib
 import hmac
 import logging
+import math
+import re
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, Tuple, List
 
 import stripe
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.models import Organization, User, BillingCustomer, Subscription, UsageMeter
+from app.models.models import (
+    Organization, User, BillingCustomer, Subscription, UsageMeter,
+    UpiPaymentRequest, AuditLog
+)
 
 logger = logging.getLogger(__name__)
+
+UPI_UTR_PATTERN = re.compile(r"^[A-Z0-9]{10,35}$")
 
 # Initialize Stripe API Key if configured
 if settings.STRIPE_SECRET_KEY and not settings.STRIPE_SECRET_KEY.startswith("sk_test_mock"):
@@ -38,14 +45,14 @@ PLANS_CATALOG = [
             {"name": "Standard discovery sync (2-hr cycle)", "included": True},
             {"name": "Bring-Your-Own-Key (BYOK) AI tokens", "included": True},
             {"name": "Real-time webhook issue alerts", "included": False},
-            {"name": "High-value bounty tracker (Algora/Polar)", "included": False},
+            {"name": "Priority GSoC 2026 org filters & PR guard", "included": False},
             {"name": "Private repositories & orgs", "included": False},
         ],
     },
     {
         "id": "pro",
         "name": "Pro Developer",
-        "description": "Unconstrained task automation, priority discovery, and bounty tracking for high-velocity builders.",
+        "description": "Unconstrained task automation and priority GSoC issue discovery for high-velocity contributors.",
         "currency": "INR",
         "currency_symbol": "₹",
         "price_monthly": 100,
@@ -59,7 +66,7 @@ PLANS_CATALOG = [
             {"name": "Local hybrid runner execution", "included": True},
             {"name": "Diff secret & credential scanning", "included": True},
             {"name": "Priority real-time discovery & webhooks", "included": True, "highlight": True},
-            {"name": "High-value bounty tracker (Algora/Polar)", "included": True, "highlight": True},
+            {"name": "Real-time GSoC PR-free verification", "included": True, "highlight": True},
             {"name": "Custom skill & tag weighting matrix", "included": True},
             {"name": "Priority runner job queue", "included": True},
             {"name": "Private repositories & orgs", "included": False},
@@ -420,16 +427,101 @@ class BillingService:
         return meter
 
     @staticmethod
+    async def provision_reverse_free_trial(
+        tenant_id: str,
+        user_id: Optional[str],
+        db: AsyncSession,
+        trial_days: Optional[int] = None,
+    ) -> Optional[Subscription]:
+        """
+        Provisions a 15-day Pro Reverse Free Trial for newly onboarded workspaces
+        without requiring an upfront credit card or UPI mandate.
+        """
+        days = settings.FREE_TRIAL_DAYS if trial_days is None else int(trial_days)
+        if days <= 0:
+            return None
+
+        existing_sub = (
+            await db.execute(select(Subscription).where(Subscription.tenant_id == tenant_id))
+        ).scalar_one_or_none()
+        if existing_sub:
+            return existing_sub
+
+        org = (
+            await db.execute(select(Organization).where(Organization.id == tenant_id))
+        ).scalar_one_or_none()
+        if org:
+            org.billing_tier = "pro"
+
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        trial_sub = Subscription(
+            id=str(uuid.uuid4()),
+            tenant_id=tenant_id,
+            user_id=user_id,
+            stripe_subscription_id=f"trial_{tenant_id}",
+            stripe_customer_id=f"trial_cust_{tenant_id}",
+            plan_tier="pro",
+            status="trialing",
+            current_period_start=now_utc,
+            current_period_end=now_utc + timedelta(days=days),
+            cancel_at_period_end=False,
+        )
+        db.add(trial_sub)
+        await db.flush()
+        return trial_sub
+
+    @staticmethod
+    async def sync_trial_expiration(
+        tenant_id: str,
+        db: AsyncSession,
+    ) -> Tuple[Optional[Organization], Optional[Subscription]]:
+        """
+        Checks if a Reverse Free Trial has passed its deadline and automatically
+        downgrades the organization to Community Starter limits if unpaid.
+        """
+        org = (
+            await db.execute(select(Organization).where(Organization.id == tenant_id))
+        ).scalar_one_or_none()
+        sub = (
+            await db.execute(select(Subscription).where(Subscription.tenant_id == tenant_id))
+        ).scalar_one_or_none()
+
+        if sub and sub.status == "trialing" and sub.current_period_end:
+            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            end_utc = (
+                sub.current_period_end.replace(tzinfo=None)
+                if sub.current_period_end.tzinfo
+                else sub.current_period_end
+            )
+            if now_utc >= end_utc:
+                sub.status = "canceled"
+                sub.plan_tier = "starter"
+                sub.updated_at = now_utc
+                if org:
+                    org.billing_tier = "starter"
+                db.add(AuditLog(
+                    id=str(uuid.uuid4()),
+                    tenant_id=tenant_id,
+                    user_id=sub.user_id,
+                    action="FREE_TRIAL_EXPIRED",
+                    actor="SYSTEM",
+                    details={"downgraded_to": "starter", "expired_at": now_utc.isoformat()},
+                ))
+                await db.commit()
+                await db.refresh(sub)
+                if org:
+                    await db.refresh(org)
+
+        return org, sub
+
+    @staticmethod
     async def get_monthly_task_usage(tenant_id: str, db: AsyncSession) -> Tuple[int, Optional[int]]:
         """Returns (usage_count, limit_count) for the tenant in the current calendar month."""
         if getattr(settings, "FREE_BETA_MODE", False):
             meter = await BillingService.get_or_create_task_usage_meter(tenant_id, db)
             return meter.usage_count, None  # Unlimited during Free Beta
 
-        # Check org tier
-        org_stmt = select(Organization).where(Organization.id == tenant_id)
-        org_res = await db.execute(org_stmt)
-        org = org_res.scalar_one_or_none()
+        org, _ = await BillingService.sync_trial_expiration(tenant_id, db)
         tier = org.billing_tier if org else "starter"
 
         meter = await BillingService.get_or_create_task_usage_meter(tenant_id, db)
@@ -449,18 +541,50 @@ class BillingService:
         return meter.usage_count
 
     @staticmethod
-    async def get_subscription_summary(tenant_id: str, db: AsyncSession) -> Dict[str, Any]:
+    async def get_subscription_summary(
+        tenant_id: str,
+        db: AsyncSession,
+        is_admin: bool = False,
+    ) -> Dict[str, Any]:
         """Provides a complete snapshot of subscription, current tier, and month-to-date usage."""
-        org_stmt = select(Organization).where(Organization.id == tenant_id)
-        org_res = await db.execute(org_stmt)
-        org = org_res.scalar_one_or_none()
+        org, sub = await BillingService.sync_trial_expiration(tenant_id, db)
         effective_tier = org.billing_tier if org else ("pro" if getattr(settings, "FREE_BETA_MODE", False) else "starter")
 
-        sub_stmt = select(Subscription).where(Subscription.tenant_id == tenant_id)
-        sub_res = await db.execute(sub_stmt)
-        sub = sub_res.scalar_one_or_none()
-
         usage_count, limit_count = await BillingService.get_monthly_task_usage(tenant_id, db)
+
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        is_trial_sub = bool(sub and (sub.stripe_subscription_id or "").startswith("trial_"))
+        trial_active = bool(is_trial_sub and sub.status == "trialing" and effective_tier in ("pro", "team", "enterprise"))
+        trial_expired = bool(is_trial_sub and sub.status == "canceled" and effective_tier == "starter")
+        trial_days_remaining = 0
+        if trial_active and sub and sub.current_period_end:
+            end_utc = (
+                sub.current_period_end.replace(tzinfo=None)
+                if sub.current_period_end.tzinfo
+                else sub.current_period_end
+            )
+            remaining_sec = max(0.0, (end_utc - now_utc).total_seconds())
+            trial_days_remaining = math.ceil(remaining_sec / 86400.0) if remaining_sec > 0 else 0
+
+        pending_upi_stmt = select(func.count(UpiPaymentRequest.id)).where(
+            UpiPaymentRequest.tenant_id == tenant_id,
+            UpiPaymentRequest.status == "pending"
+        )
+        pending_upi_count = (await db.execute(pending_upi_stmt)).scalar() or 0
+
+        pending_admin_upi_count = 0
+        if is_admin:
+            pending_admin_stmt = select(func.count(UpiPaymentRequest.id)).where(
+                UpiPaymentRequest.status == "pending"
+            )
+            pending_admin_upi_count = (await db.execute(pending_admin_stmt)).scalar() or 0
+
+        if getattr(settings, "FREE_BETA_MODE", False):
+            plan_display = "Early Adopter Founder Plan"
+        elif trial_active:
+            plan_display = f"Pro Developer ({settings.FREE_TRIAL_DAYS}-Day Free Trial)"
+        else:
+            plan_display = f"{effective_tier.capitalize()} Plan"
 
         return {
             "tier": effective_tier,
@@ -471,5 +595,265 @@ class BillingService:
             "monthly_task_limit": limit_count,
             "is_simulation": is_simulation_mode(),
             "free_beta_mode": getattr(settings, "FREE_BETA_MODE", False),
-            "plan_display_name": "Early Adopter Founder Plan" if getattr(settings, "FREE_BETA_MODE", False) else f"{effective_tier.capitalize()} Plan",
+            "plan_display_name": plan_display,
+            "is_admin": is_admin,
+            "pending_upi_count": int(pending_upi_count),
+            "pending_admin_upi_count": int(pending_admin_upi_count),
+            "trial_active": trial_active,
+            "trial_expired": trial_expired,
+            "trial_days_remaining": trial_days_remaining,
+            "trial_total_days": settings.FREE_TRIAL_DAYS,
+            "trial_ends_at": sub.current_period_end.isoformat() if (is_trial_sub and sub and sub.current_period_end) else None,
         }
+
+    # ==========================================
+    # Direct UPI Payments & Verification Queue
+    # ==========================================
+
+    @staticmethod
+    def get_upi_config() -> Dict[str, Any]:
+        """Returns public Direct UPI payment metadata for QR & intent links."""
+        plan_pricing = {
+            p["id"]: {
+                "monthly": p["price_monthly"],
+                "annual": p["price_annual"],
+                "name": p["name"],
+            }
+            for p in PLANS_CATALOG
+            if p["id"] in ("pro", "team")
+        }
+        return {
+            "upi_vpa": settings.UPI_VPA,
+            "payee_name": settings.UPI_PAYEE_NAME,
+            "qr_image_url": settings.UPI_QR_IMAGE_PATH,
+            "currency": "INR",
+            "currency_symbol": "₹",
+            "suggested_support_amounts": [49, 100, 250, 500],
+            "autopay_available": False,
+            "autopay_note": (
+                "Direct personal UPI supports instant 0%-fee one-time transfers. "
+                "Automated monthly UPI AutoPay mandates require a merchant payment gateway (planned for later)."
+            ),
+            "plan_pricing": plan_pricing,
+        }
+
+    @staticmethod
+    def serialize_upi_request(req: UpiPaymentRequest) -> Dict[str, Any]:
+        return {
+            "id": req.id,
+            "tenant_id": req.tenant_id,
+            "user_id": req.user_id,
+            "payer_username": req.payer_username,
+            "payer_email": req.payer_email,
+            "payment_purpose": req.payment_purpose,
+            "plan_tier": req.plan_tier,
+            "billing_cycle": req.billing_cycle,
+            "amount_inr": req.amount_inr,
+            "upi_vpa": req.upi_vpa,
+            "utr_number": req.utr_number,
+            "payer_upi_id": req.payer_upi_id,
+            "note": req.note,
+            "status": req.status,
+            "admin_note": req.admin_note,
+            "reviewed_by_user_id": req.reviewed_by_user_id,
+            "reviewed_at": req.reviewed_at.isoformat() if req.reviewed_at else None,
+            "created_at": req.created_at.isoformat() if req.created_at else None,
+            "updated_at": req.updated_at.isoformat() if req.updated_at else None,
+        }
+
+    @staticmethod
+    async def submit_upi_payment_request(
+        tenant_id: str,
+        user: User,
+        payment_purpose: str,
+        utr_number: str,
+        plan_tier: Optional[str] = None,
+        billing_cycle: Optional[str] = None,
+        amount_inr: Optional[int] = None,
+        payer_upi_id: Optional[str] = None,
+        note: Optional[str] = None,
+        db: AsyncSession = None,
+    ) -> Dict[str, Any]:
+        """Validates and logs a user's Direct UPI payment submission for manual verification."""
+        purpose = (payment_purpose or "").strip().lower()
+        if purpose not in ("plan", "support"):
+            raise ValueError("Invalid payment purpose. Expected 'plan' or 'support'.")
+
+        normalized_utr = re.sub(r"\s+", "", (utr_number or "")).upper()
+        if not UPI_UTR_PATTERN.match(normalized_utr):
+            raise ValueError(
+                "Please enter a valid 12-digit UTR or UPI Transaction Reference ID (10-35 alphanumeric characters)."
+            )
+
+        resolved_tier: Optional[str] = None
+        resolved_cycle: str = "one_time"
+        resolved_amount: int
+
+        if purpose == "plan":
+            resolved_tier = (plan_tier or "").strip().lower()
+            if resolved_tier not in ("pro", "team"):
+                raise ValueError("Invalid plan tier. Choose 'pro' or 'team'.")
+            resolved_cycle = (billing_cycle or "monthly").strip().lower()
+            if resolved_cycle not in ("monthly", "annual"):
+                raise ValueError("Invalid billing cycle. Choose 'monthly' or 'annual'.")
+            plan_obj = next((p for p in PLANS_CATALOG if p["id"] == resolved_tier), None)
+            if not plan_obj:
+                raise ValueError("Requested plan not found.")
+            resolved_amount = int(
+                plan_obj["price_annual"] if resolved_cycle == "annual" else plan_obj["price_monthly"]
+            )
+        else:
+            if amount_inr is None or int(amount_inr) < 1 or int(amount_inr) > 100000:
+                raise ValueError("Support amount must be between ₹1 and ₹1,00,000.")
+            resolved_amount = int(amount_inr)
+
+        dup_stmt = select(UpiPaymentRequest).where(
+            UpiPaymentRequest.utr_number == normalized_utr,
+            UpiPaymentRequest.status.in_(["pending", "approved"])
+        )
+        dup_existing = (await db.execute(dup_stmt)).scalar_one_or_none()
+        if dup_existing:
+            raise FileExistsError(
+                f"UTR/Reference ID '{normalized_utr}' has already been submitted ({dup_existing.status})."
+            )
+
+        req = UpiPaymentRequest(
+            id=str(uuid.uuid4()),
+            tenant_id=tenant_id,
+            user_id=user.id,
+            payer_username=user.github_username or user.name or "contributor",
+            payer_email=user.email,
+            payment_purpose=purpose,
+            plan_tier=resolved_tier,
+            billing_cycle=resolved_cycle,
+            amount_inr=resolved_amount,
+            upi_vpa=settings.UPI_VPA,
+            utr_number=normalized_utr,
+            payer_upi_id=(payer_upi_id or "").strip()[:255] or None,
+            note=(note or "").strip()[:512] or None,
+            status="pending",
+        )
+        db.add(req)
+
+        audit = AuditLog(
+            id=str(uuid.uuid4()),
+            tenant_id=tenant_id,
+            user_id=user.id,
+            action="UPI_PAYMENT_SUBMITTED",
+            actor=user.github_username or "USER",
+            details={
+                "request_id": req.id,
+                "purpose": purpose,
+                "plan_tier": resolved_tier,
+                "billing_cycle": resolved_cycle,
+                "amount_inr": resolved_amount,
+                "utr_number": normalized_utr,
+                "upi_vpa": settings.UPI_VPA,
+            },
+        )
+        db.add(audit)
+        await db.commit()
+        await db.refresh(req)
+        return BillingService.serialize_upi_request(req)
+
+    @staticmethod
+    async def list_tenant_upi_requests(tenant_id: str, db: AsyncSession) -> List[Dict[str, Any]]:
+        stmt = (
+            select(UpiPaymentRequest)
+            .where(UpiPaymentRequest.tenant_id == tenant_id)
+            .order_by(desc(UpiPaymentRequest.created_at))
+            .limit(50)
+        )
+        rows = (await db.execute(stmt)).scalars().all()
+        return [BillingService.serialize_upi_request(r) for r in rows]
+
+    @staticmethod
+    async def list_admin_upi_requests(
+        db: AsyncSession,
+        status_filter: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        stmt = select(UpiPaymentRequest)
+        if status_filter and status_filter.lower() in ("pending", "approved", "rejected"):
+            stmt = stmt.where(UpiPaymentRequest.status == status_filter.lower())
+        stmt = stmt.order_by(desc(UpiPaymentRequest.created_at)).limit(100)
+        rows = (await db.execute(stmt)).scalars().all()
+        return [BillingService.serialize_upi_request(r) for r in rows]
+
+    @staticmethod
+    async def review_upi_payment_request(
+        request_id: str,
+        action: str,
+        reviewer_user: User,
+        admin_note: Optional[str],
+        db: AsyncSession,
+    ) -> Dict[str, Any]:
+        """Approves or rejects a submitted UPI payment request and unlocks plan tier if approved."""
+        normalized_action = (action or "").strip().lower()
+        if normalized_action not in ("approve", "reject"):
+            raise ValueError("Action must be 'approve' or 'reject'.")
+
+        stmt = select(UpiPaymentRequest).where(UpiPaymentRequest.id == request_id)
+        req = (await db.execute(stmt)).scalar_one_or_none()
+        if not req:
+            raise LookupError("UPI payment request not found.")
+        if req.status != "pending":
+            raise ValueError(f"Payment request has already been {req.status}.")
+
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        req.status = "approved" if normalized_action == "approve" else "rejected"
+        req.admin_note = (admin_note or "").strip()[:512] or None
+        req.reviewed_by_user_id = reviewer_user.id
+        req.reviewed_at = now_utc
+        req.updated_at = now_utc
+
+        if normalized_action == "approve" and req.payment_purpose == "plan" and req.plan_tier in ("pro", "team"):
+            duration_days = 365 if req.billing_cycle == "annual" else 30
+            await db.execute(
+                update(Organization)
+                .where(Organization.id == req.tenant_id)
+                .values(billing_tier=req.plan_tier)
+            )
+            sub_stmt = select(Subscription).where(Subscription.tenant_id == req.tenant_id)
+            sub = (await db.execute(sub_stmt)).scalar_one_or_none()
+            if not sub:
+                sub = Subscription(
+                    id=str(uuid.uuid4()),
+                    tenant_id=req.tenant_id,
+                    user_id=req.user_id,
+                    stripe_subscription_id=f"upi_sub_{req.id[:12]}",
+                    stripe_customer_id=f"upi_cus_{req.tenant_id[:12]}",
+                    plan_tier=req.plan_tier,
+                    status="active",
+                    current_period_start=now_utc,
+                    current_period_end=now_utc + timedelta(days=duration_days),
+                )
+                db.add(sub)
+            else:
+                sub.stripe_subscription_id = f"upi_sub_{req.id[:12]}"
+                sub.stripe_customer_id = f"upi_cus_{req.tenant_id[:12]}"
+                sub.plan_tier = req.plan_tier
+                sub.status = "active"
+                sub.cancel_at_period_end = False
+                sub.current_period_start = now_utc
+                sub.current_period_end = now_utc + timedelta(days=duration_days)
+                sub.updated_at = now_utc
+
+        audit = AuditLog(
+            id=str(uuid.uuid4()),
+            tenant_id=req.tenant_id,
+            user_id=reviewer_user.id,
+            action=f"UPI_PAYMENT_{req.status.upper()}",
+            actor=reviewer_user.github_username or "ADMIN",
+            details={
+                "request_id": req.id,
+                "utr_number": req.utr_number,
+                "amount_inr": req.amount_inr,
+                "purpose": req.payment_purpose,
+                "plan_tier": req.plan_tier,
+                "admin_note": req.admin_note,
+            },
+        )
+        db.add(audit)
+        await db.commit()
+        await db.refresh(req)
+        return BillingService.serialize_upi_request(req)

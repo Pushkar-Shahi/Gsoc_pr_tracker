@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,9 +10,24 @@ from app.schemas.schemas import PlatformSettingsRead, PlatformSettingsUpdate
 from app.services.antigravity_handoff import AntigravityHandoffService
 from app.core.config import settings as app_settings
 from app.core.tenant import TenantContext, get_current_tenant
+from app.core.entitlements import require_tier
 from app.core.crypto import encrypt_secret, decrypt_secret, mask_api_key
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
+
+
+class RankingMatrixUpdate(BaseModel):
+    skill_weights: Dict[str, float] = Field(default_factory=dict)
+    tag_weights: Dict[str, float] = Field(default_factory=dict)
+
+
+def _extract_matrix_weights(filters: Optional[dict]) -> tuple[dict, dict]:
+    if not isinstance(filters, dict):
+        return {}, {}
+    return (
+        dict(filters.get("skill_weights") or {}),
+        dict(filters.get("tag_weights") or {}),
+    )
 
 @router.get("", response_model=PlatformSettingsRead)
 async def get_settings(
@@ -75,6 +91,9 @@ async def get_settings(
     org_gemini_dec = decrypt_secret(o_sett.gemini_api_key_encrypted)
     org_custom_dec = decrypt_secret(o_sett.custom_api_key_encrypted)
 
+    merged_filters = dict(u_sett.discovery_filters or s.discovery_filters or {})
+    skill_weights, tag_weights = _extract_matrix_weights(merged_filters)
+
     return PlatformSettingsRead(
         github_token_configured=bool(s.github_token and s.github_token.strip()),
         github_username=(ctx.user.github_username if ctx.user and ctx.user.github_username != "admin" else (s.github_username or "Pushkar-Shahi")),
@@ -82,7 +101,7 @@ async def get_settings(
         workspace_root=u_sett.workspace_root or s.workspace_root or str(app_settings.WORKSPACE_ROOT),
         antigravity_app_path=u_sett.antigravity_app_path or s.antigravity_app_path,
         skills_profile=u_sett.skills_profile or s.skills_profile or app_settings.DEFAULT_SKILLS,
-        discovery_filters=u_sett.discovery_filters or s.discovery_filters or {},
+        discovery_filters=merged_filters,
         detected_antigravity_installed=detection["desktop_app_detected"],
         detected_agy_cli=detection["cli_detected"],
         has_openai_key=has_openai,
@@ -102,8 +121,44 @@ async def get_settings(
         org_gemini_api_key=mask_api_key(org_gemini_dec),
         org_custom_api_key=mask_api_key(org_custom_dec),
         enforce_shared_keys=o_sett.enforce_shared_keys,
-        preferred_ai_provider=u_sett.preferred_ai_provider or "gemini"
+        preferred_ai_provider=u_sett.preferred_ai_provider or "gemini",
+        custom_endpoint=u_sett.custom_endpoint or o_sett.custom_endpoint,
+        triage_policy=dict(o_sett.triage_policy or {}),
+        skill_weights=skill_weights,
+        tag_weights=tag_weights,
     )
+
+
+@router.put("/ranking-matrix")
+async def update_ranking_matrix(
+    payload: RankingMatrixUpdate,
+    ctx: TenantContext = Depends(require_tier("pro")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Saves custom skill and tag weighting matrix (Pro Developer & Engineering Team feature)."""
+    u_stmt = select(UserSettings).where(UserSettings.user_id == ctx.user.id)
+    u_sett = (await db.execute(u_stmt)).scalar_one_or_none()
+    if not u_sett:
+        u_sett = UserSettings(user_id=ctx.user.id)
+        db.add(u_sett)
+        await db.flush()
+
+    filters = dict(u_sett.discovery_filters or {})
+    filters["skill_weights"] = {
+        str(k).lower().strip(): max(0.25, min(3.0, float(v)))
+        for k, v in payload.skill_weights.items()
+    }
+    filters["tag_weights"] = {
+        str(k).lower().strip(): max(0.25, min(3.0, float(v)))
+        for k, v in payload.tag_weights.items()
+    }
+    u_sett.discovery_filters = filters
+    await db.commit()
+    return {
+        "status": "success",
+        "skill_weights": filters["skill_weights"],
+        "tag_weights": filters["tag_weights"],
+    }
 
 @router.put("", response_model=PlatformSettingsRead)
 async def update_settings(
@@ -180,6 +235,8 @@ async def update_settings(
         if payload.custom_api_key is not None:
             res = _process_key(payload.custom_api_key)
             o_sett.custom_api_key_encrypted = None if res == "" else res
+        if payload.custom_endpoint is not None:
+            o_sett.custom_endpoint = payload.custom_endpoint.strip() or None
         if payload.preferred_ai_provider is not None:
             o_sett.preferred_ai_provider = payload.preferred_ai_provider
     else:
@@ -195,9 +252,13 @@ async def update_settings(
         if payload.custom_api_key is not None:
             res = _process_key(payload.custom_api_key)
             u_sett.custom_api_key_encrypted = None if res == "" else res
+        if payload.custom_endpoint is not None:
+            u_sett.custom_endpoint = payload.custom_endpoint.strip() or None
 
     if payload.enforce_shared_keys is not None and ctx.role in ("owner", "admin"):
         o_sett.enforce_shared_keys = payload.enforce_shared_keys
+    if payload.triage_policy is not None and ctx.role in ("owner", "admin"):
+        o_sett.triage_policy = dict(payload.triage_policy)
 
     if payload.auto_publish_pr is not None:
         u_sett.auto_publish_pr = payload.auto_publish_pr
@@ -209,6 +270,13 @@ async def update_settings(
         u_sett.skills_profile = payload.skills_profile
     if payload.discovery_filters is not None:
         u_sett.discovery_filters = payload.discovery_filters
+    if payload.skill_weights is not None or payload.tag_weights is not None:
+        curr_filters = dict(u_sett.discovery_filters or {})
+        if payload.skill_weights is not None:
+            curr_filters["skill_weights"] = payload.skill_weights
+        if payload.tag_weights is not None:
+            curr_filters["tag_weights"] = payload.tag_weights
+        u_sett.discovery_filters = curr_filters
     if payload.preferred_ai_provider is not None:
         u_sett.preferred_ai_provider = payload.preferred_ai_provider
 
@@ -271,6 +339,9 @@ async def update_settings(
     org_gemini_dec = decrypt_secret(o_sett.gemini_api_key_encrypted)
     org_custom_dec = decrypt_secret(o_sett.custom_api_key_encrypted)
 
+    merged_filters = dict(u_sett.discovery_filters or s.discovery_filters or {})
+    skill_weights, tag_weights = _extract_matrix_weights(merged_filters)
+
     return PlatformSettingsRead(
         github_token_configured=bool(s.github_token and s.github_token.strip()),
         github_username=(ctx.user.github_username if ctx.user and ctx.user.github_username != "admin" else (s.github_username or "Pushkar-Shahi")),
@@ -278,7 +349,7 @@ async def update_settings(
         workspace_root=u_sett.workspace_root or s.workspace_root or str(app_settings.WORKSPACE_ROOT),
         antigravity_app_path=u_sett.antigravity_app_path or s.antigravity_app_path,
         skills_profile=u_sett.skills_profile or s.skills_profile or app_settings.DEFAULT_SKILLS,
-        discovery_filters=u_sett.discovery_filters or s.discovery_filters or {},
+        discovery_filters=merged_filters,
         detected_antigravity_installed=detection["desktop_app_detected"],
         detected_agy_cli=detection["cli_detected"],
         has_openai_key=has_openai,
@@ -298,5 +369,41 @@ async def update_settings(
         org_gemini_api_key=mask_api_key(org_gemini_dec),
         org_custom_api_key=mask_api_key(org_custom_dec),
         enforce_shared_keys=o_sett.enforce_shared_keys,
-        preferred_ai_provider=u_sett.preferred_ai_provider or "gemini"
+        preferred_ai_provider=u_sett.preferred_ai_provider or "gemini",
+        custom_endpoint=u_sett.custom_endpoint or o_sett.custom_endpoint,
+        triage_policy=dict(o_sett.triage_policy or {}),
+        skill_weights=skill_weights,
+        tag_weights=tag_weights,
     )
+
+
+@router.put("/ranking-matrix")
+async def update_ranking_matrix(
+    payload: RankingMatrixUpdate,
+    ctx: TenantContext = Depends(require_tier("pro")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Saves custom skill and tag weighting matrix (Pro Developer & Engineering Team feature)."""
+    u_stmt = select(UserSettings).where(UserSettings.user_id == ctx.user.id)
+    u_sett = (await db.execute(u_stmt)).scalar_one_or_none()
+    if not u_sett:
+        u_sett = UserSettings(user_id=ctx.user.id)
+        db.add(u_sett)
+        await db.flush()
+
+    filters = dict(u_sett.discovery_filters or {})
+    filters["skill_weights"] = {
+        str(k).lower().strip(): max(0.25, min(3.0, float(v)))
+        for k, v in payload.skill_weights.items()
+    }
+    filters["tag_weights"] = {
+        str(k).lower().strip(): max(0.25, min(3.0, float(v)))
+        for k, v in payload.tag_weights.items()
+    }
+    u_sett.discovery_filters = filters
+    await db.commit()
+    return {
+        "status": "success",
+        "skill_weights": filters["skill_weights"],
+        "tag_weights": filters["tag_weights"],
+    }

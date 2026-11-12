@@ -111,6 +111,7 @@ async def enforce_auth_middleware(request: Request, call_next):
     PUBLIC_AUTH_PATHS = {
         "/api/v1/billing/webhook",
         "/api/v1/billing/plans",
+        "/api/v1/billing/upi/config",
         "/api/v1/health",
     }
     if path.startswith("/api/v1"):
@@ -118,7 +119,7 @@ async def enforce_auth_middleware(request: Request, call_next):
         if (
             is_public_auth
             or path in PUBLIC_AUTH_PATHS
-            or path.startswith("/api/v1/webhooks")
+            or path == "/api/v1/webhooks/github"
             or path.startswith("/api/v1/runners")
         ):
             return await call_next(request)

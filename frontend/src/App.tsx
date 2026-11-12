@@ -4,7 +4,7 @@ import {
   Coins, Menu, Share2, X
 } from 'lucide-react';
 
-import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog } from './types';
+import { Issue, Task, PlatformSettings, DiscoveryStatus, AuditLog, SubscriptionInfo } from './types';
 import * as api from './api';
 
 import { Header } from './components/Header';
@@ -23,6 +23,7 @@ const BillingView = lazy(() => import('./components/BillingView').then(m => ({ d
 const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
 const IssueDetailsModal = lazy(() => import('./components/IssueDetailsModal').then(m => ({ default: m.IssueDetailsModal })));
 const UpgradeModal = lazy(() => import('./components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
+const SupportUpiModal = lazy(() => import('./components/SupportUpiModal').then(m => ({ default: m.SupportUpiModal })));
 
 function TabLoadingSkeleton() {
   return (
@@ -38,8 +39,11 @@ export function App() {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [planTier, setPlanTier] = useState<string>('pro');
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<string | undefined>(undefined);
+  const [supportUpiModalOpen, setSupportUpiModalOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<'github' | 'ai' | 'automation' | 'skills' | 'team' | 'workspace' | 'account'>('github');
 
   // iOS Safari "Add to Home Screen" detection
   const [showIosInstallGuide, setShowIosInstallGuide] = useState(() => {
@@ -134,8 +138,11 @@ export function App() {
       setDiscoveryStatus(disc);
       setAuditLogs(logs);
       setTasks(tList);
-      if (sub?.tier) {
-        setPlanTier(sub.tier);
+      if (sub) {
+        setSubscriptionInfo(sub);
+        if (sub.tier) {
+          setPlanTier(sub.tier);
+        }
       }
     } catch (err: any) {
       console.error('Failed to load initial platform metadata:', err);
@@ -447,8 +454,10 @@ export function App() {
             totalPRs={totalPRs}
             trackedTasksCount={tasks.length}
             onOpenUpgrade={() => setUpgradeModalOpen(true)}
+            onOpenSupportUpi={() => setSupportUpiModalOpen(true)}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}
+            subscriptionInfo={subscriptionInfo}
           />
         </div>
 
@@ -463,10 +472,16 @@ export function App() {
             activeTab={activeTab}
             setActiveTab={setActiveTab as any}
             onLock={api.logout}
+            onOpenSupportUpi={() => setSupportUpiModalOpen(true)}
+            onOpenTeamSettings={() => {
+              setSettingsSection('team');
+              setActiveTab('settings');
+            }}
             isInstallable={isInstallable}
             onInstallPWA={handleInstallPWA}
             onToggleMobileMenu={() => setIsMobileDrawerOpen(prev => !prev)}
             planTier={planTier}
+            subscriptionInfo={subscriptionInfo}
           />
 
           {/* Main Content Container */}
@@ -523,6 +538,8 @@ export function App() {
               {activeTab === 'settings' && (
                 <SettingsView
                   settings={settings}
+                  initialSection={settingsSection}
+                  onSettingsUpdated={(updated) => setSettings(updated)}
                   onSaveSettings={async (updated) => {
                     const res = await api.updateSettings(updated);
                     setSettings(res);
@@ -653,7 +670,13 @@ export function App() {
           isInstallable={isInstallable}
           onInstallPWA={handleInstallPWA}
           onLock={api.logout}
+          onOpenSupportUpi={() => setSupportUpiModalOpen(true)}
+          onOpenTeamSettings={() => {
+            setSettingsSection('team');
+            setActiveTab('settings');
+          }}
           planTier={planTier}
+          subscriptionInfo={subscriptionInfo}
         />
       </div>
 
@@ -680,6 +703,17 @@ export function App() {
             onClose={() => setUpgradeModalOpen(false)}
             reason={upgradeReason}
             onNavigateToBilling={() => setActiveTab('billing')}
+            subscriptionInfo={subscriptionInfo}
+          />
+
+          {/* Direct UPI Support / Donate Modal */}
+          <SupportUpiModal
+            isOpen={supportUpiModalOpen}
+            onClose={() => setSupportUpiModalOpen(false)}
+            onNavigateToBilling={() => setActiveTab('billing')}
+            onPaymentSubmitted={(req) => {
+              showToast(`✓ UPI Ref ${req.utr_number} (₹${req.amount_inr}) submitted!`);
+            }}
           />
         </Suspense>
 

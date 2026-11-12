@@ -13,7 +13,8 @@ class WebhookService:
     async def process_github_webhook_event(
         db: AsyncSession,
         event_type: str,
-        payload: Dict[str, Any]
+        payload: Dict[str, Any],
+        tenant_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Processes ingested GitHub App webhook events and synchronizes platform state.
@@ -44,14 +45,18 @@ class WebhookService:
             repo_stmt = select(Repository).where(Repository.full_name == repo_full_name) if repo_full_name else select(Repository).where(Repository.id == "none")
             repo = (await db.execute(repo_stmt)).scalar_one_or_none()
             if not repo and repo_full_name:
+                is_priv = bool(repo_data.get("private", False))
                 repo = Repository(
                     id=f"repo-{uuid.uuid4().hex[:8]}",
+                    tenant_id=tenant_id,
                     owner=owner,
                     name=repo_name,
                     full_name=repo_full_name,
                     html_url=repo_data.get("html_url") or f"https://github.com/{repo_full_name}",
                     default_branch=repo_data.get("default_branch", "main"),
-                    primary_language=repo_data.get("language")
+                    primary_language=repo_data.get("language"),
+                    is_private=is_priv,
+                    is_gsoc=not is_priv,
                 )
                 db.add(repo)
                 await db.flush()
@@ -64,6 +69,7 @@ class WebhookService:
                 if not issue and repo:
                     issue = Issue(
                         id=f"iss-{uuid.uuid4().hex[:8]}",
+                        tenant_id=tenant_id or repo.tenant_id,
                         repository_id=repo.id,
                         github_id=gh_issue_id,
                         issue_number=issue_num,

@@ -1,31 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Key, Terminal, Shield, Check, 
+  Key, Terminal, Check,
   AlertTriangle, Save, Plus, X, ShieldAlert, RefreshCw,
-  Cpu, Sparkles, LogOut, CheckCircle2, User, Globe, ExternalLink,
-  Bot, Settings as SettingsIcon
+  Cpu, Sparkles, LogOut, CheckCircle2, User, Users, Webhook,
+  Copy, Trash2, Sliders, Zap
 } from 'lucide-react';
-import { PlatformSettings } from '../types';
-import { logout, getCustomGitHubToken } from '../api';
+import { PlatformSettings, WebhookSubscription } from '../types';
+import {
+  logout, getCustomGitHubToken,
+  fetchWebhookSubscriptions, createWebhookSubscription, deleteWebhookSubscription,
+  triggerPrioritySync, updateRankingMatrix, rescoreIssues
+} from '../api';
+import { TeamGovernancePanel } from './TeamGovernancePanel';
+
+export type SettingsSection = 'github' | 'ai' | 'automation' | 'skills' | 'team' | 'workspace' | 'account';
 
 interface SettingsViewProps {
   settings: PlatformSettings | null;
-  onSaveSettings: (updated: Partial<PlatformSettings> & { 
-    github_token?: string;
-    openai_api_key?: string;
-    anthropic_api_key?: string;
-    gemini_api_key?: string;
-    preferred_ai_provider?: string;
-  }) => Promise<void>;
+  initialSection?: SettingsSection;
+  onSaveSettings: (updated: Partial<PlatformSettings> & Record<string, any>) => Promise<void>;
+  onSettingsUpdated?: (updated: PlatformSettings) => void;
 }
 
-type SettingsSection = 'github' | 'ai' | 'automation' | 'skills' | 'workspace' | 'account';
+const DEFAULT_TAG_KEYS = ['good first issue', 'help wanted', 'bug', 'enhancement', 'documentation'];
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   settings,
+  initialSection = 'github',
   onSaveSettings,
+  onSettingsUpdated,
 }) => {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('github');
+  const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
+
+  useEffect(() => {
+    if (initialSection) {
+      setActiveSection(initialSection);
+    }
+  }, [initialSection]);
 
   // Form State with LocalStorage fallbacks
   const [token, setToken] = useState('');
@@ -47,9 +58,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('issuetopr_gemini_key') || '');
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('issuetopr_claude_key') || '');
   const [openaiKey, setOpenaiKey] = useState(() => localStorage.getItem('issuetopr_openai_key') || '');
+  const [customKey, setCustomKey] = useState('');
+  const [customEndpoint, setCustomEndpoint] = useState(settings?.custom_endpoint || '');
   const [preferredModel, setPreferredModel] = useState(() => 
-    localStorage.getItem('issuetopr_preferred_ai') || 'gemini'
+    localStorage.getItem('issuetopr_preferred_ai') || settings?.preferred_ai_provider || 'gemini'
   );
+
+  // Custom Weighting Matrix State (Pro)
+  const [skillWeights, setSkillWeights] = useState<Record<string, number>>(
+    () => settings?.skill_weights || {}
+  );
+  const [tagWeights, setTagWeights] = useState<Record<string, number>>(
+    () => settings?.tag_weights || {}
+  );
+  const [matrixSaving, setMatrixSaving] = useState(false);
+
+  // Real-time Webhooks & Priority Discovery State (Pro)
+  const [webhooks, setWebhooks] = useState<WebhookSubscription[]>([]);
+  const [webhookTierLocked, setWebhookTierLocked] = useState(false);
+  const [newWebhookRepo, setNewWebhookRepo] = useState('');
+  const [creatingWebhook, setCreatingWebhook] = useState(false);
+  const [copiedSecretId, setCopiedSecretId] = useState<string | null>(null);
+  const [prioritySyncing, setPrioritySyncing] = useState(false);
 
   // Status and Feedback
   const [saving, setSaving] = useState(false);
@@ -71,8 +101,87 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       if (settings.skills_profile && Array.isArray(settings.skills_profile)) {
         setSkills(settings.skills_profile);
       }
+      if (settings.custom_endpoint !== undefined) {
+        setCustomEndpoint(settings.custom_endpoint || '');
+      }
+      if (settings.preferred_ai_provider) {
+        setPreferredModel(settings.preferred_ai_provider);
+      }
+      if (settings.skill_weights) {
+        setSkillWeights(settings.skill_weights);
+      }
+      if (settings.tag_weights) {
+        setTagWeights(settings.tag_weights);
+      }
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (activeSection !== 'automation') return;
+    fetchWebhookSubscriptions()
+      .then((list) => {
+        setWebhooks(list);
+        setWebhookTierLocked(false);
+      })
+      .catch((err: any) => {
+        if (err.code === 'TIER_UPGRADE_REQUIRED') {
+          setWebhookTierLocked(true);
+        }
+      });
+  }, [activeSection]);
+
+  const handleSaveMatrixAndRescore = async () => {
+    setMatrixSaving(true);
+    setSaveMessage(null);
+    try {
+      await updateRankingMatrix(skillWeights, tagWeights);
+      const res = await rescoreIssues();
+      setSaveMessage(`✓ Saved custom weighting matrix and re-ranked ${res.rescored_count} open GSoC issues.`);
+    } catch (err: any) {
+      setSaveMessage(`Matrix notice: ${err.message}`);
+    } finally {
+      setMatrixSaving(false);
+    }
+  };
+
+  const handleCreateWebhook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWebhookRepo.trim()) return;
+    setCreatingWebhook(true);
+    setSaveMessage(null);
+    try {
+      const created = await createWebhookSubscription(newWebhookRepo.trim());
+      setWebhooks((prev) => [created, ...prev]);
+      setNewWebhookRepo('');
+      setSaveMessage(`✓ Registered real-time webhook for ${created.repo_full_name}.`);
+    } catch (err: any) {
+      setSaveMessage(`Webhook notice: ${err.message}`);
+    } finally {
+      setCreatingWebhook(false);
+    }
+  };
+
+  const handleDeleteWebhook = async (id: string) => {
+    try {
+      await deleteWebhookSubscription(id);
+      setWebhooks((prev) => prev.filter((w) => w.id !== id));
+    } catch (err: any) {
+      setSaveMessage(`Webhook delete error: ${err.message}`);
+    }
+  };
+
+  const handlePriorityDiscovery = async () => {
+    setPrioritySyncing(true);
+    setSaveMessage(null);
+    try {
+      const res = await triggerPrioritySync(undefined, true);
+      setSaveMessage(`✓ Priority discovery sync finished (${res.discovered ?? 0} issues synced).`);
+    } catch (err: any) {
+      setSaveMessage(`Priority sync notice: ${err.message}`);
+    } finally {
+      setPrioritySyncing(false);
+    }
+  };
 
   const handleAddSkill = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +260,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         gemini_api_key: geminiKey.trim() || undefined,
         anthropic_api_key: claudeKey.trim() || undefined,
         openai_api_key: openaiKey.trim() || undefined,
+        custom_api_key: customKey.trim() || undefined,
+        custom_endpoint: customEndpoint.trim() || undefined,
         preferred_ai_provider: preferredModel,
       });
       setSaveMessage('✓ Platform settings saved successfully.');
@@ -174,8 +285,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const navSections = [
     { id: 'github' as SettingsSection, label: 'GitHub & Tokens', icon: Key },
     { id: 'ai' as SettingsSection, label: 'AI Intelligence', icon: Sparkles },
-    { id: 'automation' as SettingsSection, label: 'Automation & PRs', icon: ShieldAlert },
-    { id: 'skills' as SettingsSection, label: 'Toolbox Skills', icon: Terminal },
+    { id: 'automation' as SettingsSection, label: 'Automation & Webhooks', icon: ShieldAlert },
+    { id: 'skills' as SettingsSection, label: 'Skills & Weight Matrix', icon: Terminal },
+    { id: 'team' as SettingsSection, label: 'Team & Private Repos', icon: Users },
     { id: 'workspace' as SettingsSection, label: 'Antigravity IDE', icon: Cpu },
     { id: 'account' as SettingsSection, label: 'Account & Security', icon: User },
   ];
@@ -386,27 +498,55 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 className="w-full bg-[#05080f] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 font-mono transition"
               />
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-neutral-300 font-semibold mb-1.5">
+                  Custom / Ollama Endpoint URL
+                </label>
+                <input
+                  type="text"
+                  value={customEndpoint}
+                  onChange={(e) => setCustomEndpoint(e.target.value)}
+                  placeholder="http://localhost:11434/v1"
+                  className="w-full bg-[#05080f] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 font-mono transition"
+                />
+              </div>
+              <div>
+                <label className="block text-neutral-300 font-semibold mb-1.5">
+                  Custom Provider API Key
+                </label>
+                <input
+                  type="password"
+                  value={customKey}
+                  onChange={(e) => setCustomKey(e.target.value)}
+                  placeholder="Optional token for custom endpoint"
+                  className="w-full bg-[#05080f] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 font-mono transition"
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Section 3: Automation & PRs */}
+      {/* Section 3: Automation & PRs + Real-Time Webhooks (Pro) */}
       {activeSection === 'automation' && (
+        <div className="space-y-6">
         <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <ShieldAlert className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white">Automated PR & Runner Policies</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Automated PR & Runner Policies</h3>
           </div>
 
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1 text-xs">
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-slate-900 dark:text-white">
                 Auto-Publish Pull Requests upon Successful Validation
               </span>
-              <p className="text-neutral-400 leading-relaxed">
+              <p className="text-slate-500 dark:text-neutral-400 leading-relaxed">
                 When enabled, once all test runs and AST diff security checks pass with exit code 0, the platform will autonomously push to your fork and publish the PR without an extra per-PR manual confirmation.
               </p>
-              <div className="bg-[#05080f] border border-white/10 rounded-xl p-3 mt-2 text-[11px] text-neutral-400">
+              <div className="bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl p-3 mt-2 text-[11px] text-slate-600 dark:text-neutral-400">
                 Safety Guarantee: Unresolved policy checks, non-OSI licenses, or test failures always block PR creation regardless of this toggle.
               </div>
             </div>
@@ -422,18 +562,112 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </label>
           </div>
         </div>
+
+        {/* Pro Real-Time Discovery & Repository Webhooks */}
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
+            <div className="flex items-center gap-2.5">
+              <Webhook className="w-4 h-4 text-blue-500" />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Priority Real-Time Discovery & GitHub Webhooks
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                  Receive instant issue/PR updates instead of waiting for the standard 2-hour crawl cycle.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handlePriorityDiscovery}
+              disabled={prioritySyncing}
+              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 disabled:opacity-50"
+            >
+              <Zap className={`w-3.5 h-3.5 ${prioritySyncing ? 'animate-pulse' : ''}`} />
+              <span>{prioritySyncing ? 'Priority Syncing...' : 'Run Priority Sync Now'}</span>
+            </button>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 text-[11px] text-slate-600 dark:text-neutral-400">
+            Payload URL: <code className="font-mono text-slate-900 dark:text-white">{typeof window !== 'undefined' ? `${window.location.origin}/api/v1/webhooks/github` : '/api/v1/webhooks/github'}</code>
+          </div>
+
+          {webhookTierLocked ? (
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-800 dark:text-amber-300">
+              Real-time repository webhook subscriptions require <strong>Pro Developer (₹100/mo)</strong> or <strong>Engineering Team</strong>.
+            </div>
+          ) : (
+            <>
+              <form onSubmit={handleCreateWebhook} className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newWebhookRepo}
+                  onChange={(e) => setNewWebhookRepo(e.target.value)}
+                  placeholder="owner/repo (e.g. kornia/kornia or org/private-repo)"
+                  className="flex-1 bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono"
+                />
+                <button
+                  type="submit"
+                  disabled={creatingWebhook || !newWebhookRepo.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{creatingWebhook ? 'Creating...' : 'Create Webhook'}</span>
+                </button>
+              </form>
+
+              {webhooks.length > 0 && (
+                <div className="divide-y divide-slate-100 dark:divide-white/10">
+                  {webhooks.map((wh) => (
+                    <div key={wh.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white">{wh.repo_full_name}</div>
+                        <div className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
+                          Secret: {wh.webhook_secret.slice(0, 12)}••• • {wh.deliveries_count} deliveries
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(wh.webhook_secret);
+                            setCopiedSecretId(wh.id);
+                            setTimeout(() => setCopiedSecretId(null), 2000);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-[11px] font-semibold text-slate-700 dark:text-neutral-200 flex items-center gap-1"
+                        >
+                          {copiedSecretId === wh.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedSecretId === wh.id ? 'Copied' : 'Copy Secret'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteWebhook(wh.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        </div>
       )}
 
-      {/* Section 4: Toolbox Skills Profile */}
+      {/* Section 4: Toolbox Skills Profile + Custom Weighting Matrix (Pro) */}
       {activeSection === 'skills' && (
+        <div className="space-y-6">
         <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
             <Terminal className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-white">Configurable Technology Stack Skills</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Configurable Technology Stack Skills</h3>
           </div>
 
           <div className="space-y-3">
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-slate-500 dark:text-neutral-400">
               Issues matching these frameworks and languages receive higher suitability and priority rankings:
             </p>
 
@@ -443,11 +677,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
                 placeholder="Add skill or language (e.g. Next.js, Rust, Go, PyTorch, Docker)..."
-                className="flex-1 bg-[#05080f] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition"
+                className="flex-1 bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition"
               />
               <button
                 type="submit"
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/10 transition flex items-center gap-1.5 active:scale-95"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition flex items-center gap-1.5 active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add</span>
@@ -458,7 +692,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               {skills.map(s => (
                 <span
                   key={s}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#05080f] border border-white/10 text-xs font-mono text-white shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-900 dark:text-white shadow-sm"
                 >
                   <span>{s}</span>
                   <button
@@ -473,6 +707,96 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Custom Skill & Tag Weighting Matrix */}
+        <div className="bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
+            <div className="flex items-center gap-2.5">
+              <Sliders className="w-4 h-4 text-indigo-500" />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Custom Skill & Tag Weighting Matrix
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                  Tune priority multipliers (0.5x – 3.0x) and re-rank open issues in your inbox.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveMatrixAndRescore}
+              disabled={matrixSaving}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${matrixSaving ? 'animate-spin' : ''}`} />
+              <span>{matrixSaving ? 'Re-Ranking...' : 'Save Matrix & Re-Rank Issues'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2.5">
+              <div className="text-[11px] font-mono uppercase font-bold text-slate-500 dark:text-neutral-400">
+                Skill Multipliers
+              </div>
+              {skills.slice(0, 8).map((s) => {
+                const w = Number(skillWeights[s.toLowerCase()] ?? 1.0);
+                return (
+                  <div key={s} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
+                    <span className="text-xs font-mono font-semibold text-slate-800 dark:text-neutral-200">{s}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={3.0}
+                        step={0.25}
+                        value={w}
+                        onChange={(e) => setSkillWeights((prev) => ({ ...prev, [s.toLowerCase()]: Number(e.target.value) }))}
+                        className="w-24 accent-indigo-600"
+                      />
+                      <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 w-9 text-right">
+                        {w.toFixed(1)}x
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="text-[11px] font-mono uppercase font-bold text-slate-500 dark:text-neutral-400">
+                Issue Label / Tag Multipliers
+              </div>
+              {DEFAULT_TAG_KEYS.map((tag) => {
+                const w = Number(tagWeights[tag] ?? 1.0);
+                return (
+                  <div key={tag} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-neutral-200">{tag}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={3.0}
+                        step={0.25}
+                        value={w}
+                        onChange={(e) => setTagWeights((prev) => ({ ...prev, [tag]: Number(e.target.value) }))}
+                        className="w-24 accent-emerald-600"
+                      />
+                      <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 w-9 text-right">
+                        {w.toFixed(1)}x
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        </div>
+      )}
+
+      {/* Section 5: Team Seats, Private Repos & RBAC Governance */}
+      {activeSection === 'team' && (
+        <TeamGovernancePanel settings={settings} onSettingsUpdated={onSettingsUpdated} />
       )}
 
       {/* Section 5: Antigravity IDE Integration */}

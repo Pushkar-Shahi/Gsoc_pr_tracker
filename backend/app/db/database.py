@@ -63,7 +63,8 @@ async def create_tables():
     from app.models.models import (
         User, Organization, Membership, Repository, Issue, Task,
         DiscoveryCheckpoint, AuditLog, PlatformSettings,
-        UserSettings, OrganizationSettings, Runner, RunnerJob
+        UserSettings, OrganizationSettings, Runner, RunnerJob,
+        BillingCustomer, Subscription, UsageMeter, UpiPaymentRequest, WebhookSubscription
     )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -182,6 +183,21 @@ async def create_tables():
         except Exception:
             pass
 
+        # Safe migration for Private Repos, Team Triage Policy, and Priority Runner Jobs
+        team_pro_cols = [
+            ("repositories", "is_private", "BOOLEAN DEFAULT FALSE"),
+            ("organization_settings", "triage_policy", "JSON DEFAULT '{}'::json" if is_pg else "TEXT"),
+            ("runner_jobs", "priority", "INTEGER DEFAULT 10"),
+        ]
+        for tbl, col_name, col_type in team_pro_cols:
+            try:
+                if is_pg:
+                    await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+                else:
+                    await conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN {col_name} {col_type};"))
+            except Exception:
+                pass
+
         # Backfill existing repositories in DB matching GSoC organizations
         try:
             from app.core.gsoc_orgs import GSOC_ORGS_MAP
@@ -206,6 +222,14 @@ async def create_tables():
                         "INSERT INTO users (id, github_username, name, email, is_active, is_superuser, created_at, updated_at) "
                         f"VALUES ('default-user', 'admin', 'Admin User', 'admin@example.com', {'TRUE, TRUE' if is_pg else '1, 1'}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);"
                     ))
+
+            # Ensure platform owner user accounts retain superuser access
+            super_val = "TRUE" if is_pg else "1"
+            await conn.execute(text(
+                f"UPDATE users SET is_superuser = {super_val} "
+                "WHERE id = 'default-user' OR LOWER(github_username) = 'pushkar-shahi' "
+                "OR LOWER(email) IN ('riseinspirethrive2008@gmail.com', 'shahi.pushkar2008@gmail.com');"
+            ))
 
             # Check default org
             o_check = await conn.execute(text("SELECT id FROM organizations WHERE id = 'default-org'"))

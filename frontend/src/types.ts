@@ -12,6 +12,7 @@ export interface Repository {
   open_issues_count: number;
   is_fork: boolean;
   is_archived: boolean;
+  is_private?: boolean;
   is_gsoc?: boolean;
   gsoc_org_name?: string;
 }
@@ -140,6 +141,9 @@ export interface ImplementationBrief {
     action_on_approval: string;
     draft_comment?: string;
   };
+  ai_mode?: 'live_byok' | 'deterministic_heuristic' | string;
+  ai_provider?: string;
+  ai_key_source?: 'organization' | 'personal' | 'env' | 'none' | string;
 }
 
 export interface Task {
@@ -208,6 +212,28 @@ export interface PlatformSettings {
   discovery_filters: Record<string, any>;
   detected_antigravity_installed: boolean;
   detected_agy_cli: boolean;
+  openai_api_key?: string;
+  anthropic_api_key?: string;
+  gemini_api_key?: string;
+  custom_api_key?: string;
+  has_openai_key?: boolean;
+  has_anthropic_key?: boolean;
+  has_gemini_key?: boolean;
+  has_custom_key?: boolean;
+  enforce_shared_keys?: boolean;
+  preferred_ai_provider?: string;
+  custom_endpoint?: string;
+  triage_policy?: Record<string, any>;
+  skill_weights?: Record<string, number>;
+  tag_weights?: Record<string, number>;
+  org_openai_api_key?: string;
+  org_anthropic_api_key?: string;
+  org_gemini_api_key?: string;
+  org_custom_api_key?: string;
+  has_org_openai_key?: boolean;
+  has_org_anthropic_key?: boolean;
+  has_org_gemini_key?: boolean;
+  has_org_custom_key?: boolean;
 }
 
 export interface DiscoveryStatus {
@@ -245,10 +271,12 @@ export interface Runner {
 
 export interface RunnerJob {
   id: string;
-  task_id: string;
-  tenant_id: string;
+  task_id?: string;
+  tenant_id?: string;
   runner_id?: string;
+  job_type?: string;
   status: 'queued' | 'running' | 'completed' | 'failed' | string;
+  priority?: number;
   payload: Record<string, any>;
   result?: Record<string, any>;
   error_message?: string;
@@ -256,6 +284,60 @@ export interface RunnerJob {
   started_at?: string;
   completed_at?: string;
   created_at?: string;
+}
+
+export interface WebhookSubscription {
+  id: string;
+  repo_full_name: string;
+  webhook_secret: string;
+  events: string[];
+  is_active: boolean;
+  deliveries_count: number;
+  last_delivery_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface PrivateRepositorySummary {
+  id: string;
+  full_name: string;
+  html_url: string;
+  primary_language?: string | null;
+  stars_count: number;
+  open_issues_count: number;
+  last_inspected_at?: string | null;
+}
+
+export interface ContributorVelocity {
+  user_id: string;
+  username: string;
+  avatar_url?: string | null;
+  role: string;
+  tasks_count: number;
+  prs_opened: number;
+  prs_merged: number;
+  ci_passing: number;
+}
+
+export interface TeamVelocityReport {
+  organization_id: string;
+  total_tasks: number;
+  total_prs: number;
+  open_prs: number;
+  merged_prs: number;
+  changes_requested_prs: number;
+  merge_rate_pct: number;
+  ci_pass_rate_pct: number;
+  avg_cycle_hours: number;
+  seat_count: number;
+  contributors: ContributorVelocity[];
+  recent_merges: Array<{
+    task_id: string;
+    pr_number?: number;
+    pr_url?: string;
+    repo: string;
+    title: string;
+    updated_at?: string | null;
+  }>;
 }
 
 export interface PlanFeature {
@@ -286,6 +368,50 @@ export interface SubscriptionInfo {
   tasks_created_this_month: number;
   monthly_task_limit: number | null;
   is_simulation: boolean;
+  free_beta_mode?: boolean;
+  plan_display_name?: string;
+  is_admin?: boolean;
+  pending_upi_count?: number;
+  pending_admin_upi_count?: number;
+  trial_active?: boolean;
+  trial_expired?: boolean;
+  trial_days_remaining?: number;
+  trial_total_days?: number;
+  trial_ends_at?: string | null;
+}
+
+export interface UpiConfig {
+  upi_vpa: string;
+  payee_name: string;
+  qr_image_url: string;
+  currency: string;
+  currency_symbol: string;
+  suggested_support_amounts: number[];
+  autopay_available: boolean;
+  autopay_note: string;
+  plan_pricing?: Record<string, { monthly: number; annual: number; name: string }>;
+}
+
+export interface UpiPaymentRequest {
+  id: string;
+  tenant_id: string;
+  user_id?: string | null;
+  payer_username?: string | null;
+  payer_email?: string | null;
+  payment_purpose: 'plan' | 'support';
+  plan_tier?: 'pro' | 'team' | null;
+  billing_cycle?: 'monthly' | 'annual' | 'one_time' | null;
+  amount_inr: number;
+  upi_vpa: string;
+  utr_number: string;
+  payer_upi_id?: string | null;
+  note?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_note?: string | null;
+  reviewed_by_user_id?: string | null;
+  reviewed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface CheckoutSessionResponse {

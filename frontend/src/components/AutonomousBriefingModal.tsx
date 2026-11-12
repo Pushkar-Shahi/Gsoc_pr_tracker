@@ -23,6 +23,30 @@ export const AutonomousBriefingModal: React.FC<AutonomousBriefingModalProps> = (
 }) => {
   if (!isOpen || !task) return null;
 
+  return (
+    <AutonomousBriefingModalContent
+      key={task.id}
+      task={task}
+      onClose={onClose}
+      onApprove={onApprove}
+      onRegenerateBriefing={onRegenerateBriefing}
+    />
+  );
+};
+
+interface AutonomousBriefingModalContentProps {
+  task: Task;
+  onClose: () => void;
+  onApprove: (taskId: string, customComment?: string) => Promise<void>;
+  onRegenerateBriefing?: (taskId: string) => Promise<void>;
+}
+
+const AutonomousBriefingModalContent: React.FC<AutonomousBriefingModalContentProps> = ({
+  task,
+  onClose,
+  onApprove,
+  onRegenerateBriefing,
+}) => {
   const brief = task.implementation_brief;
   const isAssignmentRequired = task.assignment_required || brief?.rule_check?.assignment_required;
   const initialComment = task.draft_assignment_comment || brief?.rule_check?.draft_comment || '';
@@ -76,6 +100,15 @@ export const AutonomousBriefingModal: React.FC<AutonomousBriefingModalProps> = (
                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
                   Autonomous Plan
                 </span>
+                {brief?.ai_mode === 'live_byok' ? (
+                  <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    BYOK AI ({brief.ai_provider || 'LLM'} • {brief.ai_key_source || 'key'})
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/10">
+                    Heuristic Brief
+                  </span>
+                )}
               </div>
               <h3 className="text-base font-bold text-white mt-1 line-clamp-1">
                 {task.issue?.title}

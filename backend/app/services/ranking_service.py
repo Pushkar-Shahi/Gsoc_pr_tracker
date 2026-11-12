@@ -1,10 +1,25 @@
 import re
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Optional
 from app.core.config import settings
 
+
+def _clamp_weight(val: Any) -> float:
+    try:
+        return max(0.25, min(3.0, float(val)))
+    except Exception:
+        return 1.0
+
+
 class RankingService:
-    def __init__(self, user_skills: List[str] = None):
+    def __init__(
+        self,
+        user_skills: Optional[List[str]] = None,
+        skill_weights: Optional[Dict[str, float]] = None,
+        tag_weights: Optional[Dict[str, float]] = None,
+    ):
         self.skills = [s.lower() for s in (user_skills or settings.DEFAULT_SKILLS)]
+        self.skill_weights = {str(k).lower().strip(): _clamp_weight(v) for k, v in (skill_weights or {}).items()}
+        self.tag_weights = {str(k).lower().strip(): _clamp_weight(v) for k, v in (tag_weights or {}).items()}
 
     def evaluate_issue(
         self,
@@ -33,20 +48,22 @@ class RankingService:
         matched_skills = []
         
         if repo_language and repo_language.lower() in self.skills:
-            skill_score += 20.0
+            lang_w = self.skill_weights.get(repo_language.lower(), 1.0)
+            skill_score += 20.0 * lang_w
             matched_skills.append(repo_language)
-            reasons.append(f"Repository primary language '{repo_language}' matches your toolbox.")
+            reasons.append(f"Repository primary language '{repo_language}' matches your toolbox ({lang_w:.1f}x weight).")
         
         for skill in self.skills:
             if skill == (repo_language or "").lower():
                 continue
+            skill_w = self.skill_weights.get(skill, 1.0)
             # Check title, body, and labels for technology mention
             pattern = r'\b' + re.escape(skill) + r'\b'
             if re.search(pattern, title_lower) or any(re.search(pattern, l) for l in label_names):
-                skill_score += 5.0
+                skill_score += 5.0 * skill_w
                 matched_skills.append(skill)
             elif re.search(pattern, body_lower):
-                skill_score += 2.0
+                skill_score += 2.0 * skill_w
                 matched_skills.append(skill)
         
         skill_score = min(skill_score, 35.0)
@@ -100,12 +117,21 @@ class RankingService:
         else:
             reasons.append("License not verified; caution recommended before contribution.")
 
-        # Friendly contributor labels
+        # Friendly contributor labels + custom tag weighting matrix
+        matched_tag_weights: Dict[str, float] = {}
+        tag_bonus = 0.0
+        for lbl in label_names:
+            if lbl in self.tag_weights:
+                w = self.tag_weights[lbl]
+                matched_tag_weights[lbl] = w
+                tag_bonus += 3.0 * (w - 1.0)
         if any(l in ["good first issue", "beginner friendly", "easy", "help wanted"] for l in label_names):
             health_score += 4.0
             reasons.append("Flagged with maintainer 'help wanted' or 'good first issue' label.")
+        if matched_tag_weights:
+            reasons.append(f"Custom tag weights applied: {', '.join(f'{k} ({v:.1f}x)' for k, v in matched_tag_weights.items())}.")
 
-        health_score = min(health_score, 20.0)
+        health_score = max(0.0, min(health_score + tag_bonus, 20.0))
 
         # 4. Implementation Effort & Scope (Max 20 points)
         effort_score = 15.0
@@ -152,7 +178,9 @@ class RankingService:
                 "effort_score": round(effort_score, 1),
                 "reasons": reasons,
                 "has_blocker_risk": blocker_risk,
-                "matched_skills": list(set(matched_skills))
+                "matched_skills": list(set(matched_skills)),
+                "weighted_matrix_applied": bool(self.skill_weights or self.tag_weights),
+                "matched_tag_weights": matched_tag_weights,
             }
         }
 

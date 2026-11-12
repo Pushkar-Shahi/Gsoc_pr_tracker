@@ -96,6 +96,7 @@ class Repository(Base):
     is_fork = Column(Boolean, default=False)
     is_archived = Column(Boolean, default=False)
     is_disabled = Column(Boolean, default=False)
+    is_private = Column(Boolean, default=False, index=True)
     is_gsoc = Column(Boolean, default=False, index=True)
     gsoc_org_name = Column(String(255), nullable=True)
     last_inspected_at = Column(DateTime, nullable=True)
@@ -309,6 +310,7 @@ class OrganizationSettings(Base):
     custom_endpoint = Column(String(1024), nullable=True)
     enforce_shared_keys = Column(Boolean, default=False)
     billing_tier = Column(String(64), default="starter")
+    triage_policy = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -345,6 +347,7 @@ class RunnerJob(Base):
     task_id = Column(String(36), nullable=True, index=True)
     job_type = Column(String(64), nullable=False)
     status = Column(String(32), default="queued")
+    priority = Column(Integer, default=10, index=True)
     payload = Column(JSON, default=dict)
     result = Column(JSON, default=dict)
     error_message = Column(Text, nullable=True)
@@ -411,4 +414,51 @@ class UsageMeter(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     organization = relationship("Organization")
+
+
+class UpiPaymentRequest(Base):
+    __tablename__ = "upi_payment_requests"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    payer_username = Column(String(255), nullable=True)
+    payer_email = Column(String(255), nullable=True)
+    payment_purpose = Column(String(32), default="plan", nullable=False)  # plan, support
+    plan_tier = Column(String(32), nullable=True)  # pro, team
+    billing_cycle = Column(String(16), nullable=True)  # monthly, annual, one_time
+    amount_inr = Column(Integer, nullable=False)
+    upi_vpa = Column(String(255), nullable=False)
+    utr_number = Column(String(64), nullable=False, index=True)
+    payer_upi_id = Column(String(255), nullable=True)
+    note = Column(String(512), nullable=True)
+    status = Column(String(32), default="pending", nullable=False, index=True)  # pending, approved, rejected
+    admin_note = Column(String(512), nullable=True)
+    reviewed_by_user_id = Column(String(36), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    organization = relationship("Organization")
+    user = relationship("User")
+
+
+class WebhookSubscription(Base):
+    __tablename__ = "webhook_subscriptions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    repo_full_name = Column(String(512), nullable=False, index=True)
+    webhook_secret = Column(String(255), nullable=False)
+    events = Column(JSON, default=lambda: ["issues", "pull_request", "pull_request_review"])
+    is_active = Column(Boolean, default=True, nullable=False)
+    deliveries_count = Column(Integer, default=0, nullable=False)
+    last_delivery_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    organization = relationship("Organization")
+    user = relationship("User")
+
 

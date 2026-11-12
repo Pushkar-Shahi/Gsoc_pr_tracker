@@ -1,10 +1,11 @@
 import React from 'react';
 import { 
-  Search, Trophy, Bookmark, GitPullRequest, 
-  Clock, Play,
-  Zap, ArrowRight, PanelLeftClose, PanelLeft, Sparkles
+  Search, Bookmark, GitPullRequest, 
+  Clock, Play, Heart,
+  ArrowRight, PanelLeftClose, PanelLeft, Sparkles
 } from 'lucide-react';
 import { BrandIcon } from './BrandIcon';
+import { SubscriptionInfo } from '../types';
 
 interface SidebarProps {
   activeTab: string;
@@ -13,8 +14,10 @@ interface SidebarProps {
   totalPRs?: number;
   trackedTasksCount?: number;
   onOpenUpgrade?: () => void;
+  onOpenSupportUpi?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  subscriptionInfo?: SubscriptionInfo | null;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -23,9 +26,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   totalIssues = 744,
   totalPRs = 0,
   trackedTasksCount = 0,
-  onOpenUpgrade,
+  onOpenSupportUpi,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  subscriptionInfo,
 }) => {
   const navItems = [
     { id: 'issues', label: 'Find Issues', icon: Search, badge: totalIssues > 0 ? String(totalIssues) : '744', badgeType: 'neutral' },
@@ -150,36 +154,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Context Card */}
-      <div className={`mt-auto pt-3 w-full ${isCollapsed ? 'flex justify-center' : ''}`}>
+      <div className={`mt-auto pt-3 w-full ${isCollapsed ? 'flex flex-col items-center gap-2' : ''}`}>
         {isCollapsed ? (
-          <button
-            onClick={() => setActiveTab('issues')}
-            title="GSoC 2026 Ready - Verified Unassigned Issues"
-            className="w-11 h-11 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 dark:bg-[#0d121f] dark:hover:bg-[#151c30] dark:border-white/10 dark:hover:border-blue-400/40 dark:text-blue-400 flex items-center justify-center transition shadow-sm active:scale-95"
-          >
-            <Sparkles className="w-5 h-5 fill-blue-500 text-blue-500" />
-          </button>
+          <>
+            {onOpenSupportUpi && (
+              <button
+                type="button"
+                onClick={onOpenSupportUpi}
+                title="Support GSoC Issue-to-PR via UPI (8116710520@ibl)"
+                className="w-11 h-11 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-600 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 dark:border-emerald-500/30 dark:text-emerald-400 flex items-center justify-center transition shadow-sm active:scale-95"
+              >
+                <Heart className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => setActiveTab('issues')}
+              title="GSoC 2026 Ready - Verified Unassigned Issues"
+              className="w-11 h-11 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 dark:bg-[#0d121f] dark:hover:bg-[#151c30] dark:border-white/10 dark:hover:border-blue-400/40 dark:text-blue-400 flex items-center justify-center transition shadow-sm active:scale-95"
+            >
+              <Sparkles className="w-5 h-5 fill-blue-500 text-blue-500" />
+            </button>
+          </>
         ) : (
           <div className="p-3.5 rounded-2xl bg-gradient-to-b from-blue-50/60 to-slate-50 dark:from-[#0d1527] dark:to-[#0c101a] border border-blue-100 dark:border-blue-500/20 text-xs shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-xs">
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-xs truncate">
                 <Sparkles className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
                 <span>GSoC 2026 Edition</span>
               </div>
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-400/30">
-                100% FREE
-              </span>
+              {(() => {
+                const isTrial = Boolean(subscriptionInfo?.trial_active);
+                const daysLeft = subscriptionInfo?.trial_days_remaining ?? 15;
+                const badgeText = subscriptionInfo?.free_beta_mode
+                  ? '100% FREE'
+                  : isTrial
+                  ? `${daysLeft}D TRIAL`
+                  : (subscriptionInfo?.tier || 'pro').toUpperCase();
+                return (
+                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                    isTrial && daysLeft <= 3
+                      ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/30'
+                      : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-400/30'
+                  }`}>
+                    {badgeText}
+                  </span>
+                );
+              })()}
             </div>
             <p className="text-[11px] text-slate-600 dark:text-neutral-300 leading-relaxed">
-              Curated unassigned issues from official Google Summer of Code organizations.
+              {subscriptionInfo?.trial_active
+                ? `Pro features unlocked (${subscriptionInfo.trial_days_remaining ?? 15} days left). Lock Pro forever at ₹100/mo.`
+                : subscriptionInfo?.trial_expired && subscriptionInfo?.tier === 'starter'
+                ? 'Free trial ended (5 tasks/mo limit). Upgrade via UPI to restore unlimited Pro workflows.'
+                : 'Curated unassigned issues from official Google Summer of Code organizations.'}
             </p>
-            <button
-              onClick={() => setActiveTab('issues')}
-              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white border border-blue-600 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
-            >
-              <span>Explore GSoC Issues</span>
-              <ArrowRight className="w-3 h-3 text-white" />
-            </button>
+            {(subscriptionInfo?.trial_active || (subscriptionInfo?.tier === 'starter' && !subscriptionInfo?.free_beta_mode)) ? (
+              <button
+                onClick={() => setActiveTab('billing')}
+                className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white border border-blue-600 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
+              >
+                <span>{subscriptionInfo?.trial_active ? 'Lock Pro (₹100/mo)' : 'Upgrade to Pro'}</span>
+                <ArrowRight className="w-3 h-3 text-white" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveTab('issues')}
+                className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white border border-blue-600 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm shadow-blue-600/20"
+              >
+                <span>Explore GSoC Issues</span>
+                <ArrowRight className="w-3 h-3 text-white" />
+              </button>
+            )}
+            {onOpenSupportUpi && (
+              <button
+                type="button"
+                onClick={onOpenSupportUpi}
+                className="w-full px-3 py-1.5 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/25 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <Heart className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>Support via UPI</span>
+              </button>
+            )}
           </div>
         )}
       </div>

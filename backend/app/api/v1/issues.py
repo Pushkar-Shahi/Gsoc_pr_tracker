@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.database import get_db
-from app.models.models import Issue, Repository, Task, PlatformSettings
+from app.models.models import Issue, Repository, Task, PlatformSettings, UserSettings
 from app.schemas.schemas import IssueRead, IssueListResponse, IssueImportRequest, IssueImportResponse
 from app.services.github_client import GitHubClient
 from app.services.ranking_service import RankingService
@@ -18,8 +18,9 @@ from app.services.discovery_service import DiscoveryService
 from app.services.policy_inspector import PolicyInspector
 from app.services.availability_inspector import AvailabilityInspector
 from app.core.config import settings
+from app.core.entitlements import require_tier
 from app.core.gsoc_orgs import ALL_GSOC_OWNERS, FOCUS_GSOC_OWNERS, FOCUS_GSOC_ORGS, get_gsoc_info, is_gsoc_org, is_focus_gsoc_org
-from app.core.tenant import TenantContext, get_current_tenant
+from app.core.tenant import TenantContext, get_current_tenant, get_optional_tenant
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +43,12 @@ async def list_issues(
     gsoc_org: Optional[str] = None,
     sort_by: str = Query("created", pattern="^(rank|created|stars|effort)$"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
-    ctx: Optional[TenantContext] = Depends(get_current_tenant),
+    ctx: Optional[TenantContext] = Depends(get_optional_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Issue).options(
-        selectinload(Issue.repository)
+        selectinload(Issue.repository),
+        selectinload(Issue.tasks),
     )
 
     # Join repository if filtering by language, stars, or repo name
@@ -68,6 +70,19 @@ async def list_issues(
             Issue.availability_status.is_(None)
         )
     )
+
+    # Tenant isolation for Private Repositories (Team / Enterprise)
+    current_org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
+    if current_org_id:
+        filters.append(
+            or_(
+                Repository.is_private.is_(False),
+                Repository.is_private.is_(None),
+                Repository.tenant_id == current_org_id,
+            )
+        )
+    else:
+        filters.append(or_(Repository.is_private.is_(False), Repository.is_private.is_(None)))
 
     # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
     focus_owners = list(FOCUS_GSOC_OWNERS)
@@ -95,15 +110,16 @@ async def list_issues(
             )
         )
     else:
-        # Default ("All Orgs"): Show open issues from focus owners, tracked GSoC/custom repos, or user tasks
+        # Default ("All Orgs"): Show open issues from focus owners, tracked GSoC/custom repos, org private repos, or user tasks
         if gsoc_only:
-            filters.append(
-                or_(
-                    func.lower(Repository.owner).in_(focus_owners),
-                    Repository.is_gsoc.is_(True),
-                    Issue.id.in_(select(Task.issue_id))
-                )
-            )
+            gsoc_clauses = [
+                func.lower(Repository.owner).in_(focus_owners),
+                Repository.is_gsoc.is_(True),
+                Issue.id.in_(select(Task.issue_id)),
+            ]
+            if current_org_id:
+                gsoc_clauses.append(and_(Repository.is_private.is_(True), Repository.tenant_id == current_org_id))
+            filters.append(or_(*gsoc_clauses))
 
     if query and query.strip():
         q_term = f"%{query.strip()}%"
@@ -257,7 +273,10 @@ class AddOrganizationByUrlRequest(BaseModel):
 
 
 @router.get("/organizations")
-async def get_tracked_organizations(db: AsyncSession = Depends(get_db)):
+async def get_tracked_organizations(
+    ctx: Optional[TenantContext] = Depends(get_optional_tenant),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Returns all organizations available for filtering, combining the 4 focus showcase orgs
     with all dynamically added custom organizations in the database.
@@ -269,6 +288,7 @@ async def get_tracked_organizations(db: AsyncSession = Depends(get_db)):
         {"id": "kornia", "label": "Kornia", "icon": "👁️", "is_default": True},
     ]
 
+    org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
     stmt = (
         select(
             Repository.owner,
@@ -279,6 +299,13 @@ async def get_tracked_organizations(db: AsyncSession = Depends(get_db)):
             func.count(Issue.id).label("issue_count")
         )
         .outerjoin(Issue, (Issue.repository_id == Repository.id) & (Issue.state == "open"))
+        .where(
+            or_(
+                Repository.is_private.is_(False),
+                Repository.is_private.is_(None),
+                Repository.tenant_id == org_id,
+            )
+        )
         .group_by(Repository.owner, Repository.name, Repository.gsoc_org_name, Repository.stars_count, Repository.primary_language)
     )
     res = await db.execute(stmt)
@@ -481,19 +508,83 @@ async def add_org_by_url(
         }
 
 
+@router.post("/rescore")
+async def rescore_issues_with_matrix(
+    ctx: TenantContext = Depends(require_tier("pro")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-ranks eligible open issues using the Pro/Team user's Custom Skill & Tag Weighting Matrix."""
+    u_sett = (
+        await db.execute(select(UserSettings).where(UserSettings.user_id == ctx.user.id))
+    ).scalar_one_or_none()
+    filters = dict((u_sett.discovery_filters if u_sett else None) or {})
+    user_skills = (u_sett.skills_profile if (u_sett and u_sett.skills_profile) else None) or settings.DEFAULT_SKILLS
+    ranking_svc = RankingService(
+        user_skills=user_skills,
+        skill_weights=filters.get("skill_weights"),
+        tag_weights=filters.get("tag_weights"),
+    )
+
+    stmt = (
+        select(Issue)
+        .options(selectinload(Issue.repository))
+        .join(Repository)
+        .where(
+            Issue.state == "open",
+            Issue.is_eligible.is_(True),
+            or_(
+                Repository.is_private.is_(False),
+                Repository.is_private.is_(None),
+                Repository.tenant_id == ctx.organization.id,
+            ),
+        )
+        .order_by(Issue.created_at.desc())
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    rescored_count = 0
+    for iss in rows:
+        repo = iss.repository
+        eval_res = ranking_svc.evaluate_issue(
+            title=iss.title,
+            body=iss.body or "",
+            labels=iss.labels or [],
+            repo_language=(repo.primary_language if repo else "") or "",
+            repo_stars=(repo.stars_count if repo else 0) or 0,
+            license_spdx=repo.license_spdx if repo else None,
+        )
+        iss.ranking_score = eval_res["ranking_score"]
+        iss.difficulty_estimate = eval_res["difficulty_estimate"]
+        iss.estimated_effort_hours = eval_res["estimated_effort_hours"]
+        iss.ranking_breakdown = eval_res["ranking_breakdown"]
+        rescored_count += 1
+
+    await db.commit()
+    return {
+        "status": "rescored",
+        "rescored_count": rescored_count,
+        "skill_weights": filters.get("skill_weights") or {},
+        "tag_weights": filters.get("tag_weights") or {},
+    }
+
+
 @router.get("/{issue_id}", response_model=IssueRead)
 async def get_issue(
     issue_id: str,
-    ctx: Optional[TenantContext] = Depends(get_current_tenant),
+    ctx: Optional[TenantContext] = Depends(get_optional_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(Issue).options(
-        selectinload(Issue.repository)
+        selectinload(Issue.repository),
+        selectinload(Issue.tasks),
     ).where(Issue.id == issue_id)
     
     result = await db.execute(stmt)
     issue = result.scalar_one_or_none()
     if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
+    if issue.repository and issue.repository.is_private and issue.repository.tenant_id != org_id:
         raise HTTPException(status_code=404, detail="Issue not found")
     
     active_task = None
@@ -585,6 +676,7 @@ async def get_live_issue_availability(
 @router.post("/import", response_model=IssueImportResponse)
 async def import_issue(
     payload: IssueImportRequest,
+    ctx: Optional[TenantContext] = Depends(get_optional_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -625,6 +717,30 @@ async def import_issue(
     repo_data = await gh.get_repository(owner, repo_name)
     if not repo_data:
         raise HTTPException(status_code=404, detail=f"GitHub repository '{owner}/{repo_name}' not found or inaccessible.")
+
+    repo_is_private = bool(repo_data.get("private", False))
+    if repo_is_private:
+        if not ctx:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "message": "Importing issues from private repositories requires an Engineering Team organization.",
+                    "code": "TIER_UPGRADE_REQUIRED",
+                    "required_tier": "team",
+                    "current_tier": "starter",
+                },
+            )
+        curr_tier = (ctx.organization.billing_tier or "starter").lower()
+        if not getattr(settings, "FREE_BETA_MODE", False) and not getattr(ctx.user, "is_superuser", False) and curr_tier not in ("team", "enterprise"):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "message": "Importing issues from private repositories requires the Engineering Team tier.",
+                    "code": "TIER_UPGRADE_REQUIRED",
+                    "required_tier": "team",
+                    "current_tier": curr_tier,
+                },
+            )
 
     issue_data = await gh.get_issue(owner, repo_name, issue_number)
     if not issue_data or "id" not in issue_data:
@@ -766,6 +882,8 @@ async def import_issue(
     gsoc_org = get_gsoc_info(owner, repo_name)
     if not repository:
         repository = Repository(
+            tenant_id=ctx.organization.id if (repo_is_private and ctx) else None,
+            user_id=ctx.user.id if (repo_is_private and ctx) else None,
             owner=owner,
             name=repo_name,
             full_name=repo_full_name,
@@ -777,6 +895,7 @@ async def import_issue(
             stars_count=repo_data.get("stargazers_count", 0),
             open_issues_count=repo_data.get("open_issues_count", 0),
             is_archived=is_archived,
+            is_private=repo_is_private,
             is_gsoc=(gsoc_org is not None),
             gsoc_org_name=gsoc_org,
             last_inspected_at=datetime.utcnow()
@@ -786,6 +905,9 @@ async def import_issue(
     elif not repository.is_gsoc and gsoc_org:
         repository.is_gsoc = True
         repository.gsoc_org_name = gsoc_org
+    if repo_is_private and ctx:
+        repository.is_private = True
+        repository.tenant_id = ctx.organization.id
 
     issue_stmt = select(Issue).options(
         selectinload(Issue.repository),
@@ -960,7 +1082,8 @@ async def complete_issue(issue_id: str, db: AsyncSession = Depends(get_db)):
     Mark an issue as completed, removing it from the open eligible inbox.
     """
     stmt = select(Issue).options(
-        selectinload(Issue.repository)
+        selectinload(Issue.repository),
+        selectinload(Issue.tasks),
     ).where(Issue.id == issue_id)
     result = await db.execute(stmt)
     issue = result.scalar_one_or_none()

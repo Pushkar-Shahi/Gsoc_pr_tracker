@@ -62,6 +62,7 @@ class RepositoryRead(BaseModel):
     open_issues_count: int = 0
     is_fork: bool = False
     is_archived: bool = False
+    is_private: bool = False
     is_gsoc: bool = False
     gsoc_org_name: Optional[str] = None
 
@@ -278,6 +279,10 @@ class PlatformSettingsRead(BaseModel):
     has_custom_key: bool = False
     enforce_shared_keys: bool = False
     preferred_ai_provider: Optional[str] = "gemini"
+    custom_endpoint: Optional[str] = None
+    triage_policy: Dict[str, Any] = Field(default_factory=dict)
+    skill_weights: Dict[str, float] = Field(default_factory=dict)
+    tag_weights: Dict[str, float] = Field(default_factory=dict)
     org_openai_api_key: Optional[str] = None
     org_anthropic_api_key: Optional[str] = None
     org_gemini_api_key: Optional[str] = None
@@ -302,8 +307,12 @@ class PlatformSettingsUpdate(BaseModel):
     anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     custom_api_key: Optional[str] = None
+    custom_endpoint: Optional[str] = None
     enforce_shared_keys: Optional[bool] = None
     preferred_ai_provider: Optional[str] = None
+    triage_policy: Optional[Dict[str, Any]] = None
+    skill_weights: Optional[Dict[str, float]] = None
+    tag_weights: Optional[Dict[str, float]] = None
     scope: Optional[str] = None
     org_openai_api_key: Optional[str] = None
     org_anthropic_api_key: Optional[str] = None
@@ -335,6 +344,14 @@ class RunnerHeartbeatRequest(BaseModel):
     system_stats: Optional[Dict[str, Any]] = None
 
 
+class RunnerJobCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    job_type: str = Field(..., description="Job type: validation, workspace_prep, diagnostic, sync")
+    task_id: Optional[str] = None
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+
 class RunnerJobRead(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
@@ -343,7 +360,12 @@ class RunnerJobRead(BaseModel):
     task_id: Optional[str] = None
     job_type: str
     status: str
+    priority: int = 10
     payload: Optional[Dict[str, Any]] = None
+    result: Optional[Dict[str, Any]] = None
+    error_message: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
 

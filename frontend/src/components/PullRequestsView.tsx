@@ -1,12 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   GitPullRequest, ExternalLink, CheckCircle2, Clock, 
   AlertCircle, ShieldCheck, GitBranch, RefreshCw, MessageSquare,
   AlertTriangle, Terminal, Check, Trash2, Columns, List, 
-  ArrowUpDown, Download, Sparkles, Filter, X, User
+  ArrowUpDown, Download, Sparkles, Filter, X, User, BarChart3, Users
 } from 'lucide-react';
-import { Task } from '../types';
-import { syncPRStatus } from '../api';
+import { Task, TeamVelocityReport } from '../types';
+import { syncPRStatus, fetchOrganizations, fetchTeamVelocity } from '../api';
 
 interface PullRequestsViewProps {
   tasks: Task[];
@@ -40,6 +40,28 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
       return 'Pushkar-Shahi';
     }
   });
+  const [teamVelocity, setTeamVelocity] = useState<TeamVelocityReport | null>(null);
+  const [velocityLocked, setVelocityLocked] = useState(false);
+  const [showVelocity, setShowVelocity] = useState(true);
+
+  useEffect(() => {
+    fetchOrganizations()
+      .then((orgs) => {
+        const active = orgs.find((o) => o.is_active) || orgs[0];
+        if (!active) return;
+        return fetchTeamVelocity(active.id)
+          .then((report) => {
+            setTeamVelocity(report);
+            setVelocityLocked(false);
+          })
+          .catch((err: any) => {
+            if (err.code === 'TIER_UPGRADE_REQUIRED') {
+              setVelocityLocked(true);
+            }
+          });
+      })
+      .catch(() => null);
+  }, [tasks.length]);
 
   // Filter tasks that have PR number or PR URL
   const prTasks = useMemo(() => {
@@ -433,6 +455,112 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
         <div className="p-3 bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/20 rounded-xl text-xs text-slate-900 dark:text-white flex items-center gap-2 animate-fade-in-up shadow-sm dark:shadow-lg">
           <RefreshCw className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
           <span>{syncMessage}</span>
+        </div>
+      )}
+
+      {/* Centralized Team PR Velocity Dashboard */}
+      {(teamVelocity || velocityLocked) && (
+        <div className="rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 p-5 shadow-sm dark:shadow-xl space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
+                <BarChart3 className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Centralized Team PR Velocity Dashboard
+                  </h3>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30">
+                    TEAM METRICS
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                  Organization-wide merge velocity, CI pass rate, cycle time, and contributor breakdown.
+                </p>
+              </div>
+            </div>
+            {teamVelocity && (
+              <button
+                type="button"
+                onClick={() => setShowVelocity((v) => !v)}
+                className="text-xs font-semibold text-slate-600 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5"
+              >
+                {showVelocity ? 'Hide Analytics' : 'Show Analytics'}
+              </button>
+            )}
+          </div>
+
+          {velocityLocked ? (
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-800 dark:text-amber-300">
+              Upgrade to <strong>Engineering Team (₹300/mo)</strong> to unlock organization-wide contributor velocity analytics and cycle-time tracking.
+            </div>
+          ) : (
+            teamVelocity &&
+            showVelocity && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 dark:text-neutral-400">Merge Rate</div>
+                    <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 font-mono">
+                      {teamVelocity.merge_rate_pct}%
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-neutral-400">
+                      {teamVelocity.merged_prs} / {teamVelocity.total_prs} merged
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 dark:text-neutral-400">CI Health</div>
+                    <div className="text-xl font-extrabold text-blue-600 dark:text-blue-400 mt-0.5 font-mono">
+                      {teamVelocity.ci_pass_rate_pct}%
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-neutral-400">
+                      {teamVelocity.open_prs} active open PRs
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 dark:text-neutral-400">Avg PR Cycle</div>
+                    <div className="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5 font-mono">
+                      {teamVelocity.avg_cycle_hours}h
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-neutral-400">
+                      {teamVelocity.total_tasks} total org tasks
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 dark:text-neutral-400">Team Seats</div>
+                    <div className="text-xl font-extrabold text-purple-600 dark:text-purple-400 mt-0.5 font-mono flex items-center gap-1.5">
+                      <Users className="w-4 h-4" />
+                      <span>{teamVelocity.seat_count}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-neutral-400">
+                      {teamVelocity.changes_requested_prs} changes requested
+                    </div>
+                  </div>
+                </div>
+
+                {teamVelocity.contributors.length > 0 && (
+                  <div className="rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 divide-y divide-slate-200 dark:divide-white/10">
+                    {teamVelocity.contributors.slice(0, 6).map((c) => (
+                      <div key={c.user_id} className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 dark:text-white">@{c.username}</span>
+                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-neutral-400">
+                            {c.role}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-[11px] font-mono text-slate-600 dark:text-neutral-300">
+                          <span>Tasks: <strong>{c.tasks_count}</strong></span>
+                          <span>PRs: <strong>{c.prs_opened}</strong></span>
+                          <span className="text-emerald-600 dark:text-emerald-400">Merged: <strong>{c.prs_merged}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          )}
         </div>
       )}
 

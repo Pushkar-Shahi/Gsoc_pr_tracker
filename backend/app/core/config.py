@@ -122,16 +122,18 @@ class Settings:
     GITLAB_CLIENT_SECRET: Optional[str] = os.getenv("GITLAB_CLIENT_SECRET", "")
     GITLAB_REDIRECT_URI: str = os.getenv("GITLAB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/gitlab/callback")
 
-    # Free Beta Launch & Monetization Settings
+    # Free Beta Launch & 15-Day Reverse Free Trial Monetization Settings
     @property
     def FREE_BETA_MODE(self) -> bool:
         if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("ENVIRONMENT") == "testing":
             return False
-        return os.getenv("FREE_BETA_MODE", "true").lower() in ("true", "1", "yes")
+        return os.getenv("FREE_BETA_MODE", "false").lower() in ("true", "1", "yes")
+
+    FREE_TRIAL_DAYS: int = int(os.getenv("FREE_TRIAL_DAYS", "15"))
 
     @property
     def DEFAULT_ORG_TIER(self) -> str:
-        return "pro" if self.FREE_BETA_MODE else "starter"
+        return "pro" if (self.FREE_BETA_MODE or self.FREE_TRIAL_DAYS > 0) else "starter"
 
     STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock_stripe_key_2026")
     STRIPE_PUBLISHABLE_KEY: Optional[str] = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_mock_stripe_key_2026")
@@ -142,6 +144,11 @@ class Settings:
     BILLING_SUCCESS_URL: str = os.getenv("BILLING_SUCCESS_URL", "http://localhost:5173/?billing=success")
     BILLING_CANCEL_URL: str = os.getenv("BILLING_CANCEL_URL", "http://localhost:5173/?billing=cancel")
     FREE_TIER_MONTHLY_TASK_LIMIT: int = int(os.getenv("FREE_TIER_MONTHLY_TASK_LIMIT", "5"))
+
+    # Direct UPI Payment & Support Settings
+    UPI_VPA: str = os.getenv("UPI_VPA", "8116710520@ibl")
+    UPI_PAYEE_NAME: str = os.getenv("UPI_PAYEE_NAME", "Pushkar Shahi")
+    UPI_QR_IMAGE_PATH: str = os.getenv("UPI_QR_IMAGE_PATH", "/phonepe-upi-qr.jpg")
     
     # Workspace & Worktree
     DATA_DIR: Path = DEFAULT_DATA_DIR

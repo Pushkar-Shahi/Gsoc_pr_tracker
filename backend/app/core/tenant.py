@@ -216,3 +216,17 @@ async def get_current_tenant(
         membership=membership,
         role=membership.role
     )
+
+
+async def get_optional_tenant(
+    authorization: Optional[str] = Header(None),
+    x_organization_id: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[TenantContext]:
+    """Best-effort tenant resolution for endpoints supporting minimal JWTs."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        return await get_current_tenant(authorization=authorization, x_organization_id=x_organization_id, db=db)
+    except HTTPException:
+        return None

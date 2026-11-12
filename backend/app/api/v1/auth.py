@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.security import verify_password, generate_session_token, verify_session_token, decode_session_token
 from app.db.database import get_db
 from app.models.models import User, Organization, Membership
+from app.services.billing_service import BillingService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -183,6 +184,7 @@ async def _provision_user_and_token(
         if is_owner:
             user.github_username = "Pushkar-Shahi"
             user.name = "Pushkar Shahi"
+            user.is_superuser = True
             if not user.avatar_url:
                 user.avatar_url = "https://github.com/Pushkar-Shahi.png"
     else:
@@ -193,7 +195,8 @@ async def _provision_user_and_token(
             github_username="Pushkar-Shahi" if is_owner else gh_username,
             email=email or ("riseinspirethrive2008@gmail.com" if is_owner else f"{gh_username.lower()}@platform.dev"),
             name="Pushkar Shahi" if is_owner else (name or gh_username),
-            avatar_url=avatar_url or (f"https://github.com/{user.github_username if is_owner else gh_username}.png")
+            is_superuser=is_owner,
+            avatar_url=avatar_url or (f"https://github.com/{'Pushkar-Shahi' if is_owner else gh_username}.png")
         )
         db.add(user)
         await db.flush()
@@ -239,11 +242,29 @@ async def _provision_user_and_token(
         )
         db.add(membership)
         await db.flush()
+        if (
+            not is_owner
+            and not getattr(settings, "FREE_BETA_MODE", False)
+            and settings.FREE_TRIAL_DAYS > 0
+        ):
+            await BillingService.provision_reverse_free_trial(org.id, user.id, db)
         tenant_id = org.id
         tier = org.billing_tier
     else:
         tenant_id = membership.org_id
-        tier = membership.organization.billing_tier if (membership.organization and membership.organization.billing_tier) else "pro"
+        synced_org, sub = await BillingService.sync_trial_expiration(tenant_id, db)
+        if (
+            not is_owner
+            and not getattr(settings, "FREE_BETA_MODE", False)
+            and settings.FREE_TRIAL_DAYS > 0
+            and synced_org is not None
+            and synced_org.is_personal
+            and synced_org.billing_tier == "pro"
+            and sub is None
+        ):
+            await BillingService.provision_reverse_free_trial(tenant_id, user.id, db)
+        active_org = synced_org or membership.organization
+        tier = active_org.billing_tier if (active_org and active_org.billing_tier) else "pro"
 
     await db.commit()
 

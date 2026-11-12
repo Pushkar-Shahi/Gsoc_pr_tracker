@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Cpu, Server, Plus, Trash2, RefreshCw, CheckCircle2, 
-  AlertCircle, ShieldCheck, Terminal, Copy, Check, ExternalLink, Zap
+  Terminal, Copy, Check, Zap, Play, Clock
 } from 'lucide-react';
-import { Runner } from '../types';
-import { getRunners, registerRunner, deleteRunner } from '../api';
+import { Runner, RunnerJob } from '../types';
+import { getRunners, registerRunner, deleteRunner, fetchRunnerJobs, enqueueRunnerJob } from '../api';
 
 export function RunnersView() {
   const [runners, setRunners] = useState<Runner[]>([]);
+  const [jobs, setJobs] = useState<RunnerJob[]>([]);
+  const [dispatchingJob, setDispatchingJob] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -19,13 +21,29 @@ export function RunnersView() {
 
   const fetchRunnerList = async () => {
     try {
-      const data = await getRunners();
+      const [data, jobList] = await Promise.all([
+        getRunners(),
+        fetchRunnerJobs().catch(() => []),
+      ]);
       setRunners(data);
+      setJobs(jobList);
     } catch (err) {
       console.error('Error fetching runners:', err);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleDispatchDiagnostic = async () => {
+    setDispatchingJob(true);
+    try {
+      await enqueueRunnerJob('diagnostic', { check: 'environment_health' });
+      await fetchRunnerList();
+    } catch (err) {
+      console.error('Failed to enqueue runner job:', err);
+    } finally {
+      setDispatchingJob(false);
     }
   };
 
@@ -229,6 +247,63 @@ export function RunnersView() {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Priority Runner Job Queue (Pro/Team Priority > Starter FIFO) */}
+      <div className="rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm dark:shadow-xl">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-500" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-300 font-mono">
+              Priority Runner Job Queue
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30">
+              {jobs.length} Jobs
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleDispatchDiagnostic}
+            disabled={dispatchingJob}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-white transition active:scale-95 disabled:opacity-50"
+          >
+            <Play className="w-3 h-3 text-emerald-500" />
+            <span>{dispatchingJob ? 'Queuing...' : 'Queue Diagnostic Job'}</span>
+          </button>
+        </div>
+
+        {jobs.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-500 dark:text-neutral-400">
+            No runner jobs dispatched yet. Higher tiers (Team 30 / Pro 20) automatically preempt Starter FIFO (10).
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-white/5">
+            {jobs.map((job) => {
+              const prio = job.priority ?? 10;
+              const prioLabel = prio >= 30 ? 'PRIORITY • TEAM' : prio >= 20 ? 'PRIORITY • PRO' : 'STANDARD';
+              return (
+                <div key={job.id} className="px-5 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{job.job_type || 'job'}</span>
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      prio >= 20
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-neutral-400 dark:border-white/10'
+                    }`}>
+                      {prioLabel} ({prio})
+                    </span>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
+                      {job.status}
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
+                    {job.created_at ? new Date(job.created_at).toLocaleString() : job.id.slice(0, 8)}
                   </div>
                 </div>
               );

@@ -1,12 +1,13 @@
 import React from 'react';
 import { 
-  X, Cpu, History, CreditCard, Settings, Download, 
-  Sun, Moon, LogOut, Sparkles, ArrowRight, ExternalLink, User
+  X, Cpu, History, CreditCard, Settings, Download, Heart,
+  Sun, Moon, LogOut, Sparkles, ExternalLink, User
 } from 'lucide-react';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { logout } from '../api';
+import { SubscriptionInfo } from '../types';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -16,8 +17,11 @@ interface MobileDrawerProps {
   isInstallable?: boolean;
   onInstallPWA?: () => void;
   onLock?: () => void;
+  onOpenSupportUpi?: () => void;
+  onOpenTeamSettings?: () => void;
   onlineRunnersCount?: number;
   planTier?: string;
+  subscriptionInfo?: SubscriptionInfo | null;
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({
@@ -28,8 +32,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   isInstallable,
   onInstallPWA,
   onLock,
+  onOpenSupportUpi,
+  onOpenTeamSettings,
   onlineRunnersCount = 0,
   planTier = 'pro',
+  subscriptionInfo,
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const username = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
@@ -68,11 +75,17 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     },
     {
       id: 'billing',
-      label: 'Billing & Early Adopter Perks',
+      label: 'Billing & Plan Trial',
       icon: CreditCard,
-      badge: '100% FREE',
-      badgeColor: 'blue',
-      desc: 'Founder Beta tier and feature entitlements'
+      badge: subscriptionInfo?.free_beta_mode
+        ? '100% FREE'
+        : subscriptionInfo?.trial_active
+        ? `${subscriptionInfo.trial_days_remaining ?? 15}d TRIAL`
+        : (subscriptionInfo?.tier || planTier || 'pro').toUpperCase(),
+      badgeColor: subscriptionInfo?.trial_active ? 'emerald' : 'blue',
+      desc: subscriptionInfo?.trial_active
+        ? `${subscriptionInfo.trial_days_remaining ?? 15} days of free Pro left • Upgrade via UPI`
+        : 'Plan quotas, Direct UPI upgrades & feature entitlements'
     },
   ];
 
@@ -175,7 +188,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <span className="truncate max-w-[120px]">{username}</span>
             </div>
           </div>
-          <OrganizationSwitcher />
+          <OrganizationSwitcher
+            onOpenTeamSettings={() => {
+              onClose();
+              if (onOpenTeamSettings) onOpenTeamSettings();
+            }}
+          />
         </div>
 
         {/* Quick Actions (Appearance, Star on GitHub, Sign Out) - Put right here near the top! */}
@@ -239,6 +257,29 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             Profile & Account
           </span>
           {profileItems.map(renderNavCard)}
+          {onOpenSupportUpi && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenSupportUpi();
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-xl text-left transition active:scale-95 text-slate-700 hover:text-slate-900 hover:bg-emerald-50/80 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-emerald-950/30 border border-transparent"
+            >
+              <div className="flex items-start gap-3">
+                <Heart className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <div>
+                  <div className="text-xs font-semibold">Support via UPI</div>
+                  <div className="text-[10px] text-slate-500 dark:text-neutral-400">
+                    Scan PhonePe QR or pay 8116710520@ibl
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full shrink-0 bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30">
+                UPI
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Workflow & Fleet Views */}

@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from app.services.github_client import GitHubClient
 from app.services.policy_inspector import PolicyInspector
+from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,12 @@ class IssueAnalyzer:
         body: str,
         labels: List[Any],
         language: Optional[str] = None,
-        assignees: Optional[List[Any]] = None
+        assignees: Optional[List[Any]] = None,
+        ai_api_key: Optional[str] = None,
+        ai_provider: Optional[str] = None,
+        custom_endpoint: Optional[str] = None,
+        ai_key_source: Optional[str] = None,
+        triage_policy: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Performs deep automated intelligence on a GitHub issue:
@@ -46,7 +52,12 @@ class IssueAnalyzer:
         
         assignment_required = policy_result.get("assignment_required", False)
         workflow_state = policy_result.get("workflow_state", "READY_TO_WORK")
-        policy_evidence = policy_result.get("evidence", [])
+        policy_evidence = list(policy_result.get("evidence", []))
+
+        if triage_policy and triage_policy.get("require_maintainer_approval"):
+            assignment_required = True
+            workflow_state = "ASSIGNMENT_REQUIRED"
+            policy_evidence.append("Organization triage policy requires maintainer approval before PR submission.")
         
         # 2. Extract code blocks, error traces, and mentioned files
         extracted_files = self._extract_file_paths(body_text, lang)
@@ -67,6 +78,34 @@ class IssueAnalyzer:
             affected_files=extracted_files,
             test_strategy=test_strategy
         )
+
+        # 5b. Enrich with real BYOK LLM brief when configured
+        ai_mode = "deterministic_heuristic"
+        llm_brief = None
+        if ai_api_key:
+            llm_brief = await LLMService.generate_issue_brief(
+                api_key=ai_api_key,
+                provider=ai_provider or "gemini",
+                owner=owner,
+                repo=repo,
+                issue_number=issue_number,
+                title=title,
+                body=body_text,
+                language=language,
+                custom_endpoint=custom_endpoint,
+            )
+        if llm_brief:
+            ai_mode = "live_byok"
+            if llm_brief.get("executive_summary"):
+                executive_summary = llm_brief["executive_summary"]
+            if llm_brief.get("root_cause_analysis"):
+                root_cause = llm_brief["root_cause_analysis"]
+            if llm_brief.get("affected_files"):
+                extracted_files = llm_brief["affected_files"]
+            if llm_brief.get("proposed_plan"):
+                proposed_plan = llm_brief["proposed_plan"]
+            if llm_brief.get("test_command"):
+                test_strategy["command"] = llm_brief["test_command"]
         
         # 6. Tailor assignment comment if required
         draft_comment = policy_result.get("draft_comment")
@@ -109,6 +148,9 @@ class IssueAnalyzer:
             "proposed_plan": proposed_plan,
             "test_strategy": test_strategy,
             "rule_check": rule_decision,
+            "ai_mode": ai_mode,
+            "ai_provider": ai_provider or "gemini",
+            "ai_key_source": ai_key_source or "none",
             "prompt_text": self._generate_agent_prompt(
                 owner=owner,
                 repo=repo,

@@ -6,9 +6,13 @@ import { CreateOrganizationModal } from './CreateOrganizationModal';
 
 interface OrganizationSwitcherProps {
   onOrganizationChanged?: (org: Organization) => void;
+  onOpenTeamSettings?: () => void;
 }
 
-export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({ onOrganizationChanged }) => {
+export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
+  onOrganizationChanged,
+  onOpenTeamSettings,
+}) => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -152,8 +156,21 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({ onOr
             })}
           </div>
 
-          {/* Create Organization Action */}
-          <div className="pt-1 border-t border-slate-200 dark:border-white/10">
+          {/* Create Organization & Team Governance Actions */}
+          <div className="pt-1 border-t border-slate-200 dark:border-white/10 space-y-1">
+            {onOpenTeamSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenTeamSettings();
+                }}
+                className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-white/10 transition"
+              >
+                <Users className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Team Seats, Private Repos & RBAC</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 setIsOpen(false);

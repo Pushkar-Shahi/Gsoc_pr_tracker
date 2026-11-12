@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut, Download, Menu } from 'lucide-react';
-import { DiscoveryStatus, PlatformSettings } from '../types';
+import { Sun, Moon, User as UserIcon, Settings, CreditCard, LogOut, Download, Menu, Heart } from 'lucide-react';
+import { DiscoveryStatus, PlatformSettings, SubscriptionInfo } from '../types';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { useTheme } from '../theme';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
@@ -14,21 +14,28 @@ interface HeaderProps {
   activeTab?: string;
   setActiveTab?: (tab: string) => void;
   onLock?: () => void;
+  onOpenSupportUpi?: () => void;
+  onOpenTeamSettings?: () => void;
   isInstallable?: boolean;
   onInstallPWA?: () => void;
   onToggleMobileMenu?: () => void;
   planTier?: string;
+  subscriptionInfo?: SubscriptionInfo | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onRefreshDiscovery,
   isSyncing,
   onLock,
+  onOpenSupportUpi,
+  onOpenTeamSettings,
   activeTab,
   setActiveTab,
   isInstallable,
   onInstallPWA,
-  onToggleMobileMenu
+  onToggleMobileMenu,
+  planTier = 'pro',
+  subscriptionInfo,
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -70,13 +77,58 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 px-3.5 sm:px-8 flex items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/92 dark:bg-[#080c14]/90 backdrop-blur-sm sticky top-0 z-20 transform-gpu">
-      {/* Left: Organization / Account Switcher & Early Access Badge */}
+      {/* Left: Organization / Account Switcher & Active Tier / Trial Badge */}
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-        <OrganizationSwitcher />
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500/30 text-[11px] font-semibold select-none shadow-xs shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
-          <span>Early Access Beta</span>
-        </div>
+        <OrganizationSwitcher onOpenTeamSettings={onOpenTeamSettings} />
+        {(() => {
+          const effectiveTier = subscriptionInfo?.tier || planTier || 'pro';
+          const trialActive = Boolean(subscriptionInfo?.trial_active);
+          const daysLeft = subscriptionInfo?.trial_days_remaining ?? 15;
+          const isUrgent = trialActive && daysLeft <= 3;
+
+          let label = 'Early Access Beta';
+          let pillClasses = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500/30';
+          let dotClasses = 'bg-blue-600 dark:bg-blue-400';
+
+          if (!subscriptionInfo?.free_beta_mode) {
+            if (trialActive) {
+              label = `Pro Trial • ${daysLeft}d left`;
+              if (isUrgent) {
+                pillClasses = 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/40';
+                dotClasses = 'bg-amber-500 animate-ping';
+              } else {
+                pillClasses = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-500/30';
+                dotClasses = 'bg-indigo-500 animate-pulse';
+              }
+            } else if (subscriptionInfo?.trial_expired && effectiveTier === 'starter') {
+              label = 'Starter • Trial Ended';
+              pillClasses = 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-white/5 dark:text-neutral-300 dark:border-white/15';
+              dotClasses = 'bg-amber-500';
+            } else if (effectiveTier === 'team') {
+              label = 'Engineering Team';
+              pillClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-500/30';
+              dotClasses = 'bg-emerald-500';
+            } else if (effectiveTier === 'pro') {
+              label = 'Pro Developer';
+            } else {
+              label = 'Starter Free';
+              pillClasses = 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-white/5 dark:text-neutral-300 dark:border-white/10';
+              dotClasses = 'bg-slate-400';
+            }
+          }
+
+          return (
+            <button
+              type="button"
+              onClick={() => setActiveTab?.('billing')}
+              title="View plan details, 15-day trial status, and UPI upgrades"
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold select-none shadow-xs shrink-0 transition hover:opacity-90 active:scale-95 ${pillClasses}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${dotClasses}`} />
+              <span>{label}</span>
+            </button>
+          );
+        })()}
       </div>
 
       {/* Right Controls: Install App, Theme Toggle, Sync Live, Profile, Mobile Menu */}
@@ -189,12 +241,32 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <div className="flex items-center gap-2.5">
                   <CreditCard className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                  <span>Billing</span>
+                  <span>Billing & Plans</span>
                 </div>
                 <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
                   FREE BETA
                 </span>
               </button>
+
+              {/* Support via UPI */}
+              {onOpenSupportUpi && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onOpenSupportUpi();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition text-left text-slate-700 hover:text-slate-900 hover:bg-emerald-50/80 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-emerald-950/30 font-medium"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Heart className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Support via UPI</span>
+                  </div>
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                    UPI
+                  </span>
+                </button>
+              )}
 
               {/* Divider */}
               <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />

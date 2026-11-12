@@ -34,6 +34,29 @@ class SimulateTierRequest(BaseModel):
     tier: str = Field(..., description="'starter', 'pro', or 'team'")
 
 
+class UpiSubmitRequest(BaseModel):
+    payment_purpose: str = Field(..., description="'plan' or 'support'")
+    plan_tier: Optional[str] = Field(None, description="'pro' or 'team' when purpose is 'plan'")
+    billing_cycle: Optional[str] = Field("monthly", description="'monthly', 'annual', or 'one_time'")
+    amount_inr: Optional[int] = Field(None, description="Amount in INR (server-validated for plans; custom 1-100000 for support)")
+    utr_number: str = Field(..., description="12-digit UTR or UPI Transaction Reference ID")
+    payer_upi_id: Optional[str] = Field(None, description="Optional sender UPI ID")
+    note: Optional[str] = Field(None, description="Optional payment note")
+
+
+class UpiReviewRequest(BaseModel):
+    action: str = Field(..., description="'approve' or 'reject'")
+    admin_note: Optional[str] = Field(None, description="Optional reviewer note")
+
+
+def _require_platform_admin(ctx: TenantContext) -> None:
+    if not getattr(ctx.user, "is_superuser", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform administrator access required to review UPI payments."
+        )
+
+
 @router.get("/plans")
 async def get_plans_catalog():
     """Returns the pricing catalog with tier features, quotas, and pricing."""
@@ -46,7 +69,8 @@ async def get_current_subscription(
     db: AsyncSession = Depends(get_db)
 ):
     """Returns the requesting organization's subscription status and current month's task quota usage."""
-    return await BillingService.get_subscription_summary(ctx.organization.id, db)
+    is_admin = bool(getattr(ctx.user, "is_superuser", False))
+    return await BillingService.get_subscription_summary(ctx.organization.id, db, is_admin=is_admin)
 
 
 @router.post("/checkout-session")
@@ -191,4 +215,84 @@ async def simulate_tier_transition(
             sub.updated_at = now_utc
 
     await db.commit()
-    return await BillingService.get_subscription_summary(ctx.organization.id, db)
+    is_admin = bool(getattr(ctx.user, "is_superuser", False))
+    return await BillingService.get_subscription_summary(ctx.organization.id, db, is_admin=is_admin)
+
+
+# ==========================================
+# Direct UPI Payment & Admin Review Endpoints
+# ==========================================
+
+@router.get("/upi/config")
+async def get_upi_config():
+    """Returns public Direct UPI payment metadata (VPA, QR URL, INR plan rates, AutoPay note)."""
+    return BillingService.get_upi_config()
+
+
+@router.post("/upi/submit")
+async def submit_upi_payment(
+    payload: UpiSubmitRequest,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Submits a Direct UPI payment UTR / Reference ID for manual verification."""
+    try:
+        return await BillingService.submit_upi_payment_request(
+            tenant_id=ctx.organization.id,
+            user=ctx.user,
+            payment_purpose=payload.payment_purpose,
+            utr_number=payload.utr_number,
+            plan_tier=payload.plan_tier,
+            billing_cycle=payload.billing_cycle,
+            amount_inr=payload.amount_inr,
+            payer_upi_id=payload.payer_upi_id,
+            note=payload.note,
+            db=db,
+        )
+    except FileExistsError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/upi/my-requests")
+async def get_my_upi_requests(
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lists Direct UPI submissions for the active organization workspace."""
+    return await BillingService.list_tenant_upi_requests(ctx.organization.id, db)
+
+
+@router.get("/upi/admin/requests")
+async def get_admin_upi_requests(
+    status_filter: Optional[str] = None,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lists all UPI payment submissions across workspaces for administrator review."""
+    _require_platform_admin(ctx)
+    return await BillingService.list_admin_upi_requests(db, status_filter=status_filter)
+
+
+@router.post("/upi/admin/requests/{request_id}/review")
+async def review_admin_upi_request(
+    request_id: str,
+    payload: UpiReviewRequest,
+    ctx: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Approves or rejects a UPI payment submission and activates the requested tier on approval."""
+    _require_platform_admin(ctx)
+    try:
+        return await BillingService.review_upi_payment_request(
+            request_id=request_id,
+            action=payload.action,
+            reviewer_user=ctx.user,
+            admin_note=payload.admin_note,
+            db=db,
+        )
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

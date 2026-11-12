@@ -504,3 +504,50 @@ class GitHubClient:
             except Exception as e:
                 logger.error(f"Error checking duplicate PRs in {owner}/{repo}: {e}")
                 return None
+
+    async def list_user_private_repos(self, per_page: int = 30) -> List[Dict[str, Any]]:
+        """Lists private repositories accessible to the authenticated GitHub token."""
+        if not self.token:
+            return []
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            try:
+                resp = await client.get(
+                    f"{self.base_url}/user/repos",
+                    headers=self._get_headers(),
+                    params={
+                        "visibility": "private",
+                        "affiliation": "owner,collaborator,organization_member",
+                        "sort": "updated",
+                        "per_page": per_page,
+                    },
+                )
+                self._update_rate_limits(resp)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return [r for r in data if isinstance(r, dict) and r.get("private")]
+                logger.warning(f"Failed listing user private repos: {resp.status_code}")
+                return []
+            except Exception as e:
+                logger.error(f"Error listing user private repos: {e}")
+                return []
+
+    async def list_org_private_repos(self, org_name: str, per_page: int = 30) -> List[Dict[str, Any]]:
+        """Lists private repositories within a GitHub Organization."""
+        if not self.token or not org_name:
+            return []
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            try:
+                resp = await client.get(
+                    f"{self.base_url}/orgs/{org_name}/repos",
+                    headers=self._get_headers(),
+                    params={"type": "private", "sort": "updated", "per_page": per_page},
+                )
+                self._update_rate_limits(resp)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return [r for r in data if isinstance(r, dict)]
+                logger.warning(f"Failed listing org private repos for {org_name}: {resp.status_code}")
+                return []
+            except Exception as e:
+                logger.error(f"Error listing org private repos for {org_name}: {e}")
+                return []

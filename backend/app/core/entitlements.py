@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Callable, Optional
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,10 +24,18 @@ def require_tier(minimum_tier: str) -> Callable:
     """
     min_rank = TIER_RANKS.get(minimum_tier.lower(), 1)
 
-    async def tier_checker(ctx: TenantContext = Depends(get_current_tenant)) -> TenantContext:
+    async def tier_checker(
+        ctx: TenantContext = Depends(get_current_tenant),
+        db: Optional[AsyncSession] = Depends(get_db),
+    ) -> TenantContext:
         # Free Beta Mode or Superuser bypasses all tier restrictions
         if getattr(settings, "FREE_BETA_MODE", False) or ctx.user.is_superuser:
             return ctx
+
+        if db is not None and isinstance(db, AsyncSession) and ctx.organization:
+            synced_org, _ = await BillingService.sync_trial_expiration(ctx.organization.id, db)
+            if synced_org is not None:
+                ctx.organization.billing_tier = synced_org.billing_tier
 
         current_tier = (ctx.organization.billing_tier or "starter").lower()
         curr_rank = TIER_RANKS.get(current_tier, 0)
