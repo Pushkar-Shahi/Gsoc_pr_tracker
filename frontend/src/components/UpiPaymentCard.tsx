@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  Copy, Check, Smartphone, QrCode,
-  ShieldCheck, Info, Loader2, ArrowRight, Heart, Sparkles, X
+  Copy, Check, QrCode,
+  ShieldCheck, Info, Loader2, Heart, Sparkles, X
 } from 'lucide-react';
 import { UpiConfig, UpiPaymentRequest } from '../types';
 import * as api from '../api';
@@ -21,8 +21,8 @@ interface UpiPaymentCardProps {
 const DEFAULT_SUPPORT_PRESETS = [49, 100, 250, 500];
 
 /**
- * Shared Direct UPI payment widget supporting dynamic amount-locked QRs,
- * mobile UPI app intent, and UTR submission.
+ * Shared Direct UPI payment widget supporting dynamic amount-locked QRs
+ * and UTR submission.
  */
 export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
   mode,
@@ -254,8 +254,8 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
             </p>
           </div>
 
-          {/* Copy UPI ID + Open UPI App Buttons */}
-          <div className="w-full space-y-2">
+          {/* Copy UPI ID */}
+          <div className="w-full">
             <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10">
               <div className="text-left min-w-0">
                 <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 dark:text-neutral-500">
@@ -283,18 +283,6 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
                 )}
               </button>
             </div>
-
-            <a
-              href={upiUri}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition active:scale-95"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Open UPI App & Pay ₹{effectiveAmount}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-            <p className="text-[10px] text-slate-400 dark:text-neutral-500 leading-relaxed">
-              Tip: On desktop or if an app blocks browser UPI links to personal handles, scan the QR above or copy <span className="font-mono">{upiVpa}</span> directly inside PhonePe/GPay.
-            </p>
           </div>
         </div>
 
