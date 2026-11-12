@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   Clock,
   ExternalLink,
+  Lock,
+  Pencil,
 } from 'lucide-react';
 import * as api from '../api';
 import {
@@ -56,7 +58,8 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   const [auditSearch, setAuditSearch] = useState('');
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
 
-  // Runtime config form state
+  // Runtime config form state (locked by default to prevent accidental edits)
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
   const [cfgBetaMode, setCfgBetaMode] = useState(false);
   const [cfgTrialDays, setCfgTrialDays] = useState(15);
   const [cfgCreditLimit, setCfgCreditLimit] = useState(5);
@@ -157,6 +160,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
 
   const handleSaveRuntimeConfig = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isEditingConfig) return;
     runAction(
       'save_runtime',
       async () => {
@@ -166,11 +170,23 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           free_tier_credit_limit: cfgCreditLimit,
           upi_vpa: cfgUpiVpa,
         });
+        setIsEditingConfig(false);
         return `Saved live settings: Trial=${res.runtime.free_trial_days}d, Credits=${res.runtime.free_tier_credit_limit}, VPA=${res.runtime.upi_vpa}, FreeBeta=${res.runtime.free_beta_mode ? 'ON' : 'OFF'}`;
       },
       true
     );
   };
+
+  const handleCancelConfigEdit = () => {
+    if (overview) {
+      syncRuntimeForm(overview);
+    }
+    setIsEditingConfig(false);
+  };
+
+  const runtimeInputClass = isEditingConfig
+    ? 'w-full px-3 py-2 rounded-xl border border-indigo-400 dark:border-indigo-500/60 bg-white dark:bg-black/40 text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition'
+    : 'w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-200/70 dark:bg-white/[0.04] text-slate-500 dark:text-neutral-400 font-mono text-xs cursor-not-allowed select-none opacity-80 transition';
 
   const subTabs: Array<{ id: AdminSubTab; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }> = [
     { id: 'overview', label: 'Overview & Controls', icon: Sliders },
@@ -394,75 +410,141 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
             {/* Live Runtime Monetization & UPI Config */}
             <form
               onSubmit={handleSaveRuntimeConfig}
-              className="p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0d121c] space-y-4"
+              className={`p-5 rounded-2xl border space-y-4 transition ${
+                isEditingConfig
+                  ? 'border-indigo-300 dark:border-indigo-500/40 bg-white dark:bg-[#0d121c] shadow-sm shadow-indigo-500/10'
+                  : 'border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-[#0b0f17]'
+              }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <Sparkles className={`w-4 h-4 ${isEditingConfig ? 'text-purple-500' : 'text-slate-400 dark:text-neutral-500'}`} />
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white">Live Monetization & UPI Settings</h2>
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      isEditingConfig
+                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
+                        : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-neutral-400'
+                    }`}
+                  >
+                    <Lock className="w-2.5 h-2.5" />
+                    <span>{isEditingConfig ? 'EDITING UNLOCKED' : 'READ-ONLY'}</span>
+                  </span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">NO REDEPLOY NEEDED</span>
+
+                {!isEditingConfig ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingConfig(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-neutral-200 transition active:scale-95"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    <span>Edit Settings</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCancelConfigEdit}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-semibold text-slate-600 dark:text-neutral-300 transition"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="space-y-1 text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-neutral-300">Default Pro Trial Length (Days)</span>
+                  <span className={`font-semibold ${isEditingConfig ? 'text-slate-700 dark:text-neutral-300' : 'text-slate-500 dark:text-neutral-400'}`}>
+                    Default Pro Trial Length (Days)
+                  </span>
                   <input
                     type="number"
                     min={0}
                     max={365}
+                    disabled={!isEditingConfig}
                     value={cfgTrialDays}
                     onChange={(e) => setCfgTrialDays(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/30 text-slate-900 dark:text-white font-mono text-xs"
+                    className={runtimeInputClass}
                   />
                 </label>
 
                 <label className="space-y-1 text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-neutral-300">Starter One-Time Credit Limit</span>
+                  <span className={`font-semibold ${isEditingConfig ? 'text-slate-700 dark:text-neutral-300' : 'text-slate-500 dark:text-neutral-400'}`}>
+                    Starter One-Time Credit Limit
+                  </span>
                   <input
                     type="number"
                     min={1}
                     max={1000}
+                    disabled={!isEditingConfig}
                     value={cfgCreditLimit}
                     onChange={(e) => setCfgCreditLimit(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/30 text-slate-900 dark:text-white font-mono text-xs"
+                    className={runtimeInputClass}
                   />
                 </label>
 
                 <label className="space-y-1 text-xs sm:col-span-2">
-                  <span className="font-semibold text-slate-700 dark:text-neutral-300">Receiving UPI VPA (Plans & Support QR)</span>
+                  <span className={`font-semibold ${isEditingConfig ? 'text-slate-700 dark:text-neutral-300' : 'text-slate-500 dark:text-neutral-400'}`}>
+                    Receiving UPI VPA (Plans & Support QR)
+                  </span>
                   <input
                     type="text"
+                    disabled={!isEditingConfig}
                     value={cfgUpiVpa}
                     onChange={(e) => setCfgUpiVpa(e.target.value)}
                     placeholder="8116710520@sbi"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/30 text-slate-900 dark:text-white font-mono text-xs"
+                    className={runtimeInputClass}
                   />
                 </label>
               </div>
 
-              <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] cursor-pointer">
+              <label
+                className={`flex items-center justify-between p-3 rounded-xl border transition ${
+                  isEditingConfig
+                    ? 'border-indigo-300/70 dark:border-indigo-500/30 bg-slate-50 dark:bg-white/[0.03] cursor-pointer'
+                    : 'border-slate-200 dark:border-white/5 bg-slate-200/60 dark:bg-white/[0.03] cursor-not-allowed opacity-75'
+                }`}
+              >
                 <div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Free Beta Mode (Unlock Pro for Everyone)</div>
+                  <div className={`text-xs font-bold ${isEditingConfig ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-neutral-300'}`}>
+                    Free Beta Mode (Unlock Pro for Everyone)
+                  </div>
                   <div className="text-[11px] text-slate-500 dark:text-neutral-400">
                     When OFF, new users receive {cfgTrialDays}-day Pro trial then fall back to {cfgCreditLimit} credits on Starter.
                   </div>
                 </div>
                 <input
                   type="checkbox"
+                  disabled={!isEditingConfig}
                   checked={cfgBetaMode}
                   onChange={(e) => setCfgBetaMode(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-600"
+                  className={`w-4 h-4 accent-indigo-600 ${!isEditingConfig ? 'cursor-not-allowed opacity-60' : ''}`}
                 />
               </label>
 
-              <button
-                type="submit"
-                disabled={busyKey === 'save_runtime'}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-sm transition disabled:opacity-60"
-              >
-                {busyKey === 'save_runtime' ? 'Applying Settings...' : 'Save & Apply Live Config'}
-              </button>
+              {isEditingConfig ? (
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="submit"
+                    disabled={busyKey === 'save_runtime'}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-sm transition disabled:opacity-60"
+                  >
+                    {busyKey === 'save_runtime' ? 'Applying Settings...' : 'Save & Apply Live Config'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelConfigEdit}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-neutral-300 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full py-2.5 px-3 rounded-xl bg-slate-200/70 dark:bg-white/[0.04] border border-slate-200 dark:border-white/5 text-center text-[11px] font-medium text-slate-500 dark:text-neutral-400 flex items-center justify-center gap-1.5">
+                  <Lock className="w-3 h-3" />
+                  <span>Protected against accidental changes — click Edit Settings above to modify.</span>
+                </div>
+              )}
             </form>
           </div>
         </div>
