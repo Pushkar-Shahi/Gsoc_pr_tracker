@@ -256,14 +256,14 @@ export const Header: React.FC<HeaderProps> = ({
                     setIsMenuOpen(false);
                     onOpenSupportUpi();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition text-left text-slate-700 hover:text-slate-900 hover:bg-emerald-50/80 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-emerald-950/30 font-medium"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition text-left bg-gradient-to-r from-amber-50/80 to-rose-50/70 hover:from-amber-100/90 hover:to-rose-100/80 text-amber-950 border border-amber-200/80 dark:from-amber-950/35 dark:to-rose-950/30 dark:hover:from-amber-900/45 dark:hover:to-rose-900/40 dark:text-amber-100 dark:border-amber-500/30 font-semibold"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Heart className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <Heart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0" />
                     <span>Support via UPI</span>
                   </div>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                    UPI
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
+                    TIP • UPI
                   </span>
                 </button>
               )}

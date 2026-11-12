@@ -264,19 +264,19 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 onClose();
                 onOpenSupportUpi();
               }}
-              className="w-full flex items-center justify-between p-3 rounded-xl text-left transition active:scale-95 text-slate-700 hover:text-slate-900 hover:bg-emerald-50/80 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-emerald-950/30 border border-transparent"
+              className="w-full flex items-center justify-between p-3 rounded-xl text-left transition active:scale-95 bg-gradient-to-r from-amber-50/90 to-rose-50/70 hover:from-amber-100 hover:to-rose-100 text-amber-950 dark:from-amber-950/35 dark:to-rose-950/25 dark:hover:from-amber-900/45 dark:hover:to-rose-900/35 dark:text-amber-100 border border-amber-300/80 dark:border-amber-500/30"
             >
               <div className="flex items-start gap-3">
-                <Heart className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <Heart className="w-4 h-4 mt-0.5 shrink-0 text-rose-500 fill-rose-500" />
                 <div>
-                  <div className="text-xs font-semibold">Support via UPI</div>
-                  <div className="text-[10px] text-slate-500 dark:text-neutral-400">
+                  <div className="text-xs font-bold">Support via UPI</div>
+                  <div className="text-[10px] text-amber-800/80 dark:text-amber-200/80">
                     Scan amount-locked QR or pay 8116710520@sbi
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full shrink-0 bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30">
-                UPI
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full shrink-0 bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
+                TIP • UPI
               </span>
             </button>
           )}

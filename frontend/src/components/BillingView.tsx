@@ -214,9 +214,9 @@ export function BillingView() {
           <button
             type="button"
             onClick={openSupportPanel}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white text-xs font-bold shadow-md shadow-orange-500/25 transition active:scale-95"
           >
-            <Heart className="w-3.5 h-3.5" />
+            <Heart className="w-3.5 h-3.5 fill-white" />
             <span>Support via UPI ({upiConfig?.upi_vpa || '8116710520@sbi'})</span>
           </button>
         </div>
@@ -600,24 +600,29 @@ export function BillingView() {
 
       {/* Voluntary Support / Tip Banner */}
       {activeUpiPanel?.mode !== 'support' && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-[#0c101a] border border-emerald-200 dark:border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-rose-50/50 dark:from-amber-950/35 dark:via-orange-950/25 dark:to-rose-950/20 border border-amber-300/80 dark:border-amber-500/35 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm shadow-amber-500/10">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0 shadow-sm shadow-emerald-600/25">
-              <Heart className="w-5 h-5" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white shrink-0 shadow-md shadow-orange-500/25">
+              <Heart className="w-5 h-5 fill-white" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Did this GSoC tracker help you find an issue or land a PR?
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Did this GSoC tracker help you find an issue or land a PR?
+                </h3>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/35">
+                  ₹49+ • 0% FEE
+                </span>
+              </div>
               <p className="text-xs text-slate-600 dark:text-neutral-300 mt-0.5">
-                Support server & GitHub API hosting costs with a direct 0%-fee UPI tip (<span className="font-mono font-semibold">{upiConfig?.upi_vpa || '8116710520@sbi'}</span>).
+                Fuel server & GitHub API hosting with a quick 10-second UPI tip to <span className="font-mono font-semibold text-amber-800 dark:text-amber-300">{upiConfig?.upi_vpa || '8116710520@sbi'}</span>.
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={openSupportPanel}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 transition active:scale-95 shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-orange-500/25 transition active:scale-95 shrink-0"
           >
             <QrCode className="w-4 h-4" />
             <span>Open Support UPI QR</span>

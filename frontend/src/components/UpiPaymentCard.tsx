@@ -148,10 +148,18 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
   return (
     <div className="rounded-2xl bg-white dark:bg-[#0c101a] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl overflow-hidden">
       {/* Top Banner */}
-      <div className="px-5 py-4 bg-gradient-to-r from-emerald-50/90 via-blue-50/70 to-slate-50 dark:from-emerald-950/30 dark:via-blue-950/30 dark:to-[#0c101a] border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+      <div className={`px-5 py-4 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 ${
+        mode === 'support'
+          ? 'bg-gradient-to-r from-amber-50/95 via-orange-50/80 to-rose-50/70 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-rose-950/25'
+          : 'bg-gradient-to-r from-emerald-50/90 via-blue-50/70 to-slate-50 dark:from-emerald-950/30 dark:via-blue-950/30 dark:to-[#0c101a]'
+      }`}>
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 shrink-0">
-            {mode === 'support' ? <Heart className="w-4 h-4" /> : <QrCode className="w-4 h-4" />}
+          <div className={`p-2 rounded-xl text-white shadow-sm shrink-0 ${
+            mode === 'support'
+              ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 shadow-orange-500/30'
+              : 'bg-emerald-600 shadow-emerald-600/20'
+          }`}>
+            {mode === 'support' ? <Heart className="w-4 h-4 fill-white" /> : <QrCode className="w-4 h-4" />}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -160,12 +168,18 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
                   ? `Pay via UPI — ${planLabel || `${(planTier || 'pro').toUpperCase()} Plan`}`
                   : 'Support GSoC Issue-to-PR via Direct UPI'}
               </h3>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-400/30">
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                mode === 'support'
+                  ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/35'
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-400/30'
+              }`}>
                 0% FEE • DIRECT UPI
               </span>
             </div>
-            <p className="text-xs text-slate-600 dark:text-neutral-400 mt-0.5">
-              Pay directly to <span className="font-mono font-semibold text-slate-900 dark:text-white">{upiVpa}</span> ({payeeName}) via PhonePe, GPay, Paytm, or BHIM.
+            <p className="text-xs text-slate-600 dark:text-neutral-300 mt-0.5">
+              {mode === 'support'
+                ? <>100% funds GSoC server & GitHub API hosting • Pay directly to <span className="font-mono font-semibold text-slate-900 dark:text-white">{upiVpa}</span> ({payeeName}).</>
+                : <>Pay directly to <span className="font-mono font-semibold text-slate-900 dark:text-white">{upiVpa}</span> ({payeeName}) via PhonePe, GPay, Paytm, or BHIM.</>}
             </p>
           </div>
         </div>
@@ -191,21 +205,32 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
               <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400 text-left">
                 Choose Support Amount (INR)
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {presets.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => handleSelectPreset(amt)}
-                    className={`py-1.5 rounded-xl text-xs font-bold transition active:scale-95 border ${
-                      supportAmount === amt
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/20'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-300 dark:border-white/10'
-                    }`}
-                  >
-                    ₹{amt}
-                  </button>
-                ))}
+              <div className="grid grid-cols-4 gap-1.5 pt-1">
+                {presets.map((amt, idx) => {
+                  const isPopular = amt === 100 || (idx === 1 && !presets.includes(100));
+                  const isSelected = supportAmount === amt;
+                  return (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => handleSelectPreset(amt)}
+                      className={`relative py-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white border-amber-400 shadow-md shadow-orange-500/25'
+                          : isPopular
+                          ? 'bg-amber-50/90 hover:bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:text-amber-200 dark:border-amber-400/40'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-300 dark:border-white/10'
+                      }`}
+                    >
+                      {isPopular && (
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[8px] font-mono font-extrabold tracking-wider uppercase shadow-xs">
+                          Popular
+                        </span>
+                      )}
+                      ₹{amt}
+                    </button>
+                  );
+                })}
               </div>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 dark:text-neutral-400">
@@ -239,7 +264,11 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
 
           {/* Amount-Locked QR Code Display with crisp high-contrast quiet zone */}
           <div className="flex flex-col items-center space-y-2">
-            <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-md inline-block">
+            <div className={`p-3.5 rounded-2xl bg-white border shadow-md inline-block ${
+              mode === 'support'
+                ? 'border-amber-300 ring-2 ring-amber-400/40 shadow-amber-500/15'
+                : 'border-slate-200'
+            }`}>
               <QRCodeSVG
                 value={upiUri}
                 size={176}

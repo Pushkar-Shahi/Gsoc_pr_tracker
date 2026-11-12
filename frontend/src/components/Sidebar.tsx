@@ -162,9 +162,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 onClick={onOpenSupportUpi}
                 title="Support GSoC Issue-to-PR via UPI (8116710520@sbi)"
-                className="w-11 h-11 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-600 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 dark:border-emerald-500/30 dark:text-emerald-400 flex items-center justify-center transition shadow-sm active:scale-95"
+                className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white flex items-center justify-center transition shadow-md shadow-orange-500/25 active:scale-95"
               >
-                <Heart className="w-4 h-4" />
+                <Heart className="w-4 h-4 fill-white" />
               </button>
             )}
             <button
@@ -221,9 +221,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onOpenSupportUpi}
-                className="w-full px-3 py-1.5 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/25 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+                className="w-full px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition shadow-md shadow-orange-500/25 active:scale-95"
               >
-                <Heart className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <Heart className="w-3.5 h-3.5 fill-white" />
                 <span>Support via UPI</span>
               </button>
             )}
