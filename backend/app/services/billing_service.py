@@ -703,8 +703,8 @@ class BillingService:
                 plan_obj["price_annual"] if resolved_cycle == "annual" else plan_obj["price_monthly"]
             )
         else:
-            if amount_inr is None or int(amount_inr) < 1 or int(amount_inr) > 100000:
-                raise ValueError("Support amount must be between ₹1 and ₹1,00,000.")
+            if amount_inr is None or int(amount_inr) < 1 or int(amount_inr) > 50000:
+                raise ValueError("Support amount must be between ₹1 and ₹50,000.")
             resolved_amount = int(amount_inr)
 
         dup_stmt = select(UpiPaymentRequest).where(

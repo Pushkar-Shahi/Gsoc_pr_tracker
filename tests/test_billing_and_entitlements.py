@@ -472,6 +472,19 @@ async def test_upi_submit_validation_tenant_isolation_and_duplicates():
         )
         assert bad_utr.status_code == 400
 
+        # 1b. Support amount exceeding ₹50,000 limit is rejected with 400
+        over_limit = await client.post(
+            "/api/v1/billing/upi/submit",
+            headers={"Authorization": f"Bearer {token_b}"},
+            json={
+                "payment_purpose": "support",
+                "amount_inr": 50001,
+                "utr_number": f"8312{uuid.uuid4().int % 100000000:08d}",
+            },
+        )
+        assert over_limit.status_code == 400
+        assert "50,000" in str(over_limit.json()["detail"])
+
         # 2. Plan submission enforces authoritative server price even if tampered
         plan_resp = await client.post(
             "/api/v1/billing/upi/submit",

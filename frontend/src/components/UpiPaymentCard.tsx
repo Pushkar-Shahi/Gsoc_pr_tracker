@@ -82,13 +82,19 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
   };
 
   const handleCustomAmountChange = (val: string) => {
-    const cleaned = val.replace(/[^\d]/g, '').slice(0, 6);
+    const cleaned = val.replace(/[^\d]/g, '').slice(0, 5);
     setCustomAmountInput(cleaned);
     const parsed = parseInt(cleaned, 10);
     if (!Number.isNaN(parsed) && parsed > 0) {
       setSupportAmount(parsed);
+      if (parsed > 50000) {
+        setSubmitError('Maximum UPI payment limit is ₹50,000.');
+      } else {
+        setSubmitError(null);
+      }
     } else if (cleaned === '') {
       setSupportAmount(0);
+      setSubmitError(null);
     }
   };
 
@@ -106,8 +112,8 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
     e.preventDefault();
     setSubmitError(null);
 
-    if (effectiveAmount < 1 || effectiveAmount > 100000) {
-      setSubmitError('Please choose an amount between ₹1 and ₹1,00,000.');
+    if (effectiveAmount < 1 || effectiveAmount > 50000) {
+      setSubmitError('Please choose an amount between ₹1 and ₹50,000.');
       return;
     }
 
@@ -212,7 +218,7 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
                   inputMode="numeric"
                   value={customAmountInput}
                   onChange={(e) => handleCustomAmountChange(e.target.value)}
-                  placeholder="Custom amount"
+                  placeholder="Custom amount (max ₹50,000)"
                   className="w-full pl-7 pr-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 />
               </div>

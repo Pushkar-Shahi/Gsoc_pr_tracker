@@ -38,7 +38,7 @@ class UpiSubmitRequest(BaseModel):
     payment_purpose: str = Field(..., description="'plan' or 'support'")
     plan_tier: Optional[str] = Field(None, description="'pro' or 'team' when purpose is 'plan'")
     billing_cycle: Optional[str] = Field("monthly", description="'monthly', 'annual', or 'one_time'")
-    amount_inr: Optional[int] = Field(None, description="Amount in INR (server-validated for plans; custom 1-100000 for support)")
+    amount_inr: Optional[int] = Field(None, description="Amount in INR (server-validated for plans; custom 1-50000 for support)")
     utr_number: str = Field(..., description="12-digit UTR or UPI Transaction Reference ID")
     payer_upi_id: Optional[str] = Field(None, description="Optional sender UPI ID")
     note: Optional[str] = Field(None, description="Optional payment note")
