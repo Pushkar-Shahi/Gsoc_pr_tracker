@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  Copy, Check, Smartphone, QrCode, Image as ImageIcon,
+  Copy, Check, Smartphone, QrCode,
   ShieldCheck, Info, Loader2, ArrowRight, Heart, Sparkles, X
 } from 'lucide-react';
 import { UpiConfig, UpiPaymentRequest } from '../types';
@@ -22,7 +22,7 @@ const DEFAULT_SUPPORT_PRESETS = [49, 100, 250, 500];
 
 /**
  * Shared Direct UPI payment widget supporting dynamic amount-locked QRs,
- * official PhonePe QR fallback, mobile UPI app intent, and UTR submission.
+ * mobile UPI app intent, and UTR submission.
  */
 export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
   mode,
@@ -40,7 +40,6 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
 
   const [supportAmount, setSupportAmount] = useState<number>(presets[1] || 100);
   const [customAmountInput, setCustomAmountInput] = useState<string>(String(presets[1] || 100));
-  const [qrMode, setQrMode] = useState<'dynamic' | 'phonepe'>('dynamic');
   const [copiedVpa, setCopiedVpa] = useState(false);
 
   // UTR Submission state
@@ -53,7 +52,6 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
 
   const upiVpa = upiConfig?.upi_vpa || '8116710520@sbi';
   const payeeName = upiConfig?.payee_name || 'Pushkar Shahi';
-  const qrImageUrl = upiConfig?.qr_image_url || '/phonepe-upi-qr.jpg';
 
   const effectiveAmount = mode === 'plan' ? (fixedAmountInr ?? 100) : Math.max(1, Number(supportAmount) || 0);
 
@@ -239,65 +237,22 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
             </div>
           )}
 
-          {/* QR Mode Switcher */}
-          <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 w-full">
-            <button
-              type="button"
-              onClick={() => setQrMode('dynamic')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold transition ${
-                qrMode === 'dynamic'
-                  ? 'bg-white text-blue-600 shadow-xs border border-slate-200/80 dark:bg-white dark:text-black dark:border-transparent'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
-              }`}
-            >
-              <QrCode className="w-3.5 h-3.5" />
-              <span>Amount-Locked QR</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setQrMode('phonepe')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold transition ${
-                qrMode === 'phonepe'
-                  ? 'bg-white text-blue-600 shadow-xs border border-slate-200/80 dark:bg-white dark:text-black dark:border-transparent'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>PhonePe QR</span>
-            </button>
+          {/* Amount-Locked QR Code Display with crisp high-contrast quiet zone */}
+          <div className="flex flex-col items-center space-y-2">
+            <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-md inline-block">
+              <QRCodeSVG
+                value={upiUri}
+                size={176}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#0f172a"
+                includeMargin={false}
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+              Amount-locked to <strong className="text-slate-800 dark:text-neutral-200">₹{effectiveAmount}</strong> • Works on PhonePe, GPay, Paytm, BHIM
+            </p>
           </div>
-
-          {/* QR Code Display with crisp high-contrast quiet zone */}
-          {qrMode === 'dynamic' ? (
-            <div className="flex flex-col items-center space-y-2">
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-md inline-block">
-                <QRCodeSVG
-                  value={upiUri}
-                  size={176}
-                  level="M"
-                  bgColor="#ffffff"
-                  fgColor="#0f172a"
-                  includeMargin={false}
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-neutral-400">
-                Pre-filled with <strong className="text-slate-800 dark:text-neutral-200">₹{effectiveAmount}</strong> • Works on PhonePe, GPay, Paytm, BHIM
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center space-y-2">
-              <div className="p-2.5 rounded-2xl bg-[#121212] border border-slate-300 dark:border-white/15 shadow-md inline-block">
-                <img
-                  src={qrImageUrl}
-                  alt={`PhonePe UPI QR for ${upiVpa}`}
-                  className="w-48 h-auto rounded-xl object-contain"
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-neutral-400">
-                Scan with PhonePe/UPI & enter <strong className="text-slate-800 dark:text-neutral-200">₹{effectiveAmount}</strong> manually
-              </p>
-            </div>
-          )}
 
           {/* Copy UPI ID + Open UPI App Buttons */}
           <div className="w-full space-y-2">

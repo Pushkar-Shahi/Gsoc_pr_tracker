@@ -271,7 +271,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <div>
                   <div className="text-xs font-semibold">Support via UPI</div>
                   <div className="text-[10px] text-slate-500 dark:text-neutral-400">
-                    Scan PhonePe QR or pay 8116710520@sbi
+                    Scan amount-locked QR or pay 8116710520@sbi
                   </div>
                 </div>
               </div>
