@@ -14,7 +14,7 @@ async def test_background_worker_lifecycle():
 
     worker.start()
     assert worker._running is True
-    assert len(worker._tasks) == 3  # PR tracker + discovery worker + issue reconciler worker
+    assert len(worker._tasks) == 4  # PR tracker + discovery worker + issue reconciler + startup empty-inbox check
 
     # Allow worker tasks to spin once
     await asyncio.sleep(0.05)

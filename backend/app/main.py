@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
@@ -52,7 +53,12 @@ async def seed_initial_data_if_needed():
             )
             session.add(settings_obj)
             await session.commit()
-        elif isinstance(existing_sett.discovery_filters, dict) and "_admin_runtime" in existing_sett.discovery_filters:
+        elif (
+            not os.getenv("PYTEST_CURRENT_TEST")
+            and os.getenv("ENVIRONMENT") != "testing"
+            and isinstance(existing_sett.discovery_filters, dict)
+            and "_admin_runtime" in existing_sett.discovery_filters
+        ):
             settings.apply_runtime_overrides(existing_sett.discovery_filters.get("_admin_runtime") or {})
 
         logger.info("Platform settings verified. Ready for PR & Contribution tracking.")

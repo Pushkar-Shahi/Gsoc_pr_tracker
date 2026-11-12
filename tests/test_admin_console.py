@@ -209,3 +209,12 @@ async def test_admin_user_suspension_plan_override_credits_reset_and_task_contro
             settings.FREE_TIER_MONTHLY_TASK_LIMIT = orig_limit
             settings.UPI_VPA = orig_vpa
             settings._free_beta_mode_override = orig_beta
+            async with session_factory() as db:
+                from app.models.models import PlatformSettings
+                sett = (await db.execute(select(PlatformSettings).where(PlatformSettings.id == 1))).scalar_one_or_none()
+                if sett and isinstance(sett.discovery_filters, dict) and "_admin_runtime" in sett.discovery_filters:
+                    cleaned = dict(sett.discovery_filters)
+                    cleaned.pop("_admin_runtime", None)
+                    sett.discovery_filters = cleaned
+                    await db.commit()
+
