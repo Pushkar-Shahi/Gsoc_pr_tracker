@@ -1,9 +1,10 @@
 import asyncio
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -377,6 +378,10 @@ class BackgroundWorkerService:
         self.last_cron_run_at: Optional[datetime] = None
         self.next_cron_run_at: Optional[datetime] = None
         self.is_cron_running: bool = False
+        self.last_cron_discovered: int = 0
+        self.last_cron_pruned: int = 0
+        self._active_cron_task: Optional[asyncio.Task] = None
+        self._last_login_scan_triggered_at: Optional[datetime] = None
         self.cron_target_orgs: List[str] = ["NumFOCUS", "Python Software Foundation", "DeepChem", "Kornia"]
 
     def start(self):
@@ -386,6 +391,7 @@ class BackgroundWorkerService:
         self._tasks.append(asyncio.create_task(self._pr_tracker_loop(), name="pr_tracker_worker"))
         self._tasks.append(asyncio.create_task(self._discovery_loop(), name="discovery_cron_worker"))
         self._tasks.append(asyncio.create_task(self._issue_reconciler_loop(), name="issue_reconciler_worker"))
+        self._tasks.append(asyncio.create_task(self._startup_empty_inbox_check(), name="startup_empty_inbox_check"))
         now_epoch = int(datetime.now(timezone.utc).timestamp())
         cycle_start_epoch = (now_epoch // self.discovery_interval_sec) * self.discovery_interval_sec
         cycle_end_epoch = cycle_start_epoch + self.discovery_interval_sec
@@ -457,11 +463,69 @@ class BackgroundWorkerService:
                 logger.error(f"Error in PR tracker loop: {e}")
                 await asyncio.sleep(10)
 
-    async def trigger_cron_scan(self) -> Dict[str, Any]:
+    async def _startup_empty_inbox_check(self):
+        """Triggers an immediate 2h scan on server startup if the inbox has no eligible open issues."""
+        if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("ENVIRONMENT") == "testing":
+            return
+        try:
+            await asyncio.sleep(2.0)
+            async with self.session_factory() as db:
+                open_cnt = (
+                    await db.execute(
+                        select(func.count(Issue.id)).where(
+                            Issue.state == "open",
+                            Issue.is_eligible.is_(True),
+                            Issue.has_open_pr.is_(False),
+                            Issue.is_reserved.is_(False),
+                        )
+                    )
+                ).scalar() or 0
+            if open_cnt == 0:
+                logger.info("Inbox empty on startup; launching initial 2-hour discovery scan...")
+                await self.trigger_cron_scan()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.debug(f"Startup empty-inbox discovery check warning: {e}")
+
+    async def _has_empty_eligible_inbox(self) -> bool:
+        try:
+            async with self.session_factory() as db:
+                open_cnt = (
+                    await db.execute(
+                        select(func.count(Issue.id)).where(
+                            Issue.state == "open",
+                            Issue.is_eligible.is_(True),
+                            Issue.has_open_pr.is_(False),
+                            Issue.is_reserved.is_(False),
+                        )
+                    )
+                ).scalar() or 0
+                return open_cnt == 0
+        except Exception:
+            return False
+
+    async def trigger_login_scan_if_needed(self) -> None:
         """
-        Executes a 2-hour cron discovery scan across the target organizations (NumFOCUS, PSF, DeepChem, Kornia),
-        prunes closed/assigned issues, logs an in-app audit notification, and updates status timestamps.
+        Triggers the 2-hour scan asynchronously upon login when the inbox is empty
+        or no scan has been triggered in the last 10 minutes.
         """
+        if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("ENVIRONMENT") == "testing":
+            return
+        if self.is_cron_running and self._active_cron_task and not self._active_cron_task.done():
+            return
+        now_utc = datetime.now(timezone.utc)
+        cooldown_elapsed = (
+            self._last_login_scan_triggered_at is None
+            or (now_utc - self._last_login_scan_triggered_at).total_seconds() >= 600
+        )
+        if not cooldown_elapsed and not await self._has_empty_eligible_inbox():
+            return
+        self._last_login_scan_triggered_at = now_utc
+        await self.trigger_cron_scan()
+
+    async def _execute_cron_scan(self) -> Dict[str, Any]:
+        """Internal runner for a single coalesced 2-hour discovery + reconciliation pass."""
         self.is_cron_running = True
         logger.info("2-Hour Auto-Scan Cron starting across NumFOCUS, PSF, DeepChem, and Kornia...")
         try:
@@ -473,10 +537,11 @@ class BackgroundWorkerService:
 
                 discovery = DiscoveryService(db=db, github_client=gh)
                 result = await discovery.run_discovery_sync(force_refresh=True, page_limit=2)
-                discovered_count = result.get("total_discovered", 0)
+                discovered_count = int(result.get("total_discovered", 0))
 
                 # Reconcile and purge closed/assigned issues upstream
-                await reconcile_inbox_issues_upstream(self.session_factory, max_issues=None, purge=True)
+                reconcile_res = await reconcile_inbox_issues_upstream(self.session_factory, max_issues=None, purge=True)
+                pruned_count = int(reconcile_res.get("purged", 0)) + int(reconcile_res.get("reconciled_closed", 0))
 
                 # Record an audit log for the UI notifications panel
                 audit = AuditLog(
@@ -484,6 +549,7 @@ class BackgroundWorkerService:
                     actor="CRON_WORKER",
                     details={
                         "discovered": discovered_count,
+                        "pruned": pruned_count,
                         "timestamp": datetime.utcnow().isoformat(),
                         "orgs": self.cron_target_orgs,
                         "message": f"Auto-Scan Cron completed. Discovered {discovered_count} fresh unassigned issues from NumFOCUS, PSF, DeepChem, and Kornia."
@@ -492,20 +558,47 @@ class BackgroundWorkerService:
                 db.add(audit)
                 await db.commit()
 
-                self.last_cron_run_at = datetime.utcnow()
-                self.next_cron_run_at = datetime.utcnow() + timedelta(seconds=self.discovery_interval_sec)
-                logger.info(f"2-Hour Auto-Scan Cron completed. Ingested {discovered_count} issues.")
+                self.last_cron_discovered = discovered_count
+                self.last_cron_pruned = pruned_count
+                self.last_cron_run_at = datetime.now(timezone.utc)
+                self.next_cron_run_at = self.last_cron_run_at + timedelta(seconds=self.discovery_interval_sec)
+                logger.info(f"2-Hour Auto-Scan Cron completed. Ingested {discovered_count} issues, pruned {pruned_count}.")
                 return {
                     "success": True,
+                    "status": "success",
                     "discovered": discovered_count,
+                    "last_issues_synced": discovered_count,
+                    "last_issues_pruned": pruned_count,
                     "last_run_at": self.last_cron_run_at.isoformat(),
-                    "next_run_at": self.next_cron_run_at.isoformat()
+                    "next_run_at": self.next_cron_run_at.isoformat(),
                 }
         except Exception as e:
             logger.error(f"Error executing auto-scan cron: {e}")
-            return {"success": False, "error": str(e)}
+            return {
+                "success": False,
+                "status": "error",
+                "discovered": 0,
+                "last_issues_synced": 0,
+                "last_issues_pruned": 0,
+                "error": str(e),
+            }
         finally:
             self.is_cron_running = False
+
+    async def trigger_cron_scan(self) -> Dict[str, Any]:
+        """
+        Executes a 2-hour cron discovery scan across the target organizations,
+        coalescing concurrent callers onto the single active task cleanly.
+        """
+        if self._active_cron_task and not self._active_cron_task.done():
+            return await asyncio.shield(self._active_cron_task)
+
+        self._active_cron_task = asyncio.create_task(self._execute_cron_scan(), name="cron_scan_run")
+        try:
+            return await asyncio.shield(self._active_cron_task)
+        finally:
+            if self._active_cron_task and self._active_cron_task.done():
+                self._active_cron_task = None
 
     async def _discovery_loop(self):
         """Periodically polls GitHub discovery every 2 hours."""
@@ -546,4 +639,16 @@ def set_background_worker(worker: BackgroundWorkerService):
 def get_background_worker() -> Optional[BackgroundWorkerService]:
     global _global_worker
     return _global_worker
+
+
+def trigger_login_discovery_scan() -> None:
+    """Schedules the 2-hour GSoC discovery scan non-blockingly when a user signs in."""
+    if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("ENVIRONMENT") == "testing":
+        return
+    worker = get_background_worker()
+    if worker:
+        try:
+            asyncio.create_task(worker.trigger_login_scan_if_needed(), name="login_discovery_scan")
+        except Exception as exc:
+            logger.debug(f"Could not schedule login discovery scan: {exc}")
 

@@ -21,6 +21,7 @@ from app.core.security import verify_password, generate_session_token, verify_se
 from app.db.database import get_db
 from app.models.models import User, Organization, Membership
 from app.services.billing_service import BillingService
+from app.services.background_worker import trigger_login_discovery_scan
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -264,6 +265,11 @@ async def _provision_user_and_token(
         ):
             await BillingService.provision_reverse_free_trial(tenant_id, user.id, db)
         active_org = synced_org or membership.organization
+        if is_owner and active_org is not None and active_org.is_personal and active_org.billing_tier == "starter":
+            active_org.billing_tier = "pro"
+            if sub is not None and sub.status == "canceled":
+                sub.status = "active"
+                sub.plan_tier = "pro"
         tier = active_org.billing_tier if (active_org and active_org.billing_tier) else "pro"
 
     await db.commit()
@@ -276,6 +282,7 @@ async def _provision_user_and_token(
         "tier": tier
     }
     session_token = generate_session_token(subject=user.id, claims=claims)
+    trigger_login_discovery_scan()
     return session_token, user, tenant_id, membership.role, tier
 
 
@@ -1151,6 +1158,7 @@ async def sso_login(req: SSOLoginRequest, db: AsyncSession = Depends(get_db)):
         "tier": org.billing_tier
     }
     token = generate_session_token(subject=user.id, claims=claims)
+    trigger_login_discovery_scan()
 
     return {
         "token": token,

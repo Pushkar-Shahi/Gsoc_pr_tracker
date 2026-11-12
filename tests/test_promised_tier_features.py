@@ -905,3 +905,52 @@ async def test_team_pr_velocity_dashboard():
         assert len(vel["contributors"]) == 2
         assert len(vel["recent_merges"]) == 1
 
+
+@pytest.mark.asyncio
+async def test_cron_scan_coalescing_and_response_fields():
+    """Verify 2h cron scan coalesces concurrent calls and returns normalized sync/prune counts."""
+    import asyncio
+    from app.services.background_worker import BackgroundWorkerService
+
+    session_factory = await get_session_factory()
+    worker = BackgroundWorkerService(session_factory=session_factory)
+    calls = 0
+
+    async def fake_execute():
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0.05)
+        return {
+            "success": True,
+            "status": "success",
+            "discovered": 14,
+            "last_issues_synced": 14,
+            "last_issues_pruned": 3,
+            "last_run_at": datetime.utcnow().isoformat(),
+            "next_run_at": (datetime.utcnow() + timedelta(hours=2)).isoformat(),
+        }
+
+    worker._execute_cron_scan = fake_execute  # type: ignore[method-assign]
+    r1, r2 = await asyncio.gather(worker.trigger_cron_scan(), worker.trigger_cron_scan())
+    assert calls == 1
+    assert r1["last_issues_synced"] == 14
+    assert r1["last_issues_pruned"] == 3
+    assert r2["discovered"] == 14
+
+    uid = f"usr_cron_{uuid.uuid4().hex[:8]}"
+    oid = f"org_cron_{uuid.uuid4().hex[:8]}"
+    token = _make_tenant_token(uid, f"c_{uid}", oid, tier="starter")
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        with patch("app.services.background_worker.get_background_worker", return_value=worker):
+            resp = await client.post(
+                "/api/v1/discovery/cron-run-now",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["last_issues_synced"] == 14
+        assert body["last_issues_pruned"] == 3
+        assert body["discovered"] == 14
+
+

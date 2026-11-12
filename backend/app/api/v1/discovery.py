@@ -108,6 +108,7 @@ async def get_cron_status():
         "last_run_at": worker.last_cron_run_at.isoformat() if worker.last_cron_run_at else cycle_start.isoformat(),
         "next_run_at": worker.next_cron_run_at.isoformat() if worker.next_cron_run_at else cycle_end.isoformat(),
         "last_issues_synced": getattr(worker, "last_cron_discovered", 0),
+        "last_issues_pruned": getattr(worker, "last_cron_pruned", 0),
         "target_orgs": worker.cron_target_orgs,
         "priority": "Chronological (Time-based, newest first)",
     }
@@ -127,9 +128,13 @@ async def trigger_cron_run_now(db: AsyncSession = Depends(get_db)):
         gh = GitHubClient(token=s.github_token if s else None)
         service = DiscoveryService(db=db, github_client=gh)
         result = await service.run_discovery_sync(force_refresh=True, page_limit=2)
+        discovered = int(result.get("total_discovered", 0))
         return {
             "success": True,
-            "discovered": result.get("total_discovered", 0),
+            "status": "success",
+            "discovered": discovered,
+            "last_issues_synced": discovered,
+            "last_issues_pruned": 0,
             "fallback": True,
             "last_run_at": datetime.utcnow().isoformat()
         }

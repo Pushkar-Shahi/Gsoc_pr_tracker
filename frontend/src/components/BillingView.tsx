@@ -498,7 +498,11 @@ export function BillingView() {
             >
               {isPro && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-[10px] tracking-wide uppercase shadow-md">
-                  Unlocked in Public Beta
+                  {subInfo?.free_beta_mode
+                    ? 'Unlocked in Public Beta'
+                    : subInfo?.trial_active
+                    ? `${subInfo.trial_days_remaining ?? 15}-Day Free Trial`
+                    : 'Most Popular'}
                 </div>
               )}
 
@@ -557,18 +561,21 @@ export function BillingView() {
               <div>
                 {isCurrent ? (
                   <button
+                    type="button"
                     disabled
                     className="w-full py-2.5 px-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 dark:bg-white/5 dark:border-white/10 dark:text-neutral-400 text-xs font-bold cursor-default"
                   >
-                    ✓ Current Active Plan
+                    {isPro && subInfo?.trial_active
+                      ? `✓ Active (${subInfo.trial_days_remaining ?? 15}d Trial)`
+                      : '✓ Current Active Plan'}
                   </button>
                 ) : plan.id === 'starter' ? (
                   <button
-                    onClick={() => handleSimulateTier('starter')}
-                    disabled={actionLoading !== null}
-                    className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-300 text-xs font-semibold transition"
+                    type="button"
+                    disabled
+                    className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 text-slate-500 dark:bg-white/5 dark:text-neutral-400 text-xs font-semibold cursor-default"
                   >
-                    Included in Community
+                    Included in Your Plan
                   </button>
                 ) : (
                   <button
@@ -792,7 +799,8 @@ export function BillingView() {
         </div>
       )}
 
-      {/* Developer Simulation Mode Box (Visible for local testing) */}
+      {/* Developer Simulation Mode Box (Admin only) */}
+      {subInfo?.is_admin && (
       <div className="p-5 rounded-2xl bg-white dark:bg-[#0c101a] border border-dashed border-slate-300 dark:border-white/20 shadow-sm dark:shadow-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
@@ -835,6 +843,7 @@ export function BillingView() {
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }

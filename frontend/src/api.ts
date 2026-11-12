@@ -23,10 +23,16 @@ export function getAuthToken(): string | null {
 
 export function setAuthToken(token: string) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  try {
+    sessionStorage.removeItem('issuetopr_login_scan_ran');
+  } catch {}
 }
 
 export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  try {
+    sessionStorage.removeItem('issuetopr_login_scan_ran');
+  } catch {}
 }
 
 export function isAuthenticated(): boolean {
@@ -1365,10 +1371,11 @@ export async function getCronStatus(): Promise<{
 
 export async function triggerCronRunNow(): Promise<{
   status: string;
-  message: string;
+  message?: string;
   last_run_at: string;
-  next_run_at: string;
-  last_run_status: string;
+  next_run_at?: string;
+  last_run_status?: string;
+  discovered?: number;
   last_issues_synced: number;
   last_issues_pruned: number;
 }> {

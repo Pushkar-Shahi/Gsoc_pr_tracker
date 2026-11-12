@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { 
   Layers, GitPullRequest, ShieldCheck, Search, 
   Coins, Menu, Share2, X
@@ -171,10 +171,13 @@ export function App() {
         page_size: size,
         ...filters,
       });
-      setIssues(res.items || []);
+      const fetched = res.items || [];
+      setIssues(fetched);
       setTotalIssues(res.total || 0);
+      return { count: fetched.length, total: res.total || 0 };
     } catch (err) {
       console.error('Failed to load issues for finder:', err);
+      return { count: 0, total: 0 };
     } finally {
       setLoadingIssues(false);
     }
@@ -223,9 +226,42 @@ export function App() {
     }
   }, []);
 
+  const hasAutoScannedRef = useRef(false);
+
+  const runLoginDiscoveryScan = useCallback(async () => {
+    if (hasAutoScannedRef.current) return;
+    hasAutoScannedRef.current = true;
+    try {
+      sessionStorage.setItem('issuetopr_login_scan_ran', '1');
+    } catch {}
+
+    window.dispatchEvent(new CustomEvent('issuetopr-cron-started'));
+    showToast('🔍 Auto-running 2h GSoC issue scan after sign-in...');
+    try {
+      const scanRes = await api.triggerCronRunNow();
+      await loadIssues(issueFilters, pageSize);
+      window.dispatchEvent(new CustomEvent('issuetopr-cron-completed', { detail: scanRes }));
+      const synced = scanRes?.last_issues_synced ?? scanRes?.discovered ?? 0;
+      showToast(`✓ 2h GSoC scan complete: synced ${synced} open issues.`);
+    } catch (err) {
+      console.warn('Auto login discovery scan warning:', err);
+      window.dispatchEvent(new CustomEvent('issuetopr-cron-completed', { detail: null }));
+    }
+  }, [issueFilters, loadIssues, pageSize]);
+
   useEffect(() => {
+    let active = true;
     loadInitialData();
-    loadIssues({ availability: 'available', unassigned_only: true });
+    loadIssues({ availability: 'available', unassigned_only: true }).then((result) => {
+      if (!active) return;
+      let alreadyScanned = false;
+      try {
+        alreadyScanned = sessionStorage.getItem('issuetopr_login_scan_ran') === '1';
+      } catch {}
+      if (!alreadyScanned || result.count === 0) {
+        void runLoginDiscoveryScan();
+      }
+    });
 
     // PWA Install listener
     const onInstallable = () => setIsInstallable(true);
@@ -240,11 +276,12 @@ export function App() {
     }, 12000);
 
     return () => {
+      active = false;
       clearInterval(interval);
       window.removeEventListener('pwa-installable', onInstallable);
       window.removeEventListener('pwa-installed', onInstalled);
     };
-  }, [loadInitialData, loadIssues]);
+  }, [loadInitialData, loadIssues, runLoginDiscoveryScan]);
 
   const handleInstallPWA = async () => {
     const accepted = await promptPWAInstall();

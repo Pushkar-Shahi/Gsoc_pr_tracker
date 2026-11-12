@@ -424,7 +424,31 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
   useEffect(() => {
     loadTrackedOrgs();
-  }, []);
+
+    const onCronStarted = () => {
+      setIsTriggeringCron(true);
+      setGsocSyncFeedback(null);
+    };
+    const onCronCompleted = (e: Event) => {
+      setIsTriggeringCron(false);
+      const detail = (e as CustomEvent<any>)?.detail;
+      if (detail) {
+        const synced = detail.last_issues_synced ?? detail.discovered ?? 0;
+        const pruned = detail.last_issues_pruned ?? 0;
+        setGsocSyncFeedback(`✓ 2-Hour Cron scan complete: synced ${synced} issues, pruned ${pruned} closed.`);
+        setTimeout(() => setGsocSyncFeedback(null), 8000);
+      }
+      loadCronStatus();
+      loadTrackedOrgs();
+    };
+
+    window.addEventListener('issuetopr-cron-started', onCronStarted);
+    window.addEventListener('issuetopr-cron-completed', onCronCompleted);
+    return () => {
+      window.removeEventListener('issuetopr-cron-started', onCronStarted);
+      window.removeEventListener('issuetopr-cron-completed', onCronCompleted);
+    };
+  }, [loadCronStatus]);
 
   const handleAddOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
