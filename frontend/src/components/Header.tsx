@@ -243,8 +243,22 @@ export const Header: React.FC<HeaderProps> = ({
                   <CreditCard className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
                   <span>Billing & Plans</span>
                 </div>
-                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
-                  FREE BETA
+                <span
+                  className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                    subscriptionInfo?.free_beta_mode
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                      : subscriptionInfo?.trial_active
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : subscriptionInfo?.trial_expired && (subscriptionInfo?.tier || planTier) === 'starter'
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                  }`}
+                >
+                  {subscriptionInfo?.free_beta_mode
+                    ? 'FREE BETA'
+                    : subscriptionInfo?.trial_active
+                    ? `${subscriptionInfo.trial_days_remaining ?? 15}d TRIAL`
+                    : (subscriptionInfo?.tier || planTier || 'pro').toUpperCase()}
                 </span>
               </button>
 
