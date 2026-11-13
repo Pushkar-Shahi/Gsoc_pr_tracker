@@ -206,7 +206,7 @@ export function BillingView() {
             </h1>
           </div>
           <p className="text-sm text-slate-500 dark:text-neutral-400">
-            Support GSoC Issue-to-PR or upgrade via Direct UPI ({upiConfig?.upi_vpa || '8116710520@sbi'}) with 0% gateway fees.
+            Support GSoC Issue-to-PR or upgrade via Direct UPI ({upiConfig?.upi_vpa || '8116710520@ibl'}) with 0% gateway fees.
           </p>
         </div>
 
@@ -217,7 +217,7 @@ export function BillingView() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white text-xs font-bold shadow-md shadow-orange-500/25 transition active:scale-95"
           >
             <Heart className="w-3.5 h-3.5 fill-white" />
-            <span>Support via UPI ({upiConfig?.upi_vpa || '8116710520@sbi'})</span>
+            <span>Support via UPI ({upiConfig?.upi_vpa || '8116710520@ibl'})</span>
           </button>
         </div>
       </div>
@@ -615,7 +615,7 @@ export function BillingView() {
                 </span>
               </div>
               <p className="text-xs text-slate-600 dark:text-neutral-300 mt-0.5">
-                Fuel server & GitHub API hosting with a quick 10-second UPI tip to <span className="font-mono font-semibold text-amber-800 dark:text-amber-300">{upiConfig?.upi_vpa || '8116710520@sbi'}</span>.
+                Fuel server & GitHub API hosting with a quick 10-second UPI tip to <span className="font-mono font-semibold text-amber-800 dark:text-amber-300">{upiConfig?.upi_vpa || '8116710520@ibl'}</span>.
               </p>
             </div>
           </div>
@@ -696,7 +696,7 @@ export function BillingView() {
                   )}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-neutral-400">
-                  Match UTR IDs in your PhonePe app ({upiConfig?.upi_vpa || '8116710520@sbi'}) and approve to unlock user plans.
+                  Match UTR IDs in your PhonePe app ({upiConfig?.upi_vpa || '8116710520@ibl'}) and approve to unlock user plans.
                 </p>
               </div>
             </div>

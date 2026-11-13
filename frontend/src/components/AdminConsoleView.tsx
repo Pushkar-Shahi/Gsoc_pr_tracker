@@ -63,7 +63,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   const [cfgBetaMode, setCfgBetaMode] = useState(false);
   const [cfgTrialDays, setCfgTrialDays] = useState(15);
   const [cfgCreditLimit, setCfgCreditLimit] = useState(5);
-  const [cfgUpiVpa, setCfgUpiVpa] = useState('8116710520@sbi');
+  const [cfgUpiVpa, setCfgUpiVpa] = useState('8116710520@ibl');
 
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -72,7 +72,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
     setCfgBetaMode(Boolean(ov.runtime.free_beta_mode));
     setCfgTrialDays(Number(ov.runtime.free_trial_days ?? 15));
     setCfgCreditLimit(Number(ov.runtime.free_tier_credit_limit ?? 5));
-    setCfgUpiVpa(ov.runtime.upi_vpa || '8116710520@sbi');
+    setCfgUpiVpa(ov.runtime.upi_vpa || '8116710520@ibl');
   };
 
   const refreshAll = useCallback(async () => {
@@ -492,7 +492,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                     disabled={!isEditingConfig}
                     value={cfgUpiVpa}
                     onChange={(e) => setCfgUpiVpa(e.target.value)}
-                    placeholder="8116710520@sbi"
+                    placeholder="8116710520@ibl"
                     className={runtimeInputClass}
                   />
                 </label>

@@ -198,7 +198,7 @@ async def test_admin_user_suspension_plan_override_credits_reset_and_task_contro
         try:
             cfg_res = await client.post(
                 "/api/v1/admin/runtime-config",
-                json={"free_trial_days": 21, "free_tier_credit_limit": 7, "upi_vpa": "8116710520@sbi"},
+                json={"free_trial_days": 21, "free_tier_credit_limit": 7, "upi_vpa": "8116710520@ibl"},
                 headers=admin_headers,
             )
             assert cfg_res.status_code == 200

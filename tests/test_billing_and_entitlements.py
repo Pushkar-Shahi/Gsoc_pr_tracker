@@ -435,7 +435,7 @@ async def test_upi_config_endpoint():
         resp = await client.get("/api/v1/billing/upi/config")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["upi_vpa"] == "8116710520@sbi"
+        assert data["upi_vpa"] == "8116710520@ibl"
         assert data["payee_name"] == "Pushkar Shahi"
         assert data["qr_image_url"] == "/phonepe-upi-qr.jpg"
         assert data["currency"] == "INR"

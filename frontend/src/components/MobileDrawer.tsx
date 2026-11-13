@@ -278,7 +278,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <div>
                   <div className="text-xs font-bold">Support via UPI</div>
                   <div className="text-[10px] text-amber-800/80 dark:text-amber-200/80">
-                    Scan amount-locked QR or pay 8116710520@sbi
+                    Scan amount-locked QR or pay 8116710520@ibl
                   </div>
                 </div>
               </div>

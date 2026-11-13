@@ -50,7 +50,7 @@ export const UpiPaymentCard: React.FC<UpiPaymentCardProps> = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedRecord, setSubmittedRecord] = useState<UpiPaymentRequest | null>(null);
 
-  const upiVpa = upiConfig?.upi_vpa || '8116710520@sbi';
+  const upiVpa = upiConfig?.upi_vpa || '8116710520@ibl';
   const payeeName = upiConfig?.payee_name || 'Pushkar Shahi';
 
   const effectiveAmount = mode === 'plan' ? (fixedAmountInr ?? 100) : Math.max(1, Number(supportAmount) || 0);
