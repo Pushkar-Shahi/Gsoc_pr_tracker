@@ -240,10 +240,10 @@ export function AuthGate({ children }: AuthGateProps) {
         <div className="text-center space-y-1.5 mb-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold tracking-wide">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Autonomous AI Coding Agent</span>
+            <span>Open-Source Discovery & Solution Blueprints</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-xs mx-auto leading-relaxed">
-            From GitHub issue to production-tested, review-ready pull request in minutes.
+            Find active, unclaimed open-source issues and get step-by-step architectural blueprints to learn and contribute with confidence.
           </p>
         </div>
 

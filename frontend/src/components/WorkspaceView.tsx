@@ -184,7 +184,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 className="px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs border border-emerald-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-emerald-300 dark:border-emerald-500/30 active:scale-95 transition flex items-center gap-1.5 shadow-sm"
               >
                 <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                <span>View Autonomous Plan</span>
+                <span>View Solution Blueprint</span>
               </button>
             )}
 

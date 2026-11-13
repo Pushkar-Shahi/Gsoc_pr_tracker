@@ -541,7 +541,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             Issue-to-PR
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400">
-            Find issues, filter smartly, and turn them into pull requests.
+            Browse 1,840+ curated repositories or track any custom GitHub organization with zero active PRs.
           </p>
         </div>
 

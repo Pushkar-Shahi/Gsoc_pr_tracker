@@ -18,7 +18,6 @@ import { promptPWAInstall } from './registerSW';
 const TrackedIssuesView = lazy(() => import('./components/TrackedIssuesView').then(m => ({ default: m.TrackedIssuesView })));
 const PullRequestsView = lazy(() => import('./components/PullRequestsView').then(m => ({ default: m.PullRequestsView })));
 const ActivityHistoryView = lazy(() => import('./components/ActivityHistoryView').then(m => ({ default: m.ActivityHistoryView })));
-const RunnersView = lazy(() => import('./components/RunnersView').then(m => ({ default: m.RunnersView })));
 const BillingView = lazy(() => import('./components/BillingView').then(m => ({ default: m.BillingView })));
 const SettingsView = lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
 const AdminConsoleView = lazy(() => import('./components/AdminConsoleView').then(m => ({ default: m.AdminConsoleView })));
@@ -36,7 +35,7 @@ function TabLoadingSkeleton() {
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'runners' | 'billing' | 'settings' | 'admin'>('issues');
+  const [activeTab, setActiveTab] = useState<'issues' | 'tracker' | 'prs' | 'history' | 'billing' | 'settings' | 'admin'>('issues');
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [planTier, setPlanTier] = useState<string>('pro');
@@ -565,10 +564,6 @@ export function App() {
                 <ActivityHistoryView logs={auditLogs} />
               )}
 
-              {activeTab === 'runners' && (
-                <RunnersView />
-              )}
-
               {activeTab === 'billing' && (
                 <BillingView />
               )}
@@ -695,15 +690,15 @@ export function App() {
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
               className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[48px] active:scale-95 ${
-                ['history', 'runners', 'billing', 'settings', 'admin'].includes(activeTab) || isMobileDrawerOpen
+                ['history', 'billing', 'settings', 'admin'].includes(activeTab) || isMobileDrawerOpen
                   ? 'text-blue-600 bg-blue-50 border border-blue-200 dark:text-white dark:bg-white/10 dark:border-white/20 font-bold'
                   : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
-              title="More views, settings, and device runners"
+              title="More views and settings"
             >
               <div className="relative">
                 <Menu className="w-5 h-5 mb-0.5" />
-                {['history', 'runners', 'billing', 'settings', 'admin'].includes(activeTab) && (
+                {['history', 'billing', 'settings', 'admin'].includes(activeTab) && (
                   <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white dark:ring-black" />
                 )}
               </div>

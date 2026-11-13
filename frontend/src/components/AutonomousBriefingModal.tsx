@@ -98,7 +98,7 @@ const AutonomousBriefingModalContent: React.FC<AutonomousBriefingModalContentPro
                 </span>
                 <span className="text-xs text-neutral-400 font-medium">Issue #{task.issue?.issue_number}</span>
                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                  Autonomous Plan
+                  Solution Blueprint
                 </span>
                 {brief?.ai_mode === 'live_byok' ? (
                   <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
@@ -341,7 +341,7 @@ const AutonomousBriefingModalContent: React.FC<AutonomousBriefingModalContentPro
             ) : (
               <>
                 <Check className="w-4 h-4 stroke-[3]" />
-                <span>Approve Plan & Launch Workspace</span>
+                <span>Adopt Blueprint & Open Workspace</span>
               </>
             )}
           </button>

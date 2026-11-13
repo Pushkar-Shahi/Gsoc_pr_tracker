@@ -50,3 +50,7 @@ yarn-error.log*
 # Antigravity & local caches
 .agents/
 .system_generated/
+
+# Promo & Media assets
+promo/
+

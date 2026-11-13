@@ -36,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'tracker', label: 'Tracked Items', icon: Bookmark, badge: trackedTasksCount > 0 ? String(trackedTasksCount) : undefined },
     { id: 'prs', label: 'Pull Requests', icon: GitPullRequest, badge: totalPRs > 0 ? String(totalPRs) : undefined },
     { id: 'history', label: 'Timeline', icon: Clock },
-    { id: 'runners', label: 'Runners', icon: Play },
   ];
 
   return (

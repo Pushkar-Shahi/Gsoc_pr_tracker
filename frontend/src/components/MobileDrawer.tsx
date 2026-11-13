@@ -51,14 +51,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
   const workflowItems = [
     {
-      id: 'runners',
-      label: 'Local Hybrid Runners',
-      icon: Cpu,
-      badge: onlineRunnersCount > 0 ? `${onlineRunnersCount} Online` : 'Offline',
-      badgeColor: onlineRunnersCount > 0 ? 'emerald' : 'slate',
-      desc: 'Offload validation runs and worktrees locally'
-    },
-    {
       id: 'history',
       label: 'Activity Timeline & Audit',
       icon: History,
