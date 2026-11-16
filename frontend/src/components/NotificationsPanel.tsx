@@ -140,7 +140,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
         icon: <Clock className="w-4 h-4 text-white" />,
         badgeBg: 'bg-neutral-900 border-white/20 text-neutral-200',
         title: '2-Hour Cron Scan Completed ⏰',
-        desc: `Synced ${log.details?.items_synced ?? 0} issues, pruned ${log.details?.items_pruned ?? 0} closed across NumFOCUS, PSF, DeepChem, and Kornia.`,
+        desc: log.details?.message || `Synced ${log.details?.items_synced ?? 0} issues, pruned ${log.details?.items_pruned ?? 0} closed across tracked repositories.`,
         tab: 'issues',
       };
     }

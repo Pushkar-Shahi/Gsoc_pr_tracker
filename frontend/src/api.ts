@@ -26,11 +26,20 @@ export function setAuthToken(token: string) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
   try {
     sessionStorage.removeItem('issuetopr_login_scan_ran');
+    if (token && token.includes('.')) {
+      const b64 = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+      if (payload?.username) {
+        localStorage.setItem('issuetopr_gh_user', payload.username);
+      }
+    }
   } catch {}
 }
 
 export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem('issuetopr_gh_user');
+  localStorage.removeItem('issuetopr_client_settings');
   try {
     sessionStorage.removeItem('issuetopr_login_scan_ran');
   } catch {}
@@ -119,7 +128,7 @@ export async function verifyAuth(): Promise<boolean> {
       return false;
     }
     const me = await res.json().catch(() => ({}));
-    if (me.username && me.username !== 'admin') {
+    if (me.username) {
       try { localStorage.setItem('issuetopr_gh_user', me.username); } catch {}
     }
     return true;
@@ -1708,7 +1717,7 @@ export async function fetchSettings(): Promise<PlatformSettings> {
   }
   return {
     github_token_configured: !!getCustomGitHubToken(),
-    github_username: localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi',
+    github_username: localStorage.getItem('issuetopr_gh_user') || '',
     auto_publish_pr: false,
     workspace_root: '~/workspace/issue-to-pr',
     skills_profile: ['python', 'pytorch', 'react', 'numpy', 'scipy', 'deepchem'],
@@ -1746,7 +1755,7 @@ export async function updateSettings(settings: Partial<PlatformSettings> & Recor
 
   const updated: PlatformSettings = {
     github_token_configured: !!getCustomGitHubToken(),
-    github_username: settings.github_username || localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi',
+    github_username: settings.github_username || localStorage.getItem('issuetopr_gh_user') || '',
     auto_publish_pr: settings.auto_publish_pr ?? false,
     workspace_root: settings.workspace_root || '~/workspace/issue-to-pr',
     skills_profile: settings.skills_profile || ['python', 'react', 'pytorch', 'numpy'],
@@ -2119,7 +2128,7 @@ export async function importAuthorPRs(username?: string): Promise<{
 }> {
   let targetUser = username?.trim();
   if (!targetUser) {
-    targetUser = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
+    targetUser = localStorage.getItem('issuetopr_gh_user') || 'user';
   }
   try {
     localStorage.setItem('issuetopr_gh_user', targetUser);

@@ -35,9 +35,9 @@ export const PullRequestsView: React.FC<PullRequestsViewProps> = ({
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUsername, setImportUsername] = useState(() => {
     try {
-      return localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
+      return localStorage.getItem('issuetopr_gh_user') || '';
     } catch {
-      return 'Pushkar-Shahi';
+      return '';
     }
   });
   const [teamVelocity, setTeamVelocity] = useState<TeamVelocityReport | null>(null);

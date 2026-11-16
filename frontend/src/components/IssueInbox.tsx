@@ -45,6 +45,7 @@ interface IssueInboxProps {
     unassigned_only?: boolean;
     availability?: 'all' | 'available' | 'pr_open' | 'assigned' | 'reserved';
   }) => void;
+  isAdmin?: boolean;
 }
 
 interface AutonomousEngineTimerProps {
@@ -147,6 +148,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   onOpenDetails,
   onCompleteIssue,
   onFilterChange,
+  isAdmin = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
@@ -332,7 +334,10 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     try {
       const res = await triggerDiscoverySync(undefined, true, true);
       const count = res.items_synced || 0;
-      setGsocSyncFeedback(`✓ Synced ${count} issues from NumFOCUS, PSF, DeepChem, and Kornia`);
+      const feedbackMsg = isAdmin
+        ? `✓ Synced ${count} issues from NumFOCUS, PSF, DeepChem, and Kornia`
+        : `✓ Synced ${count} issues across tracked repositories`;
+      setGsocSyncFeedback(feedbackMsg);
       triggerFilters();
       setTimeout(() => setGsocSyncFeedback(null), 6000);
     } catch (err: any) {
@@ -398,14 +403,17 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   };
 
   // Dynamic Tracked Organizations & + Add Org State
-  const [trackedOrgs, setTrackedOrgs] = useState<TrackedOrganization[]>([
-    { id: 'numfocus', label: 'NumFOCUS', icon: '🧮', is_default: true, issue_count: 372 },
-    { id: 'psf', label: 'Python (PSF)', icon: '🐍', is_default: true, issue_count: 244 },
-    { id: 'deepchem', label: 'DeepChem', icon: '🧪', is_default: true, issue_count: 37 },
-    { id: 'kornia', label: 'Kornia', icon: '👁️', is_default: true, issue_count: 69 },
-    { id: 'noruzzamans/gslider-blocks', label: 'noruzzamans/gslider-blocks', icon: '📦', is_default: false, issue_count: 0 },
-    { id: 'Pushkar-Shahi/Mirador', label: 'Pushkar-Shahi/Mira...', icon: '📦', is_default: false, issue_count: 0 },
-  ]);
+  const [trackedOrgs, setTrackedOrgs] = useState<TrackedOrganization[]>(() => {
+    if (isAdmin) {
+      return [
+        { id: 'numfocus', label: 'NumFOCUS', icon: '🧮', is_default: true, issue_count: 0 },
+        { id: 'psf', label: 'Python (PSF)', icon: '🐍', is_default: true, issue_count: 0 },
+        { id: 'deepchem', label: 'DeepChem', icon: '🧪', is_default: true, issue_count: 0 },
+        { id: 'kornia', label: 'Kornia', icon: '👁️', is_default: true, issue_count: 0 },
+      ];
+    }
+    return [];
+  });
   const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
   const [addOrgUrl, setAddOrgUrl] = useState('');
   const [addOrgName, setAddOrgName] = useState('');
@@ -416,27 +424,38 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   const loadTrackedOrgs = async () => {
     try {
       const data = await fetchTrackedOrganizations();
-      if (data && data.organizations && data.organizations.length > 0) {
-        setTrackedOrgs(prev => {
-          const apiMap = new Map<string, TrackedOrganization>(
-            data.organizations.map((o: TrackedOrganization) => [o.id.toLowerCase(), o])
-          );
-          const updated = prev.map(p => {
-            const match = apiMap.get(p.id.toLowerCase());
-            return match ? { ...p, issue_count: match.issue_count || p.issue_count } : p;
-          });
-          for (const org of data.organizations) {
-            if (!prev.some(p => p.id.toLowerCase() === org.id.toLowerCase())) {
-              updated.push(org);
-            }
+      if (data && Array.isArray(data.organizations)) {
+        const orgs = isAdmin
+          ? data.organizations
+          : data.organizations.filter(o => !o.is_default && !['numfocus', 'psf', 'deepchem', 'kornia'].includes(o.id.toLowerCase()));
+        setTrackedOrgs(orgs);
+
+        setSelectedGsocOrg(current => {
+          if (current && !orgs.some(o => o.id.toLowerCase() === current.toLowerCase())) {
+            triggerFilters({ gsoc_org: '' });
+            return '';
           }
-          return updated;
+          return current;
         });
       }
     } catch (e) {
       console.warn('Failed to load tracked organizations', e);
     }
   };
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setTrackedOrgs(prev => prev.filter(o => !o.is_default && !['numfocus', 'psf', 'deepchem', 'kornia'].includes(o.id.toLowerCase())));
+      setSelectedGsocOrg(current => {
+        if (['numfocus', 'psf', 'deepchem', 'kornia'].includes(current.toLowerCase())) {
+          triggerFilters({ gsoc_org: '' });
+          return '';
+        }
+        return current;
+      });
+    }
+    loadTrackedOrgs();
+  }, [isAdmin]);
 
   useEffect(() => {
     loadTrackedOrgs();
@@ -870,7 +889,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span>All Orgs (25)</span>
+                <span>All Orgs ({totalIssues})</span>
               </button>
 
               {trackedOrgs.map((org) => {
@@ -990,7 +1009,9 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           </div>
           <h3 className="text-base font-semibold text-white">No matching open issues found</h3>
           <p className="text-xs text-neutral-400 max-w-md mx-auto">
-            Try broadening your search query or click "Run 2h Scan Now" above to crawl public repositories for fresh open unassigned issues.
+            {trackedOrgs.length === 0
+              ? 'No organizations are currently tracked. Click "+ Add Org" above to track a repository or organization by URL.'
+              : 'Try broadening your search query or click "Run 2h Scan Now" above to crawl public repositories for fresh open unassigned issues.'}
           </p>
         </div>
       )}

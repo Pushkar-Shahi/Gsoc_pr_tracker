@@ -41,7 +41,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Form State with LocalStorage fallbacks
   const [token, setToken] = useState('');
   const [username, setUsername] = useState(() => 
-    settings?.github_username || localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi'
+    settings?.github_username || localStorage.getItem('issuetopr_gh_user') || ''
   );
   const [autoPublish, setAutoPublish] = useState(() => 
     settings?.auto_publish_pr ?? false

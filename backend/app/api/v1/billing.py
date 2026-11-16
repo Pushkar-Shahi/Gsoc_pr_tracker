@@ -10,7 +10,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.tenant import TenantContext, get_current_tenant
+from app.core.tenant import TenantContext, get_current_tenant, is_admin_user
 from app.db.database import get_db
 from app.models.models import Organization, Subscription
 from app.services.billing_service import BillingService
@@ -50,7 +50,7 @@ class UpiReviewRequest(BaseModel):
 
 
 def _require_platform_admin(ctx: TenantContext) -> None:
-    if not getattr(ctx.user, "is_superuser", False):
+    if not is_admin_user(ctx):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Platform administrator access required to review UPI payments."
@@ -69,7 +69,7 @@ async def get_current_subscription(
     db: AsyncSession = Depends(get_db)
 ):
     """Returns the requesting organization's subscription status and current month's task quota usage."""
-    is_admin = bool(getattr(ctx.user, "is_superuser", False))
+    is_admin = is_admin_user(ctx)
     return await BillingService.get_subscription_summary(ctx.organization.id, db, is_admin=is_admin)
 
 
@@ -215,7 +215,7 @@ async def simulate_tier_transition(
             sub.updated_at = now_utc
 
     await db.commit()
-    is_admin = bool(getattr(ctx.user, "is_superuser", False))
+    is_admin = is_admin_user(ctx)
     return await BillingService.get_subscription_summary(ctx.organization.id, db, is_admin=is_admin)
 
 

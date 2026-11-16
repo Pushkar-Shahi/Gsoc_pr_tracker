@@ -161,6 +161,13 @@ export function App() {
     }
   }, []);
 
+  // Strict guard: ensure non-admin accounts can never stay on the Admin Console / God Mode tab
+  useEffect(() => {
+    if (activeTab === 'admin' && subscriptionInfo && !subscriptionInfo.is_admin) {
+      setActiveTab('issues');
+    }
+  }, [activeTab, subscriptionInfo]);
+
   // 2. Fetch discovered issues for the Issue Finder
   const loadIssues = useCallback(async (filters: Record<string, any> = {}, size: number = 25) => {
     setLoadingIssues(true);
@@ -538,6 +545,7 @@ export function App() {
                   onOpenDetails={(issue) => setSelectedIssueModal(issue)}
                   onCompleteIssue={handleCompleteIssue}
                   onFilterChange={handleFilterChange}
+                  isAdmin={Boolean(subscriptionInfo?.is_admin)}
                 />
               )}
 

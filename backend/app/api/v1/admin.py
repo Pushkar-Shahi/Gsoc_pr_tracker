@@ -10,7 +10,7 @@ from sqlalchemy import select, func, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.tenant import TenantContext, get_current_tenant
+from app.core.tenant import TenantContext, get_current_tenant, is_admin_user
 from app.db.database import get_db
 from app.models.models import (
     User,
@@ -50,7 +50,7 @@ ALLOWED_TASK_STATES = (
 
 
 def _require_platform_admin(ctx: TenantContext) -> None:
-    if not getattr(ctx.user, "is_superuser", False):
+    if not is_admin_user(ctx):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Platform administrator privileges required."

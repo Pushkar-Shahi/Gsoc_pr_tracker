@@ -39,7 +39,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   subscriptionInfo,
 }) => {
   const { isDark, toggleTheme } = useTheme();
-  const username = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
+  const username = localStorage.getItem('issuetopr_gh_user') || (subscriptionInfo?.is_admin ? 'Pushkar-Shahi' : 'Developer');
 
   // Lock background body scrolling whenever the Mobile Drawer is open
   useLockBodyScroll(isOpen);

@@ -91,12 +91,41 @@ async def test_dynamic_organizations_list():
         assert "organizations" in data
         assert data["total_orgs"] >= 4
 
-        # Check default 4 organizations exist
+        # Check default 4 organizations exist for admin
         org_ids = [org["id"] for org in data["organizations"]]
         assert "numfocus" in org_ids
         assert "psf" in org_ids
         assert "deepchem" in org_ids
         assert "kornia" in org_ids
+
+
+@pytest.mark.asyncio
+async def test_non_admin_does_not_see_default_organizations():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Non-admin user token
+        token = generate_session_token(subject="user-standard-456", claims={"role": "member", "tier": "starter"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        resp = await client.get("/api/v1/issues/organizations", headers=headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_orgs" in data
+        assert "organizations" in data
+
+        # Verify default organizations (NumFOCUS, PSF, DeepChem, Kornia) are excluded for non-admin
+        org_ids = [org["id"] for org in data["organizations"]]
+        assert "numfocus" not in org_ids
+        assert "psf" not in org_ids
+        assert "deepchem" not in org_ids
+        assert "kornia" not in org_ids
+
+        # Attempt to filter by a default org should yield 0 results
+        issues_resp = await client.get("/api/v1/issues?gsoc_org=kornia", headers=headers)
+        assert issues_resp.status_code == 200
+        issues_data = issues_resp.json()
+        assert issues_data["total"] == 0
+        assert len(issues_data["items"]) == 0
 
 
 @pytest.mark.asyncio

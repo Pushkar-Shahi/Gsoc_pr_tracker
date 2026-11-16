@@ -20,7 +20,7 @@ from app.services.availability_inspector import AvailabilityInspector
 from app.core.config import settings
 from app.core.entitlements import require_tier
 from app.core.gsoc_orgs import ALL_GSOC_OWNERS, FOCUS_GSOC_OWNERS, FOCUS_GSOC_ORGS, get_gsoc_info, is_gsoc_org, is_focus_gsoc_org
-from app.core.tenant import TenantContext, get_current_tenant, get_optional_tenant
+from app.core.tenant import TenantContext, get_current_tenant, get_optional_tenant, is_admin_user
 
 logger = logging.getLogger(__name__)
 
@@ -86,40 +86,71 @@ async def list_issues(
 
     # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
     focus_owners = list(FOCUS_GSOC_OWNERS)
+    is_admin = is_admin_user(ctx)
+
     if gsoc_org and gsoc_org.strip() and gsoc_org.strip().lower() != "all":
         org_filter = gsoc_org.strip().lower()
-        if org_filter == "numfocus":
-            target_owners = [
-                "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
-                "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
-                "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels"
-            ]
-        elif org_filter in ("psf", "python"):
-            target_owners = ["psf", "python", "pallets", "pypa", "celery", "pylint-dev"]
-        elif org_filter == "deepchem":
-            target_owners = ["deepchem"]
-        elif org_filter == "kornia":
-            target_owners = ["kornia"]
+        if org_filter in ("numfocus", "psf", "python", "deepchem", "kornia"):
+            if not is_admin:
+                # Non-admin accounts do not have access to default orgs (like Kornia etc.)
+                filters.append(Repository.id == "org-restricted-non-admin")
+            else:
+                if org_filter == "numfocus":
+                    target_owners = [
+                        "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
+                        "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
+                        "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels"
+                    ]
+                elif org_filter in ("psf", "python"):
+                    target_owners = ["psf", "python", "pallets", "pypa", "celery", "pylint-dev"]
+                elif org_filter == "deepchem":
+                    target_owners = ["deepchem"]
+                elif org_filter == "kornia":
+                    target_owners = ["kornia"]
+                filters.append(
+                    or_(
+                        func.lower(Repository.owner).in_(target_owners),
+                        func.lower(Repository.name).in_(target_owners),
+                        func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
+                    )
+                )
         else:
             target_owners = [org_filter]
-        filters.append(
-            or_(
-                func.lower(Repository.owner).in_(target_owners),
-                func.lower(Repository.name).in_(target_owners),
-                func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
+            filters.append(
+                or_(
+                    func.lower(Repository.owner).in_(target_owners),
+                    func.lower(Repository.name).in_(target_owners),
+                    func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
+                )
             )
-        )
     else:
-        # Default ("All Orgs"): Show open issues from focus owners, tracked GSoC/custom repos, org private repos, or user tasks
+        # Default ("All Orgs"):
+        # For admin: Show open issues from focus owners, tracked GSoC/custom repos, org private repos, or user tasks
+        # For non-admin: Default showcase orgs (NumFOCUS, PSF, DeepChem, Kornia) are completely excluded!
         if gsoc_only:
-            gsoc_clauses = [
-                func.lower(Repository.owner).in_(focus_owners),
-                Repository.is_gsoc.is_(True),
-                Issue.id.in_(select(Task.issue_id)),
-            ]
-            if current_org_id:
-                gsoc_clauses.append(and_(Repository.is_private.is_(True), Repository.tenant_id == current_org_id))
-            filters.append(or_(*gsoc_clauses))
+            if is_admin:
+                gsoc_clauses = [
+                    func.lower(Repository.owner).in_(focus_owners),
+                    Repository.is_gsoc.is_(True),
+                    Issue.id.in_(select(Task.issue_id)),
+                ]
+                if current_org_id:
+                    gsoc_clauses.append(and_(Repository.is_private.is_(True), Repository.tenant_id == current_org_id))
+                filters.append(or_(*gsoc_clauses))
+            else:
+                gsoc_clauses = [
+                    and_(
+                        Repository.is_gsoc.is_(True),
+                        func.lower(Repository.owner).not_in(focus_owners)
+                    ),
+                    Issue.id.in_(select(Task.issue_id)),
+                ]
+                if current_org_id:
+                    gsoc_clauses.append(and_(Repository.is_private.is_(True), Repository.tenant_id == current_org_id))
+                filters.append(or_(*gsoc_clauses))
+        else:
+            if not is_admin:
+                filters.append(func.lower(Repository.owner).not_in(focus_owners))
 
     if query and query.strip():
         q_term = f"%{query.strip()}%"
@@ -279,15 +310,21 @@ async def get_tracked_organizations(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Returns all organizations available for filtering, combining the 4 focus showcase orgs
-    with all dynamically added custom organizations in the database.
+    Returns all organizations available for filtering.
+    For admin accounts: includes the 4 focus showcase orgs (NumFOCUS, PSF, DeepChem, Kornia)
+    along with any dynamically added custom organizations in the database.
+    For non-admin accounts: default showcase orgs are excluded, returning only custom added organizations.
     """
-    default_orgs = [
-        {"id": "numfocus", "label": "NumFOCUS", "icon": "🧮", "is_default": True},
-        {"id": "psf", "label": "Python (PSF)", "icon": "🐍", "is_default": True},
-        {"id": "deepchem", "label": "DeepChem", "icon": "🧪", "is_default": True},
-        {"id": "kornia", "label": "Kornia", "icon": "👁️", "is_default": True},
-    ]
+    is_admin = is_admin_user(ctx)
+
+    default_orgs = []
+    if is_admin:
+        default_orgs = [
+            {"id": "numfocus", "label": "NumFOCUS", "icon": "🧮", "is_default": True},
+            {"id": "psf", "label": "Python (PSF)", "icon": "🐍", "is_default": True},
+            {"id": "deepchem", "label": "DeepChem", "icon": "🧪", "is_default": True},
+            {"id": "kornia", "label": "Kornia", "icon": "👁️", "is_default": True},
+        ]
 
     org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
     stmt = (
@@ -593,6 +630,10 @@ async def get_issue(
 
     org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
     if issue.repository and issue.repository.is_private and issue.repository.tenant_id != org_id:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    # Non-admin accounts cannot view default showcase issues
+    if not is_admin_user(ctx) and issue.repository and (issue.repository.owner or "").lower() in FOCUS_GSOC_OWNERS:
         raise HTTPException(status_code=404, detail="Issue not found")
     
     active_task = None

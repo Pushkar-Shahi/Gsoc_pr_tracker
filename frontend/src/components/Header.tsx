@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
-  const username = localStorage.getItem('issuetopr_gh_user') || 'Pushkar-Shahi';
+  const username = localStorage.getItem('issuetopr_gh_user') || (subscriptionInfo?.is_admin ? 'Pushkar-Shahi' : 'Developer');
 
   const handleOpenTab = (tab: string) => {
     if (setActiveTab) {
