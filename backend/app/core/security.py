@@ -20,7 +20,7 @@ def verify_password(plain_password: str) -> bool:
     # Use hmac.compare_digest to prevent timing attacks
     return hmac.compare_digest(plain_password.strip(), APP_PASSWORD)
 
-def generate_session_token(subject: str = "guest", claims: Optional[Dict[str, Any]] = None) -> str:
+def generate_session_token(subject: str = "default-user", claims: Optional[Dict[str, Any]] = None) -> str:
     """Generates a tamper-proof cryptographically signed session token with optional claims."""
     payload: Dict[str, Any] = {
         "sub": subject,
