@@ -196,13 +196,11 @@ async def list_issues(
     result = await db.execute(stmt)
     issues = result.scalars().all()
 
-    # Inline Real-Time PR & Availability Verification
-    # Concurrently inspect candidate issues to guarantee 0 active PRs, no maintainer locks, and no assignees
-    gh = GitHubClient(token=settings.GITHUB_TOKEN)
+    # Fast In-Memory PR & Availability Verification (zero network latency)
     clean_issues = []
     issues_to_purge = []
 
-    async def verify_single_issue(candidate_issue):
+    def verify_single_issue_fast(candidate_issue):
         # 1. Quick regex scan on title & body
         full_text = f"{candidate_issue.title or ''}\n{candidate_issue.body or ''}"
         has_pr_pattern, pr_reason = AvailabilityInspector.detect_pr_intent_or_closure(full_text)
@@ -217,20 +215,15 @@ async def list_issues(
         if candidate_issue.assignees and len(candidate_issue.assignees) > 0:
             return candidate_issue, False, "Issue has assigned contributors"
 
-        # 3. Live check GitHub timeline for linked pull requests
-        if candidate_issue.repository:
-            try:
-                prs = await gh.get_issue_linked_prs(candidate_issue.repository.owner, candidate_issue.repository.name, candidate_issue.issue_number)
-                if prs and len(prs) > 0:
-                    return candidate_issue, False, f"Linked PR #{prs[0]['number']} is open"
-            except Exception as e:
-                logger.debug(f"Failed to check timeline for {candidate_issue.id}: {e}")
+        # 3. Check cached PR flags
+        if getattr(candidate_issue, "has_open_pr", False):
+            return candidate_issue, False, "Linked PR is open"
 
         return candidate_issue, True, None
 
     if issues:
-        verification_results = await asyncio.gather(*[verify_single_issue(i) for i in issues])
-        for issue, is_clean, reason in verification_results:
+        for issue in issues:
+            issue, is_clean, reason = verify_single_issue_fast(issue)
             if is_clean:
                 clean_issues.append(issue)
             else:

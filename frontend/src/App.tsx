@@ -246,7 +246,13 @@ export function App() {
     showToast('🔍 Auto-running 24/7 GSoC issue scan after sign-in...');
     try {
       const scanRes = await api.triggerCronRunNow();
-      await loadIssues(issueFilters, pageSize);
+      // Silently refresh issues without flashing or resetting cards
+      api.fetchIssues({ page: 1, page_size: pageSize, ...issueFilters }).then(freshRes => {
+        if (freshRes.items && freshRes.items.length > 0) {
+          setIssues(freshRes.items);
+          setTotalIssues(freshRes.total || freshRes.items.length);
+        }
+      }).catch(() => {});
       window.dispatchEvent(new CustomEvent('issuetopr-cron-completed', { detail: scanRes }));
       const synced = scanRes?.last_issues_synced ?? scanRes?.discovered ?? 0;
       showToast(`✓ 24/7 GSoC scan complete: synced ${synced} open issues.`);

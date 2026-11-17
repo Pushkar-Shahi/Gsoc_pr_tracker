@@ -986,8 +986,12 @@ export async function fetchIssuesFromGitHub(params: {
     headers['Authorization'] = `token ${token}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+
   try {
-    const ghRes = await fetch(ghUrl, { headers });
+    const ghRes = await fetch(ghUrl, { headers, signal: controller.signal });
+    clearTimeout(timeoutId);
     if (ghRes.ok) {
       const data = await ghRes.json();
       const rawItems = data.items || [];
@@ -1130,19 +1134,39 @@ export async function fetchIssues(params: {
       const data = await res.json();
       if (data && Array.isArray(data.items)) {
         const filtered = data.items.filter((i: Issue) => !isIssueCompleted(i));
-        // If results exist or if a specific search query was performed, return them directly
-        if (filtered.length > 0 || params.query || params.language || params.repository) {
+        // If results exist or if a specific filter/search query was performed, return them directly
+        if (filtered.length > 0 || params.query || params.language || params.repository || params.gsoc_org || params.difficulty) {
           data.items = filtered;
           return data;
         }
+        // If results are 0 on default load, return target org default issues immediately without hanging
+        const defaults = DEFAULT_TARGET_ORG_ISSUES.filter(i => !isIssueCompleted(i));
+        return {
+          items: defaults,
+          total: defaults.length,
+          page: 1,
+          total_pages: 1,
+          coverage_status: { mode: 'Curated Target Organizations' }
+        };
       }
     }
-  } catch {
-    // Hosted / static fallback on Vercel
+  } catch (err) {
+    console.warn('API fetch issues error:', err);
   }
 
-  // Fallback to direct GitHub public API query
-  return await fetchIssuesFromGitHub(params);
+  // Fallback to direct GitHub public API query with strict timeout
+  try {
+    return await fetchIssuesFromGitHub(params);
+  } catch {
+    const cached = getCachedIssues();
+    return {
+      items: cached.slice(0, params.page_size || 25),
+      total: cached.length,
+      page: 1,
+      total_pages: 1,
+      coverage_status: { rate_limit: 'offline_cache' }
+    };
+  }
 }
 
 export async function fetchIssue(id: string): Promise<Issue> {

@@ -1001,11 +1001,19 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
+      {/* Loading state: Only show large placeholder on initial empty load */}
+      {loading && visibleIssues.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-3">
           <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm">Fetching and evaluating open-source opportunities...</p>
+        </div>
+      )}
+
+      {/* Subtle indicator when refreshing an already-populated list */}
+      {loading && visibleIssues.length > 0 && (
+        <div className="flex items-center gap-2 text-xs text-blue-400 py-1 font-medium">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          <span>Refreshing opportunities...</span>
         </div>
       )}
 
