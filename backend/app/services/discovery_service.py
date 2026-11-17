@@ -2,10 +2,10 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
-from sqlalchemy import select
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.models import Repository, Issue, DiscoveryCheckpoint, AuditLog
+from app.models.models import Repository, Issue, Task, DiscoveryCheckpoint, AuditLog
 from app.services.github_client import GitHubClient
 from app.services.ranking_service import RankingService
 from app.services.availability_inspector import AvailabilityInspector
@@ -35,26 +35,27 @@ class DiscoveryService:
         total_discovered = 0
         errors = []
 
-        # Target curated repositories across the 4 organizations: NumFOCUS, PSF, DeepChem, Kornia
+        # 0. Purge unselected issues on every scan so old issues don't pile up.
+        # Preserve issues where user clicked "Select Issue" (which creates a Task in the database).
+        try:
+            selected_subquery = select(Task.issue_id).where(Task.issue_id.is_not(None)).distinct()
+            await self.db.execute(
+                update(AuditLog)
+                .where(AuditLog.issue_id.is_not(None))
+                .where(AuditLog.issue_id.not_in(selected_subquery))
+                .values(issue_id=None)
+            )
+            await self.db.execute(
+                delete(Issue)
+                .where(Issue.id.not_in(selected_subquery))
+            )
+            await self.db.commit()
+            logger.info("Purged unselected issues prior to discovery sync.")
+        except Exception as purge_err:
+            logger.warning(f"Error purging unselected issues during scan: {purge_err}")
+
+        # 1. Target curated repositories across the 5 target organizations: Zulip, Learning Equality, Rocket.Chat, CircuitVerse, Wikimedia
         curated_repos = [
-            # NumFOCUS
-            ("numpy", "numpy", "Python"),
-            ("scipy", "scipy", "Python"),
-            ("pandas-dev", "pandas", "Python"),
-            ("matplotlib", "matplotlib", "Python"),
-            ("scikit-learn", "scikit-learn", "Python"),
-            ("sympy", "sympy", "Python"),
-            ("astropy", "astropy", "Python"),
-            # Python Software Foundation
-            ("psf", "requests", "Python"),
-            ("psf", "black", "Python"),
-            ("python", "cpython", "Python"),
-            ("pallets", "flask", "Python"),
-            ("pypa", "pip", "Python"),
-            # DeepChem
-            ("deepchem", "deepchem", "Python"),
-            # Kornia
-            ("kornia", "kornia", "Python"),
             # Zulip
             ("zulip", "zulip", "Python"),
             # Learning Equality
@@ -90,15 +91,15 @@ class DiscoveryService:
         ])
         raw_candidates: List[Tuple[Dict[str, Any], str]] = [pair for batch in repo_batches for pair in batch]
 
-        # 2. Two grouped Search API queries across focus orgs (avoids 10/min Search rate limit & completes fast)
+        # 2. Two grouped Search API queries across the 5 target orgs (avoids 10/min Search rate limit & completes fast)
         grouped_queries = [
             (
-                "gsoc:aiml:batch1:open:unassigned",
-                "is:issue is:open no:assignee archived:false (org:numfocus OR org:numpy OR org:scipy OR org:pandas-dev OR org:matplotlib OR org:scikit-learn OR org:sympy OR org:astropy)",
+                "gsoc:target:batch1:open:unassigned",
+                "is:issue is:open no:assignee archived:false (org:zulip OR org:learningequality OR org:RocketChat)",
             ),
             (
-                "gsoc:aiml:batch2:open:unassigned",
-                "is:issue is:open no:assignee archived:false (org:psf OR org:python OR org:pallets OR org:pypa OR org:deepchem OR org:kornia OR org:zulip OR org:learningequality OR org:RocketChat OR org:CircuitVerse OR org:wikimedia)",
+                "gsoc:target:batch2:open:unassigned",
+                "is:issue is:open no:assignee archived:false (org:CircuitVerse OR org:wikimedia OR org:WikiEducationFoundation OR org:Open-Knowledge-Impact-Foundation OR org:hatnote)",
             ),
         ]
 

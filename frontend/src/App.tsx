@@ -243,13 +243,13 @@ export function App() {
     } catch {}
 
     window.dispatchEvent(new CustomEvent('issuetopr-cron-started'));
-    showToast('🔍 Auto-running 2h GSoC issue scan after sign-in...');
+    showToast('🔍 Auto-running 24/7 GSoC issue scan after sign-in...');
     try {
       const scanRes = await api.triggerCronRunNow();
       await loadIssues(issueFilters, pageSize);
       window.dispatchEvent(new CustomEvent('issuetopr-cron-completed', { detail: scanRes }));
       const synced = scanRes?.last_issues_synced ?? scanRes?.discovered ?? 0;
-      showToast(`✓ 2h GSoC scan complete: synced ${synced} open issues.`);
+      showToast(`✓ 24/7 GSoC scan complete: synced ${synced} open issues.`);
     } catch (err) {
       console.warn('Auto login discovery scan warning:', err);
       window.dispatchEvent(new CustomEvent('issuetopr-cron-completed', { detail: null }));

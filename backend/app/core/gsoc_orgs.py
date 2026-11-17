@@ -115,40 +115,8 @@ GSOC_ORGS_MAP: Dict[str, str] = {
 
 ALL_GSOC_OWNERS = set(GSOC_ORGS_MAP.keys())
 
-# The 4 primary target organizations: NumFOCUS, Python Software Foundation, DeepChem, Kornia
+# The 5 primary target organizations: Zulip, Learning Equality, Rocket.Chat, CircuitVerse.org, Wikimedia Foundation
 FOCUS_GSOC_ORGS: Dict[str, str] = {
-    # NumFOCUS
-    "numfocus": "NumFOCUS",
-    "numpy": "NumFOCUS (NumPy)",
-    "scipy": "NumFOCUS (SciPy)",
-    "pandas-dev": "NumFOCUS (pandas)",
-    "matplotlib": "NumFOCUS (Matplotlib)",
-    "scikit-learn": "NumFOCUS (scikit-learn)",
-    "scikit-image": "NumFOCUS (scikit-image)",
-    "sympy": "NumFOCUS (SymPy)",
-    "networkx": "NumFOCUS (NetworkX)",
-    "astropy": "NumFOCUS (Astropy)",
-    "jupyter": "NumFOCUS (Project Jupyter)",
-    "jupyterlab": "NumFOCUS (JupyterLab)",
-    "dask": "NumFOCUS (Dask)",
-    "xarray": "NumFOCUS (xarray)",
-    "zarr-developers": "NumFOCUS (Zarr)",
-    "statsmodels": "NumFOCUS (Statsmodels)",
-
-    # Python Software Foundation
-    "psf": "Python Software Foundation",
-    "python": "Python Software Foundation",
-    "pallets": "Python Software Foundation (Pallets)",
-    "pypa": "Python Software Foundation (PyPA)",
-    "celery": "Python Software Foundation (Celery)",
-    "pylint-dev": "Python Software Foundation (Pylint)",
-
-    # DeepChem
-    "deepchem": "DeepChem",
-
-    # Kornia
-    "kornia": "Kornia",
-
     # Zulip
     "zulip": "Zulip",
 

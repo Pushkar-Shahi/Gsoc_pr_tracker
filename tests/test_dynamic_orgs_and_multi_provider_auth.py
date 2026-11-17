@@ -91,12 +91,8 @@ async def test_dynamic_organizations_list():
         assert "organizations" in data
         assert data["total_orgs"] >= 4
 
-        # Check default organizations exist for admin
+        # Check target organizations exist
         org_ids = [org["id"] for org in data["organizations"]]
-        assert "numfocus" in org_ids
-        assert "psf" in org_ids
-        assert "deepchem" in org_ids
-        assert "kornia" in org_ids
         assert "zulip" in org_ids
         assert "learningequality" in org_ids
         assert "rocketchat" in org_ids
@@ -118,12 +114,16 @@ async def test_non_admin_does_not_see_default_organizations():
         assert "total_orgs" in data
         assert "organizations" in data
 
-        # Verify default organizations are excluded for non-admin
+        # Verify legacy other showcase organizations are excluded
         org_ids = [org["id"] for org in data["organizations"]]
-        for default_id in ["numfocus", "psf", "deepchem", "kornia", "zulip", "learningequality", "rocketchat", "circuitverse", "wikimedia"]:
-            assert default_id not in org_ids
+        for legacy_id in ["numfocus", "psf", "deepchem", "kornia"]:
+            assert legacy_id not in org_ids
 
-        # Attempt to filter by a default org should yield 0 results
+        # Verify the 5 target orgs are visible in the panel
+        for target_id in ["zulip", "learningequality", "rocketchat", "circuitverse", "wikimedia"]:
+            assert target_id in org_ids
+
+        # Attempt to filter by legacy other org yields 0 results
         issues_resp = await client.get("/api/v1/issues?gsoc_org=kornia", headers=headers)
         assert issues_resp.status_code == 200
         issues_data = issues_resp.json()

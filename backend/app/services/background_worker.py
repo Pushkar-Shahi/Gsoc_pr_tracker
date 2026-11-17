@@ -365,7 +365,7 @@ class BackgroundWorkerService:
     def __init__(
         self,
         session_factory: async_sessionmaker,
-        discovery_interval_sec: int = 7200,  # 2 hours default cron interval
+        discovery_interval_sec: int = 300,  # 5-minute continuous 24/7 cron interval
         pr_poll_interval_sec: int = 60,
         issue_reconcile_interval_sec: int = 180
     ):
@@ -382,7 +382,7 @@ class BackgroundWorkerService:
         self.last_cron_pruned: int = 0
         self._active_cron_task: Optional[asyncio.Task] = None
         self._last_login_scan_triggered_at: Optional[datetime] = None
-        self.cron_target_orgs: List[str] = ["NumFOCUS", "Python Software Foundation", "DeepChem", "Kornia"]
+        self.cron_target_orgs: List[str] = ["Zulip", "Learning Equality", "Rocket.Chat", "CircuitVerse.org", "Wikimedia Foundation"]
 
     def start(self):
         if self._running:
@@ -397,7 +397,7 @@ class BackgroundWorkerService:
         cycle_end_epoch = cycle_start_epoch + self.discovery_interval_sec
         self.last_cron_run_at = datetime.fromtimestamp(cycle_start_epoch, tz=timezone.utc)
         self.next_cron_run_at = datetime.fromtimestamp(cycle_end_epoch, tz=timezone.utc)
-        logger.info(f"Background workers started (PR tracker, 2-hour discovery cron [{self.discovery_interval_sec}s], issue reconciler).")
+        logger.info(f"Background workers started (PR tracker, 24/7 continuous discovery cron [{self.discovery_interval_sec}s], issue reconciler).")
 
     async def stop(self):
         self._running = False
@@ -525,9 +525,9 @@ class BackgroundWorkerService:
         await self.trigger_cron_scan()
 
     async def _execute_cron_scan(self) -> Dict[str, Any]:
-        """Internal runner for a single coalesced 2-hour discovery + reconciliation pass."""
+        """Internal runner for a single coalesced 24/7 continuous discovery + reconciliation pass."""
         self.is_cron_running = True
-        logger.info("2-Hour Auto-Scan Cron starting across NumFOCUS, PSF, DeepChem, and Kornia...")
+        logger.info("24/7 Continuous Auto-Scan Cron starting across Zulip, Learning Equality, Rocket.Chat, CircuitVerse, and Wikimedia...")
         try:
             async with self.session_factory() as db:
                 sett_stmt = select(PlatformSettings).where(PlatformSettings.id == 1)
@@ -560,7 +560,7 @@ class BackgroundWorkerService:
                         "errors": errors,
                         "timestamp": datetime.utcnow().isoformat(),
                         "orgs": self.cron_target_orgs,
-                        "message": f"Auto-Scan Cron completed. Discovered {discovered_count} fresh unassigned issues from NumFOCUS, PSF, DeepChem, and Kornia."
+                        "message": f"24/7 Auto-Scan Cron completed. Discovered {discovered_count} fresh unassigned issues from Zulip, Learning Equality, Rocket.Chat, CircuitVerse, and Wikimedia."
                     }
                 )
                 db.add(audit)

@@ -432,384 +432,6 @@ const CACHED_ISSUES_KEY = 'issuetopr_cached_issues';
 
 const DEFAULT_TARGET_ORG_ISSUES: Issue[] = [
   {
-    id: 'seed-pipx-2414',
-    repository_id: 'pypa/pipx',
-    github_id: 2414,
-    issue_number: 2414,
-    title: "`pipx list --short --include-injected` doesn't list injected packages",
-    body: "Issue focuses on 'pipx list --short --include-injected' doesn't list injected packages in Python. Context: **issue** '--include-injected' is ignored when combined with '--short', '--pinned' honours it: ...",
-    author: 'pypa-contributor',
-    html_url: 'https://github.com/pypa/pipx/issues/2414',
-    state: 'open',
-    labels: [{ name: 'bug', color: 'd73a4a' }, { name: 'cli', color: '0075ca' }],
-    assignees: [],
-    comments_count: 5,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 5).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 65,
-    difficulty_estimate: 'intermediate',
-    estimated_effort_hours: 5,
-    ranking_breakdown: {
-      skill_match: 70,
-      clarity_score: 80,
-      repo_health_score: 75,
-      effort_score: 65,
-      reasons: ['Python Packaging Authority', 'Verified Reproducible bug']
-    },
-    repository: {
-      id: 'pypa/pipx',
-      owner: 'pypa',
-      name: 'pipx',
-      full_name: 'pypa/pipx',
-      html_url: 'https://github.com/pypa/pipx',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'Python (PSF)',
-      stars_count: 12979,
-      open_issues_count: 42
-    }
-  },
-  {
-    id: 'seed-cpython-161311',
-    repository_id: 'python/cpython',
-    github_id: 161311,
-    issue_number: 161311,
-    title: 'Inconsistent listing of inherited abstract methods in cocuentions.abc documentation',
-    body: "Issue focuses on 'inconsistent listing of inherited abstract methods in collections.abc' in Python. Context: Thanks for maintaining such comprehensive Python documentation! While studying 'collections.abc', I noticed a small inconsistency in how inherit...",
-    author: 'cpython-dev',
-    html_url: 'https://github.com/python/cpython/issues/161311',
-    state: 'open',
-    labels: [{ name: 'docs', color: '0075ca' }],
-    assignees: [],
-    comments_count: 3,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 2).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'policy_check_required',
-    ranking_score: 60,
-    difficulty_estimate: 'beginner',
-    estimated_effort_hours: 2,
-    ranking_breakdown: {
-      skill_match: 65,
-      clarity_score: 75,
-      repo_health_score: 90,
-      effort_score: 60,
-      reasons: ['Python Core Repository', 'Documentation enhancement']
-    },
-    repository: {
-      id: 'python/cpython',
-      owner: 'python',
-      name: 'cpython',
-      full_name: 'python/cpython',
-      html_url: 'https://github.com/python/cpython',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'Python (PSF)',
-      stars_count: 77778,
-      open_issues_count: 1200
-    }
-  },
-  {
-    id: 'seed-scipy-26615',
-    repository_id: 'scipy/scipy',
-    github_id: 26615,
-    issue_number: 26615,
-    title: 'BUG: map_coordinates failing with NaN coords breaks reproject package',
-    body: "Issue focuses on 'BUG: map_coordinates failing with NaN coords breaks reproject package' in Python. Context: The change to 'map_coordinates' in https://github.com/scipy/scipy/pull/26323 has broken the [reproject](https://github.com/astropy/reproject)...",
-    author: 'scipy-maintainer',
-    html_url: 'https://github.com/scipy/scipy/issues/26615',
-    state: 'open',
-    labels: [{ name: 'defect', color: 'e11d21' }, { name: 'scipy.ndimage', color: 'fbca04' }],
-    assignees: [],
-    comments_count: 6,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 69,
-    difficulty_estimate: 'advanced',
-    estimated_effort_hours: 12,
-    ranking_breakdown: {
-      skill_match: 72,
-      clarity_score: 85,
-      repo_health_score: 88,
-      effort_score: 69,
-      reasons: ['NumFOCUS Flagship Repository', 'Critical Regression Bug']
-    },
-    repository: {
-      id: 'scipy/scipy',
-      owner: 'scipy',
-      name: 'scipy',
-      full_name: 'scipy/scipy',
-      html_url: 'https://github.com/scipy/scipy',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'NumFOCUS',
-      stars_count: 15155,
-      open_issues_count: 650
-    }
-  },
-  {
-    id: 'seed-numfocus-1',
-    repository_id: 'numpy/numpy',
-    github_id: 25114,
-    issue_number: 25114,
-    title: 'DOC: Clarify documentation for np.linalg.qr mode parameter behavior',
-    body: 'The documentation in numpy/linalg/linalg.py could be clearer on what happens when mode="complete" is passed with non-square tall matrices. Adding code doctest examples would be very helpful.',
-    author: 'maintainer-gsoc',
-    html_url: 'https://github.com/numpy/numpy/issues/25114',
-    state: 'open',
-    labels: [{ name: 'documentation', color: '0075ca' }, { name: 'good first issue', color: '7057ff' }],
-    assignees: [],
-    comments_count: 2,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 4).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 96,
-    difficulty_estimate: 'beginner',
-    estimated_effort_hours: 3,
-    ranking_breakdown: {
-      skill_match: 95,
-      clarity_score: 98,
-      repo_health_score: 98,
-      effort_score: 92,
-      reasons: ['NumFOCUS Core Tier 1', 'Good first issue label', 'Zero assignees and active maintainers']
-    },
-    repository: {
-      id: 'numpy/numpy',
-      owner: 'numpy',
-      name: 'numpy',
-      full_name: 'numpy/numpy',
-      html_url: 'https://github.com/numpy/numpy',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'NumFOCUS',
-      stars_count: 26500,
-      open_issues_count: 850
-    }
-  },
-  {
-    id: 'seed-numfocus-2',
-    repository_id: 'scipy/scipy',
-    github_id: 19842,
-    issue_number: 19842,
-    title: 'BUG: Fix edge-case in scipy.signal.resample for 1D single-element window arrays',
-    body: 'When scipy.signal.resample receives a single element or boundary window, an IndexError can be raised instead of returning the expected transformed shape.',
-    author: 'scipy-contributor',
-    html_url: 'https://github.com/scipy/scipy/issues/19842',
-    state: 'open',
-    labels: [{ name: 'scipy.signal', color: 'fbca04' }, { name: 'defect', color: 'e11d21' }],
-    assignees: [],
-    comments_count: 4,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 8).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 92,
-    difficulty_estimate: 'intermediate',
-    estimated_effort_hours: 8,
-    ranking_breakdown: {
-      skill_match: 90,
-      clarity_score: 94,
-      repo_health_score: 96,
-      effort_score: 88,
-      reasons: ['NumFOCUS Flagship Repository', 'Clear reproduction steps provided', 'Open & Unassigned']
-    },
-    repository: {
-      id: 'scipy/scipy',
-      owner: 'scipy',
-      name: 'scipy',
-      full_name: 'scipy/scipy',
-      html_url: 'https://github.com/scipy/scipy',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'NumFOCUS',
-      stars_count: 13500,
-      open_issues_count: 620
-    }
-  },
-  {
-    id: 'seed-psf-1',
-    repository_id: 'pallets/flask',
-    github_id: 5412,
-    issue_number: 5412,
-    title: 'DOC: Add comprehensive async request hook example to documentation',
-    body: 'Add an explicit example demonstrating how to hook async before_request and after_request coroutines when using Quart / modern Flask application factories.',
-    author: 'pallets-dev',
-    html_url: 'https://github.com/pallets/flask/issues/5412',
-    state: 'open',
-    labels: [{ name: 'docs', color: '0e8a16' }, { name: 'good first issue', color: '7057ff' }],
-    assignees: [],
-    comments_count: 1,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 95,
-    difficulty_estimate: 'beginner',
-    estimated_effort_hours: 4,
-    ranking_breakdown: {
-      skill_match: 94,
-      clarity_score: 96,
-      repo_health_score: 98,
-      effort_score: 95,
-      reasons: ['Python Software Foundation Ecosystem', 'Docs & beginner priority', 'Zero assignees']
-    },
-    repository: {
-      id: 'pallets/flask',
-      owner: 'pallets',
-      name: 'flask',
-      full_name: 'pallets/flask',
-      html_url: 'https://github.com/pallets/flask',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'Python Software Foundation',
-      stars_count: 67000,
-      open_issues_count: 90
-    }
-  },
-  {
-    id: 'seed-psf-2',
-    repository_id: 'python/cpython',
-    github_id: 114209,
-    issue_number: 114209,
-    title: 'Clarify error message when invalid conversion flags are used in format strings',
-    body: 'When formatting complex expressions with invalid specifier flags, the parser error can be ambiguous. Improve message clarity in ast parser.',
-    author: 'cpython-triage',
-    html_url: 'https://github.com/python/cpython/issues/114209',
-    state: 'open',
-    labels: [{ name: 'type-feature', color: '207de5' }, { name: 'easy', color: 'c2e0c6' }],
-    assignees: [],
-    comments_count: 5,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 16).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 91,
-    difficulty_estimate: 'intermediate',
-    estimated_effort_hours: 10,
-    ranking_breakdown: {
-      skill_match: 90,
-      clarity_score: 90,
-      repo_health_score: 99,
-      effort_score: 85,
-      reasons: ['Python Software Foundation Core', 'Actionable improvement', 'Unassigned']
-    },
-    repository: {
-      id: 'python/cpython',
-      owner: 'python',
-      name: 'cpython',
-      full_name: 'python/cpython',
-      html_url: 'https://github.com/python/cpython',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'Python Software Foundation',
-      stars_count: 62000,
-      open_issues_count: 1400
-    }
-  },
-  {
-    id: 'seed-deepchem-1',
-    repository_id: 'deepchem/deepchem',
-    github_id: 3840,
-    issue_number: 3840,
-    title: 'Add support for custom featurizers in GraphConvModel tutorial notebooks',
-    body: 'The current deepchem GraphConvModel tutorial hardcodes ConvMolFeaturizer. It would be beneficial to demonstrate how custom featurizers can be plugged in seamlessly.',
-    author: 'chem-learner',
-    html_url: 'https://github.com/deepchem/deepchem/issues/3840',
-    state: 'open',
-    labels: [{ name: 'good first issue', color: '7057ff' }, { name: 'tutorials', color: '0e8a16' }],
-    assignees: [],
-    comments_count: 3,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 20).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 94,
-    difficulty_estimate: 'beginner',
-    estimated_effort_hours: 5,
-    ranking_breakdown: {
-      skill_match: 92,
-      clarity_score: 95,
-      repo_health_score: 90,
-      effort_score: 90,
-      reasons: ['DeepChem GSoC Organization', 'Good first issue', 'High educational value']
-    },
-    repository: {
-      id: 'deepchem/deepchem',
-      owner: 'deepchem',
-      name: 'deepchem',
-      full_name: 'deepchem/deepchem',
-      html_url: 'https://github.com/deepchem/deepchem',
-      default_branch: 'master',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'DeepChem',
-      stars_count: 5100,
-      open_issues_count: 310
-    }
-  },
-  {
-    id: 'seed-kornia-1',
-    repository_id: 'kornia/kornia',
-    github_id: 2895,
-    issue_number: 2895,
-    title: 'Add type hints and doctest for kornia.geometry.transform.warp_affine',
-    body: 'Ensure torch.Tensor shapes (B, C, H, W) and (B, 2, 3) are strictly documented with type annotations and concise doctests for warp_affine.',
-    author: 'vision-dev',
-    html_url: 'https://github.com/kornia/kornia/issues/2895',
-    state: 'open',
-    labels: [{ name: 'geometry', color: '0052cc' }, { name: 'good first issue', color: '7057ff' }],
-    assignees: [],
-    comments_count: 1,
-    github_created_at: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
-    is_eligible: true,
-    license_status: 'approved',
-    policy_status: 'ready_to_work',
-    ranking_score: 96,
-    difficulty_estimate: 'beginner',
-    estimated_effort_hours: 4,
-    ranking_breakdown: {
-      skill_match: 96,
-      clarity_score: 98,
-      repo_health_score: 94,
-      effort_score: 94,
-      reasons: ['Kornia GSoC Organization', 'PyTorch / Computer Vision match', 'Zero assignees']
-    },
-    repository: {
-      id: 'kornia/kornia',
-      owner: 'kornia',
-      name: 'kornia',
-      full_name: 'kornia/kornia',
-      html_url: 'https://github.com/kornia/kornia',
-      default_branch: 'main',
-      is_fork: false,
-      is_archived: false,
-      is_gsoc: true,
-      gsoc_org_name: 'Kornia',
-      stars_count: 10400,
-      open_issues_count: 220
-    }
-  },
-  {
     id: 'seed-zulip-1',
     repository_id: 'zulip/zulip',
     github_id: 40708,
@@ -1122,20 +744,12 @@ export async function fetchIssuesFromGitHub(params: {
   const page = params.page || 1;
   const pageSize = params.page_size || 25;
 
-  let orgFilter = 'org:NumFOCUS org:psf org:deepchem org:kornia org:zulip org:learningequality org:RocketChat org:CircuitVerse org:wikimedia';
+  let orgFilter = 'org:zulip org:learningequality org:RocketChat org:CircuitVerse org:wikimedia org:WikiEducationFoundation org:Open-Knowledge-Impact-Foundation org:hatnote';
   if (params.gsoc_org) {
     const orgLower = params.gsoc_org.toLowerCase();
-    if (orgLower.includes('numfocus')) {
-      orgFilter = 'org:NumFOCUS org:numpy org:scipy org:pandas-dev org:matplotlib org:scikit-learn org:astropy org:sympy';
-    } else if (orgLower.includes('python') || orgLower.includes('psf')) {
-      orgFilter = 'org:psf org:python org:pypa org:pallets';
-    } else if (orgLower.includes('deepchem')) {
-      orgFilter = 'org:deepchem';
-    } else if (orgLower.includes('kornia')) {
-      orgFilter = 'org:kornia';
-    } else if (orgLower.includes('zulip')) {
+    if (orgLower.includes('zulip')) {
       orgFilter = 'org:zulip';
-    } else if (orgLower.includes('learningequality')) {
+    } else if (orgLower.includes('learningequality') || orgLower.includes('kolibri')) {
       orgFilter = 'org:learningequality';
     } else if (orgLower.includes('rocketchat')) {
       orgFilter = 'org:RocketChat';
@@ -1143,6 +757,8 @@ export async function fetchIssuesFromGitHub(params: {
       orgFilter = 'org:CircuitVerse';
     } else if (orgLower.includes('wikimedia')) {
       orgFilter = 'org:wikimedia org:WikiEducationFoundation org:Open-Knowledge-Impact-Foundation org:hatnote';
+    } else {
+      orgFilter = `org:${params.gsoc_org}`;
     }
   }
 
@@ -1171,17 +787,11 @@ export async function fetchIssuesFromGitHub(params: {
         const repoFullName = repoMatch ? repoMatch[1] : 'upstream/repo';
         const repoOwner = repoFullName.split('/')[0] || '';
 
-        let gsocOrg = 'NumFOCUS';
+        let gsocOrg = 'Open Source';
         const ownerLower = repoOwner.toLowerCase();
-        if (['psf', 'python', 'pypa', 'pallets'].includes(ownerLower)) {
-          gsocOrg = 'Python Software Foundation';
-        } else if (ownerLower === 'deepchem') {
-          gsocOrg = 'DeepChem';
-        } else if (ownerLower === 'kornia') {
-          gsocOrg = 'Kornia';
-        } else if (ownerLower === 'zulip') {
+        if (ownerLower === 'zulip') {
           gsocOrg = 'Zulip';
-        } else if (ownerLower === 'learningequality') {
+        } else if (['learningequality', 'kolibri'].includes(ownerLower)) {
           gsocOrg = 'Learning Equality';
         } else if (['rocketchat', 'rocket.chat'].includes(ownerLower)) {
           gsocOrg = 'Rocket.Chat';
@@ -1663,7 +1273,7 @@ export async function triggerCronRunNow(): Promise<{
 
   return {
     status: 'success',
-    message: 'Scanned online across NumFOCUS, PSF, DeepChem, and Kornia.',
+    message: '24/7 continuous scan complete across Zulip, Learning Equality, Rocket.Chat, CircuitVerse.org, and Wikimedia Foundation.',
     last_run_at: schedule.last_run_at,
     next_run_at: schedule.next_run_at,
     last_run_status: 'success',
@@ -1689,7 +1299,7 @@ export async function selectIssue(issueId: string): Promise<Task> {
     id: issueId,
     title: 'Selected Open Source Task',
     issue_number: 101,
-    repository: { full_name: 'NumFOCUS/numpy', html_url: 'https://github.com/numpy/numpy', default_branch: 'main' }
+    repository: { full_name: 'zulip/zulip', html_url: 'https://github.com/zulip/zulip', default_branch: 'main' }
   } as any;
 
   const repoName = issue.repository?.name || 'repo';
@@ -2039,12 +1649,12 @@ function getLocalAuditLogs(): AuditLog[] {
     {
       id: 'init-1',
       action: 'CRON_DISCOVERY_COMPLETED',
-      actor: 'Autonomous Background Worker (2h Cron)',
+      actor: 'Autonomous Background Worker (24/7 Continuous)',
       task_id: undefined,
       details: {
         items_synced: 421,
-        interval_hours: 2,
-        organizations: ['NumFOCUS', 'Python Software Foundation', 'DeepChem', 'Kornia'],
+        interval_hours: 0,
+        organizations: ['Zulip', 'Learning Equality', 'Rocket.Chat', 'CircuitVerse.org', 'Wikimedia Foundation'],
         priority_ordering: 'Strict Reverse Chronological Order'
       },
       created_at: new Date(Date.now() - 3600000).toISOString()

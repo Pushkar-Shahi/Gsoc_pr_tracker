@@ -73,7 +73,7 @@ async def get_cron_status():
     now_utc = datetime.now(timezone.utc)
     worker = get_background_worker()
 
-    interval_sec = worker.discovery_interval_sec if worker else 7200
+    interval_sec = worker.discovery_interval_sec if worker else 300
     now_epoch = int(now_utc.timestamp())
     cycle_start_epoch = (now_epoch // interval_sec) * interval_sec
     cycle_end_epoch = cycle_start_epoch + interval_sec
@@ -88,7 +88,7 @@ async def get_cron_status():
             "is_running": False,
             "last_run_at": cycle_start.isoformat(),
             "next_run_at": cycle_end.isoformat(),
-            "target_orgs": ["NumFOCUS", "Python Software Foundation", "DeepChem", "Kornia"],
+            "target_orgs": ["Zulip", "Learning Equality", "Rocket.Chat", "CircuitVerse.org", "Wikimedia Foundation"],
             "priority": "Chronological (Time-based, newest first)",
         }
 

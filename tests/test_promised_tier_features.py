@@ -971,7 +971,7 @@ async def test_fast_discovery_sync_grouped_search_and_returns_total_discovered()
         async def fake_search(query: str, page: int = 1, per_page: int = 20):
             nonlocal search_call_count
             search_call_count += 1
-            if "batch1" in query or "numfocus" in query:
+            if "batch1" in query or "numfocus" in query or "zulip" in query:
                 return {
                     "items": [
                         {

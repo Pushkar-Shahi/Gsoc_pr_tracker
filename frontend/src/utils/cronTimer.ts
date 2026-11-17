@@ -1,8 +1,10 @@
-// Centralized 2-Hour Autonomous Online Scanner Internal Engine
-// Calculates deterministic 2-hour cycles aligned with universal epoch intervals
+// Centralized 24/7 Autonomous Online Scanner Internal Engine
+// Calculates deterministic continuous scanning cycles aligned with universal epoch intervals
 
-export const TWO_HOURS_SEC = 7200;
-export const TWO_HOURS_MS = TWO_HOURS_SEC * 1000;
+export const SCAN_INTERVAL_SEC = 300; // 5-minute continuous 24/7 autonomous scanning loop
+export const SCAN_INTERVAL_MS = SCAN_INTERVAL_SEC * 1000;
+export const TWO_HOURS_SEC = SCAN_INTERVAL_SEC;
+export const TWO_HOURS_MS = SCAN_INTERVAL_MS;
 
 export const MANUAL_LAST_CRON_KEY = 'issuetopr_manual_last_cron_run_at';
 
@@ -25,8 +27,8 @@ export function formatCountdownSec(totalSec: number): FormattedCountdown {
     h: pad(h),
     m: pad(m),
     s: pad(s),
-    digital: `${pad(h)}:${pad(m)}:${pad(s)}`,
-    human: `${h}h ${pad(m)}m ${pad(s)}s`
+    digital: h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`,
+    human: h > 0 ? `${h}h ${pad(m)}m ${pad(s)}s` : `${pad(m)}m ${pad(s)}s`
   };
 }
 
@@ -38,14 +40,14 @@ export interface InternalCronSchedule {
 }
 
 /**
- * Returns the website's deterministic internal 2-hour schedule.
+ * Returns the website's deterministic internal 24/7 continuous schedule.
  * Independent of when any user logs in, visits the site, leaves, or reloads.
  */
 export function getWebsiteInternalSchedule(): InternalCronSchedule {
   const now = Date.now();
-  // Epoch-aligned 2-hour window
-  const cycleStartMs = Math.floor(now / TWO_HOURS_MS) * TWO_HOURS_MS;
-  const cycleEndMs = cycleStartMs + TWO_HOURS_MS;
+  // Epoch-aligned continuous window
+  const cycleStartMs = Math.floor(now / SCAN_INTERVAL_MS) * SCAN_INTERVAL_MS;
+  const cycleEndMs = cycleStartMs + SCAN_INTERVAL_MS;
   const countdownSec = Math.max(0, Math.floor((cycleEndMs - now) / 1000));
 
   let lastRunIso = new Date(cycleStartMs).toISOString();

@@ -86,81 +86,54 @@ async def list_issues(
 
     # Target organizations constraint: NumFOCUS, PSF, DeepChem, Kornia OR custom added organizations
     focus_owners = list(FOCUS_GSOC_OWNERS)
-    is_admin = is_admin_user(ctx)
 
     if gsoc_org and gsoc_org.strip() and gsoc_org.strip().lower() != "all":
         org_filter = gsoc_org.strip().lower()
-        if org_filter in ("numfocus", "psf", "python", "deepchem", "kornia", "zulip", "learningequality", "rocketchat", "circuitverse", "wikimedia"):
-            if not is_admin:
-                # Non-admin accounts do not have access to default orgs (like Kornia etc.)
-                filters.append(Repository.id == "org-restricted-non-admin")
-            else:
-                if org_filter == "numfocus":
-                    target_owners = [
-                        "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
-                        "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
-                        "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels"
-                    ]
-                elif org_filter in ("psf", "python"):
-                    target_owners = ["psf", "python", "pallets", "pypa", "celery", "pylint-dev"]
-                elif org_filter == "deepchem":
-                    target_owners = ["deepchem"]
-                elif org_filter == "kornia":
-                    target_owners = ["kornia"]
-                elif org_filter == "zulip":
-                    target_owners = ["zulip"]
-                elif org_filter == "learningequality":
-                    target_owners = ["learningequality", "kolibri", "studio", "kolibri-design-system"]
-                elif org_filter == "rocketchat":
-                    target_owners = ["rocketchat", "rocket.chat", "embeddedchat"]
-                elif org_filter == "circuitverse":
-                    target_owners = ["circuitverse", "cv-frontend-vue"]
-                elif org_filter == "wikimedia":
-                    target_owners = ["wikimedia", "wikieducationfoundation", "wikiedudashboard", "open-knowledge-impact-foundation", "campwiz-nxt-frontend2", "hatnote", "montage", "mediawiki-extensions-wikisource"]
-                filters.append(
-                    or_(
-                        func.lower(Repository.owner).in_(target_owners),
-                        func.lower(Repository.name).in_(target_owners),
-                        func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
-                    )
-                )
+        if org_filter == "zulip":
+            target_owners = ["zulip"]
+        elif org_filter == "learningequality":
+            target_owners = ["learningequality", "kolibri", "studio", "kolibri-design-system"]
+        elif org_filter == "rocketchat":
+            target_owners = ["rocketchat", "rocket.chat", "embeddedchat"]
+        elif org_filter == "circuitverse":
+            target_owners = ["circuitverse", "cv-frontend-vue"]
+        elif org_filter == "wikimedia":
+            target_owners = [
+                "wikimedia", "wikieducationfoundation", "wikiedudashboard",
+                "open-knowledge-impact-foundation", "campwiz-nxt-frontend2",
+                "hatnote", "montage", "mediawiki-extensions-wikisource"
+            ]
+        elif org_filter in ("numfocus", "psf", "python", "deepchem", "kornia"):
+            # Legacy other orgs - only include if an active user Task exists
+            filters.append(Issue.id.in_(select(Task.issue_id)))
+            target_owners = [org_filter]
         else:
             target_owners = [org_filter]
-            filters.append(
-                or_(
-                    func.lower(Repository.owner).in_(target_owners),
-                    func.lower(Repository.name).in_(target_owners),
-                    func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
-                )
+
+        filters.append(
+            or_(
+                func.lower(Repository.owner).in_(target_owners),
+                func.lower(Repository.name).in_(target_owners),
+                func.lower(Repository.gsoc_org_name).ilike(f"%{org_filter}%")
             )
+        )
     else:
         # Default ("All Orgs"):
-        # For admin: Show open issues from focus owners, tracked GSoC/custom repos, org private repos, or user tasks
-        # For non-admin: Default showcase orgs (NumFOCUS, PSF, DeepChem, Kornia) are completely excluded!
-        if gsoc_only:
-            if is_admin:
-                gsoc_clauses = [
-                    func.lower(Repository.owner).in_(focus_owners),
-                    Repository.is_gsoc.is_(True),
-                    Issue.id.in_(select(Task.issue_id)),
-                ]
-                if current_org_id:
-                    gsoc_clauses.append(and_(Repository.is_private.is_(True), Repository.tenant_id == current_org_id))
-                filters.append(or_(*gsoc_clauses))
-            else:
-                gsoc_clauses = [
-                    and_(
-                        Repository.is_gsoc.is_(True),
-                        func.lower(Repository.owner).not_in(focus_owners)
-                    ),
-                    Issue.id.in_(select(Task.issue_id)),
-                ]
-                if current_org_id:
-                    gsoc_clauses.append(and_(Repository.is_private.is_(True), Repository.tenant_id == current_org_id))
-                filters.append(or_(*gsoc_clauses))
-        else:
-            if not is_admin:
-                filters.append(func.lower(Repository.owner).not_in(focus_owners))
+        # Legacy other showcase orgs (NumFOCUS, PSF, DeepChem, Kornia) are filtered out
+        # unless an active user Task exists for them.
+        legacy_other_owners = [
+            "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
+            "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
+            "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels",
+            "psf", "python", "pallets", "pypa", "celery", "pylint-dev",
+            "deepchem", "kornia"
+        ]
+        filters.append(
+            or_(
+                func.lower(Repository.owner).not_in(legacy_other_owners),
+                Issue.id.in_(select(Task.issue_id))
+            )
+        )
 
     if query and query.strip():
         q_term = f"%{query.strip()}%"
@@ -321,25 +294,16 @@ async def get_tracked_organizations(
 ):
     """
     Returns all organizations available for filtering.
-    For admin accounts: includes the 4 focus showcase orgs (NumFOCUS, PSF, DeepChem, Kornia)
+    Includes the 5 target organizations (Zulip, Learning Equality, Rocket.Chat, CircuitVerse.org, Wikimedia Foundation)
     along with any dynamically added custom organizations in the database.
-    For non-admin accounts: default showcase orgs are excluded, returning only custom added organizations.
     """
-    is_admin = is_admin_user(ctx)
-
-    default_orgs = []
-    if is_admin:
-        default_orgs = [
-            {"id": "numfocus", "label": "NumFOCUS", "icon": "🧮", "is_default": True},
-            {"id": "psf", "label": "Python (PSF)", "icon": "🐍", "is_default": True},
-            {"id": "deepchem", "label": "DeepChem", "icon": "🧪", "is_default": True},
-            {"id": "kornia", "label": "Kornia", "icon": "👁️", "is_default": True},
-            {"id": "zulip", "label": "Zulip", "icon": "💬", "is_default": True},
-            {"id": "learningequality", "label": "Learning Equality", "icon": "📚", "is_default": True},
-            {"id": "rocketchat", "label": "Rocket.Chat", "icon": "🚀", "is_default": True},
-            {"id": "circuitverse", "label": "CircuitVerse.org", "icon": "⚡", "is_default": True},
-            {"id": "wikimedia", "label": "Wikimedia Foundation", "icon": "🌐", "is_default": True},
-        ]
+    default_orgs = [
+        {"id": "zulip", "label": "Zulip", "icon": "💬", "is_default": True},
+        {"id": "learningequality", "label": "Learning Equality", "icon": "📚", "is_default": True},
+        {"id": "rocketchat", "label": "Rocket.Chat", "icon": "🚀", "is_default": True},
+        {"id": "circuitverse", "label": "CircuitVerse.org", "icon": "⚡", "is_default": True},
+        {"id": "wikimedia", "label": "Wikimedia Foundation", "icon": "🌐", "is_default": True},
+    ]
 
     org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
     stmt = (
@@ -372,7 +336,6 @@ async def get_tracked_organizations(
     rows = res.all()
 
     counts: Dict[str, int] = {
-        "numfocus": 0, "psf": 0, "deepchem": 0, "kornia": 0,
         "zulip": 0, "learningequality": 0, "rocketchat": 0,
         "circuitverse": 0, "wikimedia": 0
     }
@@ -382,28 +345,29 @@ async def get_tracked_organizations(
         owner_lower = (row.owner or "").lower()
         iss_count = row.issue_count or 0
 
-        if owner_lower in (
+        if owner_lower == "zulip":
+            counts["zulip"] += iss_count
+        elif owner_lower in ("learningequality", "kolibri", "studio", "kolibri-design-system"):
+            counts["learningequality"] += iss_count
+        elif owner_lower in ("rocketchat", "rocket.chat", "embeddedchat"):
+            counts["rocketchat"] += iss_count
+        elif owner_lower in ("circuitverse", "cv-frontend-vue"):
+            counts["circuitverse"] += iss_count
+        elif owner_lower in (
+            "wikimedia", "wikieducationfoundation", "wikiedudashboard",
+            "open-knowledge-impact-foundation", "campwiz-nxt-frontend2",
+            "hatnote", "montage", "mediawiki-extensions-wikisource"
+        ):
+            counts["wikimedia"] += iss_count
+        elif owner_lower in (
             "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
             "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
-            "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels"
+            "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels",
+            "psf", "python", "pallets", "pypa", "celery", "pylint-dev",
+            "deepchem", "kornia"
         ):
-            counts["numfocus"] += iss_count
-        elif owner_lower in ("psf", "python", "pallets", "pypa", "celery", "pylint-dev"):
-            counts["psf"] += iss_count
-        elif owner_lower == "deepchem":
-            counts["deepchem"] += iss_count
-        elif owner_lower == "kornia":
-            counts["kornia"] += iss_count
-        elif owner_lower == "zulip":
-            counts["zulip"] += iss_count
-        elif owner_lower == "learningequality":
-            counts["learningequality"] += iss_count
-        elif owner_lower in ("rocketchat", "rocket.chat"):
-            counts["rocketchat"] += iss_count
-        elif owner_lower == "circuitverse":
-            counts["circuitverse"] += iss_count
-        elif owner_lower in ("wikimedia", "wikieducationfoundation", "open-knowledge-impact-foundation", "hatnote"):
-            counts["wikimedia"] += iss_count
+            # Legacy showcase orgs are ignored in panel counts
+            pass
         else:
             org_key = owner_lower
             if org_key not in custom_orgs_map:

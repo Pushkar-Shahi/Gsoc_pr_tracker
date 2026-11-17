@@ -115,13 +115,17 @@ const AutonomousEngineTimer = React.memo(function AutonomousEngineTimer({
       <Clock className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
       <div className="flex items-center gap-2">
         <span className="text-[10px] uppercase font-mono tracking-wider text-slate-500 dark:text-neutral-400 font-bold">
-          NEXT 2H SCAN IN
+          24/7 SCAN IN
         </span>
         <div className="font-mono text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1">
-          <span className="bg-slate-100 dark:bg-[#05080f] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10">
-            {countdown.h}h
-          </span>
-          <span className="text-slate-400 dark:text-neutral-500">:</span>
+          {parseInt(countdown.h, 10) > 0 && (
+            <>
+              <span className="bg-slate-100 dark:bg-[#05080f] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10">
+                {countdown.h}h
+              </span>
+              <span className="text-slate-400 dark:text-neutral-500">:</span>
+            </>
+          )}
           <span className="bg-slate-100 dark:bg-[#05080f] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10">
             {countdown.m}m
           </span>
@@ -402,24 +406,16 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     triggerFilters({ query: searchTerm });
   };
 
-  // Dynamic Tracked Organizations & + Add Org State
-  const DEFAULT_ORG_IDS = ['numfocus', 'psf', 'deepchem', 'kornia', 'zulip', 'learningequality', 'rocketchat', 'circuitverse', 'wikimedia'];
-  const [trackedOrgs, setTrackedOrgs] = useState<TrackedOrganization[]>(() => {
-    if (isAdmin) {
-      return [
-        { id: 'numfocus', label: 'NumFOCUS', icon: '🧮', is_default: true, issue_count: 0 },
-        { id: 'psf', label: 'Python (PSF)', icon: '🐍', is_default: true, issue_count: 0 },
-        { id: 'deepchem', label: 'DeepChem', icon: '🧪', is_default: true, issue_count: 0 },
-        { id: 'kornia', label: 'Kornia', icon: '👁️', is_default: true, issue_count: 0 },
-        { id: 'zulip', label: 'Zulip', icon: '💬', is_default: true, issue_count: 0 },
-        { id: 'learningequality', label: 'Learning Equality', icon: '📚', is_default: true, issue_count: 0 },
-        { id: 'rocketchat', label: 'Rocket.Chat', icon: '🚀', is_default: true, issue_count: 0 },
-        { id: 'circuitverse', label: 'CircuitVerse.org', icon: '⚡', is_default: true, issue_count: 0 },
-        { id: 'wikimedia', label: 'Wikimedia Foundation', icon: '🌐', is_default: true, issue_count: 0 },
-      ];
-    }
-    return [];
-  });
+  // Curated Target Organizations displayed in the top filter panel
+  const TARGET_ORGS: TrackedOrganization[] = [
+    { id: 'zulip', label: 'Zulip', icon: '💬', is_default: true, issue_count: 0 },
+    { id: 'learningequality', label: 'Learning Equality', icon: '📚', is_default: true, issue_count: 0 },
+    { id: 'rocketchat', label: 'Rocket.Chat', icon: '🚀', is_default: true, issue_count: 0 },
+    { id: 'circuitverse', label: 'CircuitVerse.org', icon: '⚡', is_default: true, issue_count: 0 },
+    { id: 'wikimedia', label: 'Wikimedia Foundation', icon: '🌐', is_default: true, issue_count: 0 },
+  ];
+
+  const [trackedOrgs, setTrackedOrgs] = useState<TrackedOrganization[]>(() => TARGET_ORGS);
   const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
   const [addOrgUrl, setAddOrgUrl] = useState('');
   const [addOrgName, setAddOrgName] = useState('');
@@ -431,13 +427,29 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
     try {
       const data = await fetchTrackedOrganizations();
       if (data && Array.isArray(data.organizations)) {
-        const orgs = isAdmin
-          ? data.organizations
-          : data.organizations.filter(o => !o.is_default && !DEFAULT_ORG_IDS.includes(o.id.toLowerCase()));
-        setTrackedOrgs(orgs);
+        // Exclude old other orgs (NumFOCUS, PSF, DeepChem, Kornia)
+        const validFetched = data.organizations.filter(o => 
+          !['numfocus', 'psf', 'deepchem', 'kornia'].includes(o.id.toLowerCase())
+        );
+
+        // Merge target orgs with fetched counts and any custom user-added orgs
+        const orgMap = new Map<string, TrackedOrganization>();
+        for (const t of TARGET_ORGS) {
+          orgMap.set(t.id.toLowerCase(), { ...t });
+        }
+        for (const vf of validFetched) {
+          const key = vf.id.toLowerCase();
+          if (orgMap.has(key)) {
+            orgMap.set(key, { ...orgMap.get(key)!, issue_count: vf.issue_count ?? 0 });
+          } else {
+            orgMap.set(key, vf);
+          }
+        }
+        const mergedOrgs = Array.from(orgMap.values());
+        setTrackedOrgs(mergedOrgs);
 
         setSelectedGsocOrg(current => {
-          if (current && !orgs.some(o => o.id.toLowerCase() === current.toLowerCase())) {
+          if (current && !mergedOrgs.some(o => o.id.toLowerCase() === current.toLowerCase())) {
             triggerFilters({ gsoc_org: '' });
             return '';
           }
@@ -450,16 +462,6 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   };
 
   useEffect(() => {
-    if (!isAdmin) {
-      setTrackedOrgs(prev => prev.filter(o => !o.is_default && !DEFAULT_ORG_IDS.includes(o.id.toLowerCase())));
-      setSelectedGsocOrg(current => {
-        if (DEFAULT_ORG_IDS.includes(current.toLowerCase())) {
-          triggerFilters({ gsoc_org: '' });
-          return '';
-        }
-        return current;
-      });
-    }
     loadTrackedOrgs();
   }, [isAdmin]);
 
@@ -580,16 +582,16 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
             onTimerExpired={handleTriggerCronNow}
           />
 
-          {/* Solid White Run 2h Scan Now Button */}
+          {/* Run 24/7 Scan Now Button */}
           <button
             type="button"
             onClick={handleTriggerCronNow}
             disabled={isTriggeringCron}
-            title="Run 2-Hour Autonomous Scan Now"
+            title="Run 24/7 Autonomous Scan Now"
             className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 dark:bg-white dark:hover:bg-neutral-200 dark:text-black dark:border-transparent font-bold text-xs flex items-center gap-2 shadow-sm active:scale-95 transition disabled:opacity-50 shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isTriggeringCron ? 'animate-spin' : ''}`} />
-            <span>{isTriggeringCron ? 'Scanning...' : 'Run 2h Scan Now'}</span>
+            <span>{isTriggeringCron ? 'Scanning...' : 'Run 24/7 Scan Now'}</span>
           </button>
         </div>
       </div>
@@ -1017,7 +1019,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
           <p className="text-xs text-neutral-400 max-w-md mx-auto">
             {trackedOrgs.length === 0
               ? 'No organizations are currently tracked. Click "+ Add Org" above to track a repository or organization by URL.'
-              : 'Try broadening your search query or click "Run 2h Scan Now" above to crawl public repositories for fresh open unassigned issues.'}
+              : 'Try broadening your search query or click "Run 24/7 Scan Now" above to crawl public repositories for fresh open unassigned issues.'}
           </p>
         </div>
       )}

@@ -241,6 +241,38 @@ async def seed_initial_data_if_needed():
         except Exception as seed_err:
             logger.warning(f"Error seeding new organizations: {seed_err}")
 
+        # Purge unselected issues belonging to older showcase orgs (NumFOCUS, PSF, DeepChem, Kornia)
+        try:
+            from app.models.models import Task, AuditLog
+            from sqlalchemy import delete, update
+            other_org_owners = [
+                "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
+                "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
+                "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels",
+                "psf", "python", "pallets", "pypa", "celery", "pylint-dev",
+                "deepchem", "kornia"
+            ]
+            selected_subquery = select(Task.issue_id).where(Task.issue_id.is_not(None)).distinct()
+            unselected_other_issues_subq = (
+                select(Issue.id)
+                .join(Repository, Issue.repository_id == Repository.id)
+                .where(func.lower(Repository.owner).in_(other_org_owners))
+                .where(Issue.id.not_in(selected_subquery))
+            )
+            await session.execute(
+                update(AuditLog)
+                .where(AuditLog.issue_id.in_(unselected_other_issues_subq))
+                .values(issue_id=None)
+            )
+            await session.execute(
+                delete(Issue)
+                .where(Issue.id.in_(unselected_other_issues_subq))
+            )
+            await session.commit()
+            logger.info("Purged unselected legacy showcase issues successfully.")
+        except Exception as purge_err:
+            logger.warning(f"Error purging unselected legacy showcase issues: {purge_err}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing Issue-to-PR backend application...")
@@ -256,10 +288,10 @@ async def lifespan(app: FastAPI):
     )
     asyncio.create_task(reconcile_tasks_on_startup(session_factory))
 
-    # Start background worker for PR sync and 2-hour discovery cron
+    # Start background worker for PR sync and 24/7 continuous discovery cron (5-minute interval)
     worker_service = BackgroundWorkerService(
         session_factory=session_factory,
-        discovery_interval_sec=7200,
+        discovery_interval_sec=300,
         pr_poll_interval_sec=60
     )
     set_background_worker(worker_service)
