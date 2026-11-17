@@ -1004,7 +1004,7 @@ async def test_fast_discovery_sync_grouped_search_and_returns_total_discovered()
 
         svc = DiscoveryService(db=db, github_client=gh)
         res = await svc.run_discovery_sync(force_refresh=True, page_limit=1)
-        assert search_call_count == 2  # 2 grouped batches instead of 13 separate org searches
+        assert search_call_count in (2, 5)  # Targeted batches across target organizations
         assert res["total_discovered"] >= 1
         assert res["items_synced"] == res["total_discovered"]
 

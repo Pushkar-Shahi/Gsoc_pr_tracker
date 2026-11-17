@@ -72,20 +72,37 @@ class DiscoveryService:
         ])
         raw_candidates: List[Tuple[Dict[str, Any], str]] = [pair for batch in repo_batches for pair in batch]
 
-        # 2. Two grouped Search API queries across the 5 target orgs (avoids 10/min Search rate limit & completes fast)
+        # 2. Five targeted Search API queries, one per target organization
         grouped_queries = [
             (
-                "gsoc:target:batch1:open:unassigned",
-                "is:issue is:open no:assignee archived:false (org:zulip OR org:learningequality OR org:RocketChat)",
+                "gsoc:target:zulip:open:unassigned",
+                "is:issue is:open no:assignee archived:false org:zulip",
+                "Python",
             ),
             (
-                "gsoc:target:batch2:open:unassigned",
-                "is:issue is:open no:assignee archived:false (org:CircuitVerse OR org:wikimedia OR org:WikiEducationFoundation OR org:Open-Knowledge-Impact-Foundation OR org:hatnote)",
+                "gsoc:target:learningequality:open:unassigned",
+                "is:issue is:open no:assignee archived:false org:learningequality",
+                "Python",
+            ),
+            (
+                "gsoc:target:rocketchat:open:unassigned",
+                "is:issue is:open no:assignee archived:false org:RocketChat",
+                "TypeScript",
+            ),
+            (
+                "gsoc:target:circuitverse:open:unassigned",
+                "is:issue is:open no:assignee archived:false org:CircuitVerse",
+                "Ruby",
+            ),
+            (
+                "gsoc:target:wikimedia:open:unassigned",
+                "is:issue is:open no:assignee archived:false org:wikimedia org:WikiEducationFoundation org:Open-Knowledge-Impact-Foundation org:hatnote",
+                "Python",
             ),
         ]
 
         effective_pages = min(page_limit, 1 if force_refresh else page_limit)
-        for query_key, search_query in grouped_queries:
+        for query_key, search_query, default_lang in grouped_queries:
             checkpoint_stmt = select(DiscoveryCheckpoint).where(DiscoveryCheckpoint.query_key == query_key)
             checkpoint = (await self.db.execute(checkpoint_stmt)).scalar_one_or_none()
             if not checkpoint:
@@ -109,7 +126,7 @@ class DiscoveryService:
                     checkpoint.is_complete = True
                     break
                 for it in items:
-                    raw_candidates.append((it, "Python"))
+                    raw_candidates.append((it, default_lang))
                 checkpoint.last_page = p + 1
                 checkpoint.items_synced += len(items)
                 checkpoint.updated_at = datetime.utcnow()
@@ -148,16 +165,19 @@ class DiscoveryService:
             pristine_candidates.append((item, item_lang, owner, repo_name, int(issue_num)))
 
         # Concurrently verify linked PRs for top candidates (bounded to keep full scan ~3-8s)
-        timeline_sem = asyncio.Semaphore(10)
+        timeline_sem = asyncio.Semaphore(12)
 
         async def _check_linked_prs(o: str, r: str, n: int) -> List[Dict[str, Any]]:
+            # If rate limit is getting low (< 25 remaining), skip external timeline calls
+            if self.gh.rate_limit_remaining is not None and self.gh.rate_limit_remaining < 25:
+                return []
             async with timeline_sem:
                 try:
-                    return await self.gh.get_issue_linked_prs(o, r, n)
+                    return await asyncio.wait_for(self.gh.get_issue_linked_prs(o, r, n), timeout=2.5)
                 except Exception:
                     return []
 
-        capped_candidates = pristine_candidates[:45]
+        capped_candidates = pristine_candidates[:80]
         linked_results = await asyncio.gather(*[
             _check_linked_prs(o, r, n) for _, _, o, r, n in capped_candidates
         ])

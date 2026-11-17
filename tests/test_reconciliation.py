@@ -101,6 +101,9 @@ async def test_startup_reconciliation_blocks_task_if_upstream_closed():
     with patch("app.services.background_worker.GitHubClient") as mock_gh_cls:
         mock_gh = AsyncMock()
         mock_gh.get_issue.return_value = {"state": "closed", "assignees": []}
+        mock_gh.get_pull_request.return_value = None
+        mock_gh.get_pull_request_reviews.return_value = []
+        mock_gh.get_commit_check_runs.return_value = {}
         mock_gh_cls.return_value = mock_gh
 
         await reconcile_tasks_on_startup(session_factory)
@@ -146,6 +149,9 @@ async def test_inbox_reconcile_with_purge():
     with patch("app.services.background_worker.GitHubClient") as mock_gh_cls:
         mock_gh = AsyncMock()
         mock_gh.get_issue.return_value = {"state": "closed", "assignees": []}
+        mock_gh.get_pull_request.return_value = None
+        mock_gh.get_pull_request_reviews.return_value = []
+        mock_gh.get_commit_check_runs.return_value = {}
         mock_gh_cls.return_value = mock_gh
 
         result = await reconcile_inbox_issues_upstream(session_factory, max_issues=None, purge=True)

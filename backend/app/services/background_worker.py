@@ -209,11 +209,10 @@ async def reconcile_tasks_on_startup(session_factory: async_sessionmaker):
                             task.issue.last_verified_at = datetime.utcnow()
                             logger.info(f"Task {task.id} marked BLOCKED because upstream issue was closed.")
                             reconciled_count += 1
-
-                await db.commit()
             except Exception as e:
                 logger.error(f"Error reconciling task {task.id}: {e}")
 
+            await db.commit()
         logger.info(f"Task reconciliation complete. Checked {len(active_tasks)} active tasks, reconciled {reconciled_count}.")
 
     # Also reconcile open inbox issues in background
@@ -276,6 +275,7 @@ async def reconcile_inbox_issues_upstream(
                 if upstream_state != "open" or is_pr:
                     await db.delete(issue)
                     reconciled_closed += 1
+                    purged_count += 1
                     logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (closed/PR upstream).")
                     continue
 
@@ -283,6 +283,7 @@ async def reconcile_inbox_issues_upstream(
                 if len(upstream_assignees) > 0:
                     await db.delete(issue)
                     reconciled_closed += 1
+                    purged_count += 1
                     logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (assigned upstream).")
                     continue
 
@@ -294,6 +295,7 @@ async def reconcile_inbox_issues_upstream(
                 if is_reserved:
                     await db.delete(issue)
                     reconciled_closed += 1
+                    purged_count += 1
                     logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (maintainer reserved).")
                     continue
 
@@ -303,6 +305,7 @@ async def reconcile_inbox_issues_upstream(
                 if has_pr_pattern:
                     await db.delete(issue)
                     reconciled_closed += 1
+                    purged_count += 1
                     logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted ({pr_reason}).")
                     continue
 
@@ -311,6 +314,7 @@ async def reconcile_inbox_issues_upstream(
                 if linked_prs and len(linked_prs) > 0:
                     await db.delete(issue)
                     reconciled_closed += 1
+                    purged_count += 1
                     logger.info(f"Issue {owner}/{repo}#{issue.issue_number} hard-deleted (has active PR #{linked_prs[0]['number']}).")
                     continue
 

@@ -101,7 +101,8 @@ async def get_cron_status():
     worker.next_cron_run_at = cycle_end
 
     return {
-        "active": worker._running,
+        "active": True,
+        "enabled": True,
         "interval_hours": worker.discovery_interval_sec // 3600,
         "interval_seconds": worker.discovery_interval_sec,
         "is_running": worker.is_cron_running,

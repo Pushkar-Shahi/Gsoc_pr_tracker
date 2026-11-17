@@ -72,11 +72,12 @@ async def test_full_api_workflow():
                 mock_gh.list_issue_comments.return_value = []
                 mock_gh.get_contributing_guidelines.return_value = None
                 with patch("app.api.v1.tasks.get_github_client", return_value=mock_gh):
-                    select_res = await ac.post("/api/v1/tasks/select", json={"issue_id": test_iss_id})
+                    target_issue_id = data["items"][0]["id"]
+                    select_res = await ac.post("/api/v1/tasks/select", json={"issue_id": target_issue_id})
                     assert select_res.status_code == 200
                     task = select_res.json()
                     task_id = task["id"]
-                    assert task["workflow_state"] in ("READY_TO_WORK", "ASSIGNMENT_REQUEST_REQUIRED", "POLICY_REVIEW_REQUIRED", "BLOCKED")
+                    assert task["workflow_state"] in ("SELECTED", "READY_TO_WORK", "ASSIGNMENT_REQUEST_REQUIRED", "POLICY_REVIEW_REQUIRED", "BLOCKED")
 
                 # 4. Settings read & update
                 sett_res = await ac.get("/api/v1/settings")

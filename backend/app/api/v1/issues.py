@@ -119,18 +119,23 @@ async def list_issues(
         )
     else:
         # Default ("All Orgs"):
-        # Legacy other showcase orgs (NumFOCUS, PSF, DeepChem, Kornia) are filtered out
-        # unless an active user Task exists for them.
-        legacy_other_owners = [
-            "numfocus", "numpy", "scipy", "pandas-dev", "matplotlib",
-            "scikit-learn", "scikit-image", "sympy", "networkx", "astropy",
-            "jupyter", "jupyterlab", "dask", "xarray", "zarr-developers", "statsmodels",
-            "psf", "python", "pallets", "pypa", "celery", "pylint-dev",
-            "deepchem", "kornia"
+        # Strictly show the 5 target organizations, plus custom user-added repos,
+        # plus any issue where the user clicked "Select Issue" (active Task).
+        target_default_owners = [
+            "zulip",
+            "learningequality", "kolibri", "studio", "kolibri-design-system",
+            "rocketchat", "rocket.chat", "embeddedchat",
+            "circuitverse", "cv-frontend-vue",
+            "wikimedia", "wikieducationfoundation", "wikiedudashboard",
+            "open-knowledge-impact-foundation", "campwiz-nxt-frontend2",
+            "hatnote", "montage", "mediawiki-extensions-wikisource"
         ]
         filters.append(
             or_(
-                func.lower(Repository.owner).not_in(legacy_other_owners),
+                func.lower(Repository.owner).in_(target_default_owners),
+                Repository.is_gsoc.is_(True),
+                Repository.is_private.is_(True),
+                Repository.tenant_id.is_not(None),
                 Issue.id.in_(select(Task.issue_id))
             )
         )
@@ -369,24 +374,25 @@ async def get_tracked_organizations(
             # Legacy showcase orgs are ignored in panel counts
             pass
         else:
-            org_key = owner_lower
-            if org_key not in custom_orgs_map:
-                label = row.gsoc_org_name or row.owner
-                if row.name and row.name.lower() != row.owner.lower():
-                    label = f"{row.owner}/{row.name}"
-                custom_orgs_map[org_key] = {
-                    "id": org_key,
-                    "label": label,
-                    "icon": "📦",
-                    "is_default": False,
-                    "owner": row.owner,
-                    "repo": row.name,
-                    "stars": row.stars_count or 0,
-                    "language": row.primary_language or "Code",
-                    "issue_count": iss_count
-                }
-            else:
-                custom_orgs_map[org_key]["issue_count"] += iss_count
+            if iss_count > 0:
+                org_key = owner_lower
+                if org_key not in custom_orgs_map:
+                    label = row.gsoc_org_name or row.owner
+                    if row.name and row.name.lower() != row.owner.lower():
+                        label = f"{row.owner}/{row.name}"
+                    custom_orgs_map[org_key] = {
+                        "id": org_key,
+                        "label": label,
+                        "icon": "📦",
+                        "is_default": False,
+                        "owner": row.owner,
+                        "repo": row.name,
+                        "stars": row.stars_count or 0,
+                        "language": row.primary_language or "Code",
+                        "issue_count": iss_count
+                    }
+                else:
+                    custom_orgs_map[org_key]["issue_count"] += iss_count
 
     for d in default_orgs:
         d["issue_count"] = counts.get(d["id"], 0)
