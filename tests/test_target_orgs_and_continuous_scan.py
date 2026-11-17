@@ -67,12 +67,36 @@ async def test_continuous_scan_purges_unselected_issues_and_preserves_selected()
         db.add(task)
         await db.commit()
 
-        # Run discovery scan with mocked gh client
+        # Run discovery scan with mocked gh client returning 1 fresh candidate
         gh = MagicMock()
         gh.rate_limit_remaining = 5000
         gh.rate_limit_limit = 5000
         gh.get_repo_issues = AsyncMock(return_value=[])
-        gh.search_issues = AsyncMock(return_value={"items": []})
+        fresh_gh_id = int(uuid.uuid4().int % 900_000_000)
+        gh.search_issues = AsyncMock(return_value={
+            "items": [
+                {
+                    "id": fresh_gh_id,
+                    "number": 555,
+                    "title": "Fresh scanned issue",
+                    "body": "Newly found issue",
+                    "html_url": f"https://github.com/{repo.full_name}/issues/555",
+                    "repository_url": f"https://api.github.com/repos/{repo.full_name}",
+                    "state": "open",
+                    "user": {"login": "dev"},
+                    "labels": [],
+                    "assignees": [],
+                    "comments": 0
+                }
+            ]
+        })
+        gh.get_repository = AsyncMock(return_value={
+            "stargazers_count": 1000,
+            "license": {"spdx_id": "Apache-2.0"},
+            "archived": False,
+            "default_branch": "main"
+        })
+        gh.get_issue_linked_prs = AsyncMock(return_value=[])
 
         service = DiscoveryService(db=db, github_client=gh)
         await service.run_discovery_sync(force_refresh=True, page_limit=1)

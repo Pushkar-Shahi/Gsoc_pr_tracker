@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import Repository, Issue, Task, DiscoveryCheckpoint, AuditLog
@@ -34,25 +34,6 @@ class DiscoveryService:
         languages = [language] if language else settings.DISCOVERY_LANGUAGES[:3]
         total_discovered = 0
         errors = []
-
-        # 0. Purge unselected issues on every scan so old issues don't pile up.
-        # Preserve issues where user clicked "Select Issue" (which creates a Task in the database).
-        try:
-            selected_subquery = select(Task.issue_id).where(Task.issue_id.is_not(None)).distinct()
-            await self.db.execute(
-                update(AuditLog)
-                .where(AuditLog.issue_id.is_not(None))
-                .where(AuditLog.issue_id.not_in(selected_subquery))
-                .values(issue_id=None)
-            )
-            await self.db.execute(
-                delete(Issue)
-                .where(Issue.id.not_in(selected_subquery))
-            )
-            await self.db.commit()
-            logger.info("Purged unselected issues prior to discovery sync.")
-        except Exception as purge_err:
-            logger.warning(f"Error purging unselected issues during scan: {purge_err}")
 
         # 1. Target curated repositories across the 5 target organizations: Zulip, Learning Equality, Rocket.Chat, CircuitVerse, Wikimedia
         curated_repos = [
@@ -181,14 +162,52 @@ class DiscoveryService:
             _check_linked_prs(o, r, n) for _, _, o, r, n in capped_candidates
         ])
 
+        newly_ingested_ids: List[str] = []
         for (item, item_lang, _, _, _), prechecked_prs in zip(capped_candidates, linked_results):
             if prechecked_prs:
                 continue
             try:
-                await self._ingest_issue_item(item, item_lang, prechecked_linked_prs=prechecked_prs)
-                total_discovered += 1
+                ingested = await self._ingest_issue_item(item, item_lang, prechecked_linked_prs=prechecked_prs)
+                if ingested and getattr(ingested, "id", None):
+                    newly_ingested_ids.append(ingested.id)
+                    total_discovered += 1
             except Exception as exc:
                 logger.warning(f"Skipping issue during discovery ingestion: {exc}")
+
+        # Stale unselected issue cleanup:
+        # If we successfully ingested fresh candidate issues, purge older unselected issues
+        # so they don't pile up, while strictly preserving any issue where user clicked "Select Issue" (Task exists).
+        # If no issues were ingested (e.g. GitHub rate limits), ensure target org fallback issues exist!
+        if newly_ingested_ids:
+            try:
+                selected_subquery = select(Task.issue_id).where(Task.issue_id.is_not(None)).distinct()
+                stale_issues_subquery = (
+                    select(Issue.id)
+                    .where(
+                        ~or_(
+                            Issue.id.in_(selected_subquery),
+                            Issue.id.in_(newly_ingested_ids)
+                        )
+                    )
+                )
+                await self.db.execute(
+                    update(AuditLog)
+                    .where(AuditLog.issue_id.in_(stale_issues_subquery))
+                    .values(issue_id=None)
+                )
+                await self.db.execute(
+                    delete(Issue).where(Issue.id.in_(stale_issues_subquery))
+                )
+                await self.db.commit()
+                logger.info(f"Purged stale unselected issues; preserved {len(newly_ingested_ids)} fresh issues and active tasks.")
+            except Exception as purge_err:
+                logger.warning(f"Error purging stale unselected issues: {purge_err}")
+        else:
+            try:
+                from app.services.seed_data import ensure_target_org_seed_issues
+                await ensure_target_org_seed_issues(self.db)
+            except Exception as seed_err:
+                logger.warning(f"Error ensuring target org seed issues: {seed_err}")
 
         # Audit event
         audit = AuditLog(
@@ -332,11 +351,13 @@ class DiscoveryService:
         # 5. Check assignees, maintainer reservations & active linked PRs (Strict Unassigned & PR-free enforcement)
         issue_number = item["number"]
         issue_stmt = select(Issue).where(
-            Issue.repository_id == repository.id,
-            Issue.issue_number == issue_number
+            or_(
+                Issue.github_id == item["id"],
+                (Issue.repository_id == repository.id) & (Issue.issue_number == issue_number)
+            )
         )
         res = await self.db.execute(issue_stmt)
-        existing_issue = res.scalar_one_or_none()
+        existing_issue = res.scalars().first()
 
         # Hard delete if assigned
         if assignees and len(assignees) > 0:
@@ -398,6 +419,8 @@ class DiscoveryService:
             existing_issue.ranking_breakdown = ranking_result["ranking_breakdown"]
             existing_issue.ai_summary = ranking_result["ai_summary"]
             existing_issue.last_verified_at = datetime.utcnow()
+            await self.db.flush()
+            return existing_issue
         else:
             new_issue = Issue(
                 repository_id=repository.id,
@@ -429,3 +452,5 @@ class DiscoveryService:
                 last_verified_at=datetime.utcnow()
             )
             self.db.add(new_issue)
+            await self.db.flush()
+            return new_issue

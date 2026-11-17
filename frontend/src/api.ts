@@ -640,6 +640,216 @@ const DEFAULT_TARGET_ORG_ISSUES: Issue[] = [
       stars_count: 1800,
       open_issues_count: 90
     }
+  },
+  {
+    id: 'seed-zulip-2',
+    repository_id: 'zulip/zulip',
+    github_id: 40718,
+    issue_number: 40718,
+    title: 'Optimize message rendering performance in web app stream view',
+    body: 'Profile and reduce DOM reflows when bulk scrolling through narrow streams with hundreds of active topic unread indicators.',
+    author: 'zulip-maintainer',
+    html_url: 'https://github.com/zulip/zulip/issues/40718',
+    state: 'open',
+    labels: [{ name: 'performance', color: '0284c7' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 1,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 6).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 95,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 4,
+    ranking_breakdown: {
+      skill_match: 95,
+      clarity_score: 96,
+      repo_health_score: 98,
+      effort_score: 94,
+      reasons: ['Zulip GSoC Organization', 'Performance & UI Optimization', 'Zero assignees']
+    },
+    repository: {
+      id: 'zulip/zulip',
+      owner: 'zulip',
+      name: 'zulip',
+      full_name: 'zulip/zulip',
+      html_url: 'https://github.com/zulip/zulip',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Zulip',
+      stars_count: 21000,
+      open_issues_count: 1400
+    }
+  },
+  {
+    id: 'seed-learningequality-2',
+    repository_id: 'learningequality/kolibri',
+    github_id: 15920,
+    issue_number: 15920,
+    title: 'Improve sync retry logic on intermittent network disconnects',
+    body: 'When peer-to-peer sync experiences packet loss, exponential backoff should gracefully resume chunk transfer without restarting.',
+    author: 'kolibri-dev',
+    html_url: 'https://github.com/learningequality/kolibri/issues/15920',
+    state: 'open',
+    labels: [{ name: 'sync', color: '8b5cf6' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 1,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 9).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 96,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 3,
+    ranking_breakdown: {
+      skill_match: 96,
+      clarity_score: 98,
+      repo_health_score: 94,
+      effort_score: 96,
+      reasons: ['Learning Equality GSoC Organization', 'Networking & Sync', 'Zero assignees']
+    },
+    repository: {
+      id: 'learningequality/kolibri',
+      owner: 'learningequality',
+      name: 'kolibri',
+      full_name: 'learningequality/kolibri',
+      html_url: 'https://github.com/learningequality/kolibri',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Learning Equality',
+      stars_count: 3200,
+      open_issues_count: 180
+    }
+  },
+  {
+    id: 'seed-rocketchat-2',
+    repository_id: 'RocketChat/Rocket.Chat',
+    github_id: 43767,
+    issue_number: 43767,
+    title: 'Navigation sidebar accessibility and theme variations',
+    body: 'Allow side navigation variations to respect compact view mode and high contrast accessibility settings.',
+    author: 'rc-maintainer',
+    html_url: 'https://github.com/rocketchat/rocket.chat/issues/43767',
+    state: 'open',
+    labels: [{ name: 'ui/ux', color: '8b5cf6' }, { name: 'accessibility', color: 'f59e0b' }],
+    assignees: [],
+    comments_count: 2,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 5).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 92,
+    difficulty_estimate: 'intermediate',
+    estimated_effort_hours: 5,
+    ranking_breakdown: {
+      skill_match: 93,
+      clarity_score: 94,
+      repo_health_score: 97,
+      effort_score: 90,
+      reasons: ['Rocket.Chat Core Flagship', 'Accessibility priority', 'Zero assignees']
+    },
+    repository: {
+      id: 'RocketChat/Rocket.Chat',
+      owner: 'RocketChat',
+      name: 'Rocket.Chat',
+      full_name: 'RocketChat/Rocket.Chat',
+      html_url: 'https://github.com/rocketchat/rocket.chat',
+      default_branch: 'develop',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Rocket.Chat',
+      stars_count: 41000,
+      open_issues_count: 850
+    }
+  },
+  {
+    id: 'seed-circuitverse-2',
+    repository_id: 'CircuitVerse/CircuitVerse',
+    github_id: 8189,
+    issue_number: 8189,
+    title: 'ActiveRecord::QueryCanceled statement timeout optimization on simulator circuits index',
+    body: 'Optimize heavy query joins when retrieving public circuits with multiple component tags.',
+    author: 'circuit-maintainer',
+    html_url: 'https://github.com/circuitverse/circuitverse/issues/8189',
+    state: 'open',
+    labels: [{ name: 'performance', color: 'e11d48' }, { name: 'backend', color: '2563eb' }],
+    assignees: [],
+    comments_count: 1,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 11).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 93,
+    difficulty_estimate: 'intermediate',
+    estimated_effort_hours: 4,
+    ranking_breakdown: {
+      skill_match: 92,
+      clarity_score: 95,
+      repo_health_score: 95,
+      effort_score: 92,
+      reasons: ['CircuitVerse Core Rails Backend', 'Database performance optimization', 'Zero assignees']
+    },
+    repository: {
+      id: 'CircuitVerse/CircuitVerse',
+      owner: 'CircuitVerse',
+      name: 'CircuitVerse',
+      full_name: 'CircuitVerse/CircuitVerse',
+      html_url: 'https://github.com/circuitverse/circuitverse',
+      default_branch: 'master',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'CircuitVerse.org',
+      stars_count: 2300,
+      open_issues_count: 110
+    }
+  },
+  {
+    id: 'seed-wikimedia-2',
+    repository_id: 'wikimedia/mediawiki-extensions-Wikisource',
+    github_id: 6363715531,
+    issue_number: 1024,
+    title: 'Export pagination formatting for multi-volume DjVu indexes',
+    body: 'Ensure export routine correctly generates continuous Roman-to-Arabic page sequence maps.',
+    author: 'wikimedia-dev',
+    html_url: 'https://github.com/wikimedia/mediawiki-extensions-Wikisource/issues/1024',
+    state: 'open',
+    labels: [{ name: 'export', color: '0284c7' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 0,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 16).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 94,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 3,
+    ranking_breakdown: {
+      skill_match: 94,
+      clarity_score: 96,
+      repo_health_score: 93,
+      effort_score: 95,
+      reasons: ['Wikimedia Foundation Wikisource', 'Good first issue', 'Zero assignees']
+    },
+    repository: {
+      id: 'wikimedia/mediawiki-extensions-Wikisource',
+      owner: 'wikimedia',
+      name: 'mediawiki-extensions-Wikisource',
+      full_name: 'wikimedia/mediawiki-extensions-Wikisource',
+      html_url: 'https://github.com/wikimedia/mediawiki-extensions-Wikisource',
+      default_branch: 'master',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Wikimedia Foundation',
+      stars_count: 350,
+      open_issues_count: 45
+    }
   }
 ];
 
@@ -919,8 +1129,12 @@ export async function fetchIssues(params: {
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.items)) {
-        data.items = data.items.filter((i: Issue) => !isIssueCompleted(i));
-        return data;
+        const filtered = data.items.filter((i: Issue) => !isIssueCompleted(i));
+        // If results exist or if a specific search query was performed, return them directly
+        if (filtered.length > 0 || params.query || params.language || params.repository) {
+          data.items = filtered;
+          return data;
+        }
       }
     }
   } catch {

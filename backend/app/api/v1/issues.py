@@ -181,6 +181,13 @@ async def list_issues(
     total_res = await db.execute(count_stmt)
     total = total_res.scalar() or 0
 
+    # Auto-healing: If database has 0 issues, restore target org seed issues so inbox never stays empty
+    if total == 0 and not query and not language and not repository:
+        from app.services.seed_data import ensure_target_org_seed_issues
+        await ensure_target_org_seed_issues(db)
+        total_res = await db.execute(count_stmt)
+        total = total_res.scalar() or 0
+
     # Paginate (over-fetch slightly on page 1 so upstream stale prunes don't leave page 1 empty)
     offset = (page - 1) * page_size
     fetch_limit = min(60, page_size * 2) if page == 1 else page_size
@@ -393,6 +400,29 @@ async def get_tracked_organizations(
 
     all_orgs = default_orgs + list(custom_orgs_map.values())
     total_issues = sum(o.get("issue_count", 0) for o in all_orgs)
+
+    if total_issues == 0:
+        from app.services.seed_data import ensure_target_org_seed_issues
+        await ensure_target_org_seed_issues(db)
+        res_heal = await db.execute(stmt)
+        rows_heal = res_heal.all()
+        counts_heal = {k: 0 for k in counts}
+        for r in rows_heal:
+            ol = (r.owner or "").lower()
+            ic = r.issue_count or 0
+            if ol == "zulip":
+                counts_heal["zulip"] += ic
+            elif ol in ("learningequality", "kolibri", "studio", "kolibri-design-system"):
+                counts_heal["learningequality"] += ic
+            elif ol in ("rocketchat", "rocket.chat", "embeddedchat"):
+                counts_heal["rocketchat"] += ic
+            elif ol in ("circuitverse", "cv-frontend-vue"):
+                counts_heal["circuitverse"] += ic
+            elif ol in ("wikimedia", "wikieducationfoundation", "wikiedudashboard", "open-knowledge-impact-foundation", "campwiz-nxt-frontend2", "hatnote", "montage", "mediawiki-extensions-wikisource"):
+                counts_heal["wikimedia"] += ic
+        for d in default_orgs:
+            d["issue_count"] = counts_heal.get(d["id"], 0)
+        total_issues = sum(o.get("issue_count", 0) for o in all_orgs)
 
     return {
         "total_orgs": len(all_orgs),

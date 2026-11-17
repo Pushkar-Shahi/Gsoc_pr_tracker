@@ -481,8 +481,10 @@ class BackgroundWorkerService:
                     )
                 ).scalar() or 0
             if open_cnt == 0:
-                logger.info("Inbox empty on startup; launching initial 2-hour discovery scan...")
-                await self.trigger_cron_scan()
+                logger.info("Inbox empty on startup; restoring target org issues...")
+                from app.services.seed_data import ensure_target_org_seed_issues
+                async with self.session_factory() as db:
+                    await ensure_target_org_seed_issues(db)
         except asyncio.CancelledError:
             pass
         except Exception as e:

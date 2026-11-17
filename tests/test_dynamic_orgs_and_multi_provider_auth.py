@@ -133,23 +133,43 @@ async def test_non_admin_does_not_see_default_organizations():
 
 @pytest.mark.asyncio
 async def test_add_organization_by_url():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        token = generate_session_token(subject="admin-test", claims={"role": "owner", "tier": "pro"})
-        headers = {"Authorization": f"Bearer {token}"}
+    from unittest.mock import patch, MagicMock, AsyncMock
+    with patch("app.api.v1.issues.GitHubClient") as mock_gh_cls:
+        mock_gh = MagicMock()
+        mock_gh.get_repository = AsyncMock(return_value={
+            "owner": {"login": "pallets"},
+            "name": "click",
+            "full_name": "pallets/click",
+            "language": "Python",
+            "stargazers_count": 15000,
+            "open_issues_count": 100,
+            "license": {"spdx_id": "BSD-3-Clause"},
+            "html_url": "https://github.com/pallets/click",
+            "default_branch": "main",
+            "archived": False
+        })
+        mock_gh.get_repo_issues = AsyncMock(return_value=[])
+        mock_gh.search_issues = AsyncMock(return_value={"items": []})
+        mock_gh.get_issue_linked_prs = AsyncMock(return_value=[])
+        mock_gh_cls.return_value = mock_gh
 
-        # Add organization by issue tab URL
-        resp = await client.post(
-            "/api/v1/issues/add-org-by-url",
-            headers=headers,
-            json={"url": "https://github.com/pallets/click/issues", "custom_name": "Click CLI"}
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is True
-        assert data["owner"] == "pallets"
-        assert data["repo"] == "click"
-        assert "issues_imported" in data
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            token = generate_session_token(subject="admin-test", claims={"role": "owner", "tier": "pro"})
+            headers = {"Authorization": f"Bearer {token}"}
+
+            # Add organization by issue tab URL
+            resp = await client.post(
+                "/api/v1/issues/add-org-by-url",
+                headers=headers,
+                json={"url": "https://github.com/pallets/click/issues", "custom_name": "Click CLI"}
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["success"] is True
+            assert data["owner"] == "pallets"
+            assert data["repo"] == "click"
+            assert "issues_imported" in data
 
 
 @pytest.mark.asyncio
