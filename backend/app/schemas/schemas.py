@@ -136,7 +136,7 @@ class IssueListResponse(BaseModel):
 
 
 class IssueImportRequest(BaseModel):
-    url: str = Field(..., description="GitHub Issue URL (e.g. https://github.com/owner/repo/issues/123)")
+    url: str = Field(..., description="GitHub Issue URL (e.g. https://github.com/owner/repo/issues)")
 
 
 class IssueImportResponse(BaseModel):

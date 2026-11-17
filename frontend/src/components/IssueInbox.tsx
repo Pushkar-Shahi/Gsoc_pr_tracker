@@ -624,7 +624,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                   type="text"
                   value={importUrl}
                   onChange={(e) => setImportUrl(e.target.value)}
-                  placeholder="Enter GitHub issue URL (e.g. https://github.com/pylint-dev/pylint/issues/11713)"
+                  placeholder="Enter GitHub issue URL (e.g. https://github.com/numpy/numpy/issues)"
                   className="w-full bg-slate-50 dark:bg-[#05080f] border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-mono transition"
                 />
               </div>
@@ -657,7 +657,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
                 <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-semibold">Condition Validation Failed: </span>
-                  <span>{importError}</span>
+                  <span>{importError.replace(/^Condition Validation Failed:\s*/i, '')}</span>
                 </div>
               </div>
             )}

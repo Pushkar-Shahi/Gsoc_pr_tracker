@@ -1126,23 +1126,53 @@ export async function importIssue(url: string): Promise<{
       body: JSON.stringify({ url }),
     });
     if (res.ok) return await res.json();
-  } catch {
+    if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 422) {
+      const errJson = await res.json().catch(() => null);
+      if (errJson?.detail) {
+        const detailMsg = typeof errJson.detail === 'string' ? errJson.detail : errJson.detail.message || JSON.stringify(errJson.detail);
+        throw new Error(detailMsg);
+      }
+    }
+  } catch (err: any) {
+    if (err?.message && err.message !== "STATIC_HOSTING_HTML_RESPONSE" && !err.message.includes("Failed to fetch")) {
+      throw err;
+    }
     // Hosted Vercel fallback: parse GitHub issue URL directly
   }
 
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
-  if (match) {
-    const [, owner, repo, numStr] = match;
-    const issueNum = parseInt(numStr, 10);
+  const matchWithNum = url.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/i) ||
+                       url.match(/([^/]+)\/([^/#]+)#(\d+)/) ||
+                       url.match(/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+  const matchRepo = url.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)(?:\/issues)?\/?$/i) ||
+                    url.match(/^([^/]+)\/([^/]+)(?:\/issues)?\/?$/);
+
+  if (matchWithNum || matchRepo) {
+    let owner: string;
+    let repo: string;
+    let issueNum: number;
+    let htmlUrl: string;
+
+    if (matchWithNum) {
+      owner = matchWithNum[1] || matchWithNum[4] || matchWithNum[7];
+      repo = matchWithNum[2] || matchWithNum[5] || matchWithNum[8];
+      issueNum = parseInt(matchWithNum[3] || matchWithNum[6] || matchWithNum[9], 10);
+      htmlUrl = url.startsWith('http') ? url : `https://github.com/${owner}/${repo}/issues/${issueNum}`;
+    } else {
+      owner = matchRepo![1] || matchRepo![3];
+      repo = matchRepo![2] || matchRepo![4];
+      issueNum = 1;
+      htmlUrl = url.startsWith('http') ? url : `https://github.com/${owner}/${repo}/issues`;
+    }
+
     const customIssue: Issue = {
       id: `gh-custom-${owner}-${repo}-${issueNum}`,
       repository_id: `${owner}/${repo}`,
       github_id: issueNum,
       issue_number: issueNum,
-      title: `Imported Issue #${issueNum} from ${owner}/${repo}`,
+      title: matchWithNum ? `Imported Issue #${issueNum} from ${owner}/${repo}` : `Imported Open Issues from ${owner}/${repo}`,
       body: `Directly imported from ${url}`,
       author: 'contributor',
-      html_url: url,
+      html_url: htmlUrl,
       state: 'open',
       labels: [{ name: 'imported', color: '10b981' }],
       assignees: [],
@@ -1175,7 +1205,7 @@ export async function importIssue(url: string): Promise<{
       meets_all_conditions: true
     };
   }
-  throw new Error('Please enter a valid GitHub issue URL (e.g. https://github.com/numpy/numpy/issues/123)');
+  throw new Error('Please enter a valid GitHub issue URL (e.g. https://github.com/numpy/numpy/issues)');
 }
 
 export async function reconcileIssues(purge: boolean = false): Promise<{

@@ -734,26 +734,46 @@ async def import_issue(
     and saves/updates it in the system.
     """
     raw_url = payload.url.strip()
-    # Match patterns like:
+    # Match specific issue patterns:
     # https://github.com/owner/repo/issues/123
     # github.com/owner/repo/issues/123
     # owner/repo#123
     # owner/repo/issues/123
-    pattern = r"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+)/issues/(\d+)|([^/]+)/([^/#]+)#(\d+)|([^/]+)/([^/]+)/issues/(\d+)"
-    match = re.search(pattern, raw_url)
-    if not match:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid GitHub issue reference. Expected format: https://github.com/owner/repo/issues/123 or owner/repo#123"
-        )
-    
-    groups = match.groups()
-    if groups[0]:
-        owner, repo_name, issue_number = groups[0], groups[1], int(groups[2])
-    elif groups[3]:
-        owner, repo_name, issue_number = groups[3], groups[4], int(groups[5])
+    issue_pattern = r"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+)/issues/(\d+)|([^/]+)/([^/#]+)#(\d+)|([^/]+)/([^/]+)/issues/(\d+)"
+    # Match repository issues tab or repository patterns:
+    # https://github.com/owner/repo/issues
+    # github.com/owner/repo/issues
+    # https://github.com/owner/repo
+    # owner/repo/issues
+    # owner/repo
+    repo_pattern = r"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+)(?:/issues)?/?$|^([^/]+)/([^/]+)(?:/issues)?/?$"
+
+    match = re.search(issue_pattern, raw_url)
+    owner = None
+    repo_name = None
+    issue_number = None
+
+    if match:
+        groups = match.groups()
+        if groups[0]:
+            owner, repo_name, issue_number = groups[0], groups[1], int(groups[2])
+        elif groups[3]:
+            owner, repo_name, issue_number = groups[3], groups[4], int(groups[5])
+        else:
+            owner, repo_name, issue_number = groups[6], groups[7], int(groups[8])
     else:
-        owner, repo_name, issue_number = groups[6], groups[7], int(groups[8])
+        repo_match = re.search(repo_pattern, raw_url)
+        if repo_match:
+            r_groups = repo_match.groups()
+            if r_groups[0]:
+                owner, repo_name = r_groups[0], r_groups[1]
+            else:
+                owner, repo_name = r_groups[2], r_groups[3]
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Please enter a valid GitHub issue URL (e.g. https://github.com/numpy/numpy/issues)"
+            )
 
     # Fetch token from settings if saved in DB
     sett_stmt = select(PlatformSettings).where(PlatformSettings.id == 1)
@@ -791,9 +811,43 @@ async def import_issue(
                 },
             )
 
-    issue_data = await gh.get_issue(owner, repo_name, issue_number)
-    if not issue_data or "id" not in issue_data:
-        raise HTTPException(status_code=404, detail=f"GitHub issue #{issue_number} not found in '{owner}/{repo_name}'.")
+    if issue_number is None:
+        # Fetch open issues from target repo to select an issue for condition evaluation and ingest into inbox
+        repo_issues = await gh.get_repo_issues(owner, repo_name, state="open", per_page=30)
+        if not repo_issues:
+            search_res = await gh.search_issues(f"repo:{owner}/{repo_name} is:issue is:open", per_page=30)
+            repo_issues = search_res.get("items", [])
+        if not repo_issues:
+            repo_issues = await gh.get_repo_issues(owner, repo_name, state="all", per_page=10)
+        if not repo_issues:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No issues found in repository '{owner}/{repo_name}'. Please enter a valid GitHub issue URL (e.g. https://github.com/numpy/numpy/issues)"
+            )
+        issue_data = repo_issues[0]
+        issue_number = issue_data.get("number")
+        if not issue_number:
+            raise HTTPException(
+                status_code=400,
+                detail="Please enter a valid GitHub issue URL (e.g. https://github.com/numpy/numpy/issues)"
+            )
+        full_issue = await gh.get_issue(owner, repo_name, issue_number)
+        if full_issue and "id" in full_issue:
+            issue_data = full_issue
+        try:
+            discovery = DiscoveryService(db=db, github_client=gh)
+            repo_lang = repo_data.get("language") or "Python"
+            for item in repo_issues[1:15]:
+                if isinstance(item, dict) and item.get("number"):
+                    if not item.get("repository_url"):
+                        item["repository_url"] = f"https://api.github.com/repos/{owner}/{repo_name}"
+                    await discovery._ingest_issue_item(item, repo_lang)
+        except Exception as e:
+            logger.warning(f"Error ingesting supplementary repo issues: {e}")
+    else:
+        issue_data = await gh.get_issue(owner, repo_name, issue_number)
+        if not issue_data or "id" not in issue_data:
+            raise HTTPException(status_code=404, detail=f"GitHub issue #{issue_number} not found in '{owner}/{repo_name}'.")
 
     if "pull_request" in issue_data:
         raise HTTPException(status_code=400, detail="The provided reference is a Pull Request, not an issue.")
