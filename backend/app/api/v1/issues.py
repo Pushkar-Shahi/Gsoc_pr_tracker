@@ -90,7 +90,7 @@ async def list_issues(
 
     if gsoc_org and gsoc_org.strip() and gsoc_org.strip().lower() != "all":
         org_filter = gsoc_org.strip().lower()
-        if org_filter in ("numfocus", "psf", "python", "deepchem", "kornia"):
+        if org_filter in ("numfocus", "psf", "python", "deepchem", "kornia", "zulip", "learningequality", "rocketchat", "circuitverse", "wikimedia"):
             if not is_admin:
                 # Non-admin accounts do not have access to default orgs (like Kornia etc.)
                 filters.append(Repository.id == "org-restricted-non-admin")
@@ -107,6 +107,16 @@ async def list_issues(
                     target_owners = ["deepchem"]
                 elif org_filter == "kornia":
                     target_owners = ["kornia"]
+                elif org_filter == "zulip":
+                    target_owners = ["zulip"]
+                elif org_filter == "learningequality":
+                    target_owners = ["learningequality", "kolibri", "studio", "kolibri-design-system"]
+                elif org_filter == "rocketchat":
+                    target_owners = ["rocketchat", "rocket.chat", "embeddedchat"]
+                elif org_filter == "circuitverse":
+                    target_owners = ["circuitverse", "cv-frontend-vue"]
+                elif org_filter == "wikimedia":
+                    target_owners = ["wikimedia", "wikieducationfoundation", "wikiedudashboard", "open-knowledge-impact-foundation", "campwiz-nxt-frontend2", "hatnote", "montage", "mediawiki-extensions-wikisource"]
                 filters.append(
                     or_(
                         func.lower(Repository.owner).in_(target_owners),
@@ -324,6 +334,11 @@ async def get_tracked_organizations(
             {"id": "psf", "label": "Python (PSF)", "icon": "🐍", "is_default": True},
             {"id": "deepchem", "label": "DeepChem", "icon": "🧪", "is_default": True},
             {"id": "kornia", "label": "Kornia", "icon": "👁️", "is_default": True},
+            {"id": "zulip", "label": "Zulip", "icon": "💬", "is_default": True},
+            {"id": "learningequality", "label": "Learning Equality", "icon": "📚", "is_default": True},
+            {"id": "rocketchat", "label": "Rocket.Chat", "icon": "🚀", "is_default": True},
+            {"id": "circuitverse", "label": "CircuitVerse.org", "icon": "⚡", "is_default": True},
+            {"id": "wikimedia", "label": "Wikimedia Foundation", "icon": "🌐", "is_default": True},
         ]
 
     org_id = ctx.organization.id if (ctx and getattr(ctx, "organization", None)) else None
@@ -356,7 +371,11 @@ async def get_tracked_organizations(
     res = await db.execute(stmt)
     rows = res.all()
 
-    counts: Dict[str, int] = {"numfocus": 0, "psf": 0, "deepchem": 0, "kornia": 0}
+    counts: Dict[str, int] = {
+        "numfocus": 0, "psf": 0, "deepchem": 0, "kornia": 0,
+        "zulip": 0, "learningequality": 0, "rocketchat": 0,
+        "circuitverse": 0, "wikimedia": 0
+    }
     custom_orgs_map: Dict[str, Dict[str, Any]] = {}
 
     for row in rows:
@@ -375,6 +394,16 @@ async def get_tracked_organizations(
             counts["deepchem"] += iss_count
         elif owner_lower == "kornia":
             counts["kornia"] += iss_count
+        elif owner_lower == "zulip":
+            counts["zulip"] += iss_count
+        elif owner_lower == "learningequality":
+            counts["learningequality"] += iss_count
+        elif owner_lower in ("rocketchat", "rocket.chat"):
+            counts["rocketchat"] += iss_count
+        elif owner_lower == "circuitverse":
+            counts["circuitverse"] += iss_count
+        elif owner_lower in ("wikimedia", "wikieducationfoundation", "open-knowledge-impact-foundation", "hatnote"):
+            counts["wikimedia"] += iss_count
         else:
             org_key = owner_lower
             if org_key not in custom_orgs_map:

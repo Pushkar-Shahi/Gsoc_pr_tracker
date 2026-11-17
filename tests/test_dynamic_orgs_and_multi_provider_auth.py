@@ -91,12 +91,17 @@ async def test_dynamic_organizations_list():
         assert "organizations" in data
         assert data["total_orgs"] >= 4
 
-        # Check default 4 organizations exist for admin
+        # Check default organizations exist for admin
         org_ids = [org["id"] for org in data["organizations"]]
         assert "numfocus" in org_ids
         assert "psf" in org_ids
         assert "deepchem" in org_ids
         assert "kornia" in org_ids
+        assert "zulip" in org_ids
+        assert "learningequality" in org_ids
+        assert "rocketchat" in org_ids
+        assert "circuitverse" in org_ids
+        assert "wikimedia" in org_ids
 
 
 @pytest.mark.asyncio
@@ -113,12 +118,10 @@ async def test_non_admin_does_not_see_default_organizations():
         assert "total_orgs" in data
         assert "organizations" in data
 
-        # Verify default organizations (NumFOCUS, PSF, DeepChem, Kornia) are excluded for non-admin
+        # Verify default organizations are excluded for non-admin
         org_ids = [org["id"] for org in data["organizations"]]
-        assert "numfocus" not in org_ids
-        assert "psf" not in org_ids
-        assert "deepchem" not in org_ids
-        assert "kornia" not in org_ids
+        for default_id in ["numfocus", "psf", "deepchem", "kornia", "zulip", "learningequality", "rocketchat", "circuitverse", "wikimedia"]:
+            assert default_id not in org_ids
 
         # Attempt to filter by a default org should yield 0 results
         issues_resp = await client.get("/api/v1/issues?gsoc_org=kornia", headers=headers)

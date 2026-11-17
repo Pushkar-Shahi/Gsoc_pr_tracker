@@ -403,6 +403,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
   };
 
   // Dynamic Tracked Organizations & + Add Org State
+  const DEFAULT_ORG_IDS = ['numfocus', 'psf', 'deepchem', 'kornia', 'zulip', 'learningequality', 'rocketchat', 'circuitverse', 'wikimedia'];
   const [trackedOrgs, setTrackedOrgs] = useState<TrackedOrganization[]>(() => {
     if (isAdmin) {
       return [
@@ -410,6 +411,11 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
         { id: 'psf', label: 'Python (PSF)', icon: '🐍', is_default: true, issue_count: 0 },
         { id: 'deepchem', label: 'DeepChem', icon: '🧪', is_default: true, issue_count: 0 },
         { id: 'kornia', label: 'Kornia', icon: '👁️', is_default: true, issue_count: 0 },
+        { id: 'zulip', label: 'Zulip', icon: '💬', is_default: true, issue_count: 0 },
+        { id: 'learningequality', label: 'Learning Equality', icon: '📚', is_default: true, issue_count: 0 },
+        { id: 'rocketchat', label: 'Rocket.Chat', icon: '🚀', is_default: true, issue_count: 0 },
+        { id: 'circuitverse', label: 'CircuitVerse.org', icon: '⚡', is_default: true, issue_count: 0 },
+        { id: 'wikimedia', label: 'Wikimedia Foundation', icon: '🌐', is_default: true, issue_count: 0 },
       ];
     }
     return [];
@@ -427,7 +433,7 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
       if (data && Array.isArray(data.organizations)) {
         const orgs = isAdmin
           ? data.organizations
-          : data.organizations.filter(o => !o.is_default && !['numfocus', 'psf', 'deepchem', 'kornia'].includes(o.id.toLowerCase()));
+          : data.organizations.filter(o => !o.is_default && !DEFAULT_ORG_IDS.includes(o.id.toLowerCase()));
         setTrackedOrgs(orgs);
 
         setSelectedGsocOrg(current => {
@@ -445,9 +451,9 @@ export const IssueInbox: React.FC<IssueInboxProps> = ({
 
   useEffect(() => {
     if (!isAdmin) {
-      setTrackedOrgs(prev => prev.filter(o => !o.is_default && !['numfocus', 'psf', 'deepchem', 'kornia'].includes(o.id.toLowerCase())));
+      setTrackedOrgs(prev => prev.filter(o => !o.is_default && !DEFAULT_ORG_IDS.includes(o.id.toLowerCase())));
       setSelectedGsocOrg(current => {
-        if (['numfocus', 'psf', 'deepchem', 'kornia'].includes(current.toLowerCase())) {
+        if (DEFAULT_ORG_IDS.includes(current.toLowerCase())) {
           triggerFilters({ gsoc_org: '' });
           return '';
         }

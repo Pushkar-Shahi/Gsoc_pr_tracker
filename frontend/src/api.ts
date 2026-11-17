@@ -808,6 +808,216 @@ const DEFAULT_TARGET_ORG_ISSUES: Issue[] = [
       stars_count: 10400,
       open_issues_count: 220
     }
+  },
+  {
+    id: 'seed-zulip-1',
+    repository_id: 'zulip/zulip',
+    github_id: 40708,
+    issue_number: 40708,
+    title: 'Scheduled messages are sent to the old topic after the topic is resolved or renamed',
+    body: 'When a topic is renamed or marked as resolved, scheduled messages queued previously should route to the updated topic title.',
+    author: 'zulip-contributor',
+    html_url: 'https://github.com/zulip/zulip/issues/40708',
+    state: 'open',
+    labels: [{ name: 'area: scheduled messages', color: 'e11d48' }, { name: 'bug', color: 'd73a4a' }],
+    assignees: [],
+    comments_count: 2,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 93,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 3,
+    ranking_breakdown: {
+      skill_match: 94,
+      clarity_score: 95,
+      repo_health_score: 98,
+      effort_score: 92,
+      reasons: ['Zulip GSoC Organization', 'Python / Django backend', 'Zero assignees']
+    },
+    repository: {
+      id: 'zulip/zulip',
+      owner: 'zulip',
+      name: 'zulip',
+      full_name: 'zulip/zulip',
+      html_url: 'https://github.com/zulip/zulip',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Zulip',
+      stars_count: 21000,
+      open_issues_count: 1400
+    }
+  },
+  {
+    id: 'seed-learningequality-1',
+    repository_id: 'learningequality/kolibri',
+    github_id: 15916,
+    issue_number: 15916,
+    title: 'kolibri-server source package build aborts on tests directory exclusion',
+    body: 'Source package build fails when searching for tests directory excluded from original release archive.',
+    author: 'ed-dev',
+    html_url: 'https://github.com/learningequality/kolibri/issues/15916',
+    state: 'open',
+    labels: [{ name: 'build', color: '0284c7' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 0,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 18).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 95,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 4,
+    ranking_breakdown: {
+      skill_match: 96,
+      clarity_score: 97,
+      repo_health_score: 92,
+      effort_score: 94,
+      reasons: ['Learning Equality GSoC Organization', 'Python packaging match', 'Zero assignees']
+    },
+    repository: {
+      id: 'learningequality/kolibri',
+      owner: 'learningequality',
+      name: 'kolibri',
+      full_name: 'learningequality/kolibri',
+      html_url: 'https://github.com/learningequality/kolibri',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Learning Equality',
+      stars_count: 3200,
+      open_issues_count: 180
+    }
+  },
+  {
+    id: 'seed-rocketchat-1',
+    repository_id: 'RocketChat/EmbeddedChat',
+    github_id: 1433,
+    issue_number: 1433,
+    title: 'bug(layout-editor): theme refinements like "change it to dark" are ignored with AI providers',
+    body: 'Ensure theme toggle refinement commands are parsed properly when streaming LLM responses in layout editor.',
+    author: 'rc-dev',
+    html_url: 'https://github.com/RocketChat/EmbeddedChat/issues/1433',
+    state: 'open',
+    labels: [{ name: 'bug', color: 'd73a4a' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 1,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 8).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 96,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 3,
+    ranking_breakdown: {
+      skill_match: 97,
+      clarity_score: 96,
+      repo_health_score: 95,
+      effort_score: 96,
+      reasons: ['Rocket.Chat GSoC Organization', 'TypeScript / React frontend', 'Zero assignees']
+    },
+    repository: {
+      id: 'RocketChat/EmbeddedChat',
+      owner: 'RocketChat',
+      name: 'EmbeddedChat',
+      full_name: 'RocketChat/EmbeddedChat',
+      html_url: 'https://github.com/RocketChat/EmbeddedChat',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Rocket.Chat',
+      stars_count: 950,
+      open_issues_count: 45
+    }
+  },
+  {
+    id: 'seed-circuitverse-1',
+    repository_id: 'CircuitVerse/cv-frontend-vue',
+    github_id: 1542,
+    issue_number: 1542,
+    title: 'Fix typo in PropertiesPanel prop name panleBodyData across desktop and child components',
+    body: 'Standardize prop naming to panelBodyData across desktop views and circuit canvas.',
+    author: 'circuit-dev',
+    html_url: 'https://github.com/CircuitVerse/cv-frontend-vue/issues/1542',
+    state: 'open',
+    labels: [{ name: 'bug', color: 'd73a4a' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 0,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 10).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 97,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 2,
+    ranking_breakdown: {
+      skill_match: 98,
+      clarity_score: 99,
+      repo_health_score: 94,
+      effort_score: 98,
+      reasons: ['CircuitVerse.org GSoC Organization', 'Vue.js / JavaScript match', 'Zero assignees']
+    },
+    repository: {
+      id: 'CircuitVerse/cv-frontend-vue',
+      owner: 'CircuitVerse',
+      name: 'cv-frontend-vue',
+      full_name: 'CircuitVerse/cv-frontend-vue',
+      html_url: 'https://github.com/CircuitVerse/cv-frontend-vue',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'CircuitVerse.org',
+      stars_count: 600,
+      open_issues_count: 35
+    }
+  },
+  {
+    id: 'seed-wikimedia-1',
+    repository_id: 'WikiEducationFoundation/WikiEduDashboard',
+    github_id: 7279,
+    issue_number: 7279,
+    title: 'Improve Sidekiq worker concurrency and job monitoring documentation',
+    body: 'Add setup instructions for Sidekiq worker pools and healthcheck endpoints in development.',
+    author: 'wiki-dev',
+    html_url: 'https://github.com/WikiEducationFoundation/WikiEduDashboard/issues/7279',
+    state: 'open',
+    labels: [{ name: 'documentation', color: '0284c7' }, { name: 'good first issue', color: '10b981' }],
+    assignees: [],
+    comments_count: 0,
+    github_created_at: new Date(Date.now() - 3600 * 1000 * 14).toISOString(),
+    is_eligible: true,
+    license_status: 'approved',
+    policy_status: 'ready_to_work',
+    ranking_score: 95,
+    difficulty_estimate: 'beginner',
+    estimated_effort_hours: 2,
+    ranking_breakdown: {
+      skill_match: 96,
+      clarity_score: 97,
+      repo_health_score: 95,
+      effort_score: 95,
+      reasons: ['Wikimedia Foundation GSoC Organization', 'Documentation / Setup match', 'Zero assignees']
+    },
+    repository: {
+      id: 'WikiEducationFoundation/WikiEduDashboard',
+      owner: 'WikiEducationFoundation',
+      name: 'WikiEduDashboard',
+      full_name: 'WikiEducationFoundation/WikiEduDashboard',
+      html_url: 'https://github.com/WikiEducationFoundation/WikiEduDashboard',
+      default_branch: 'main',
+      is_fork: false,
+      is_archived: false,
+      is_gsoc: true,
+      gsoc_org_name: 'Wikimedia Foundation',
+      stars_count: 1800,
+      open_issues_count: 90
+    }
   }
 ];
 
@@ -912,7 +1122,7 @@ export async function fetchIssuesFromGitHub(params: {
   const page = params.page || 1;
   const pageSize = params.page_size || 25;
 
-  let orgFilter = 'org:NumFOCUS org:psf org:deepchem org:kornia';
+  let orgFilter = 'org:NumFOCUS org:psf org:deepchem org:kornia org:zulip org:learningequality org:RocketChat org:CircuitVerse org:wikimedia';
   if (params.gsoc_org) {
     const orgLower = params.gsoc_org.toLowerCase();
     if (orgLower.includes('numfocus')) {
@@ -923,6 +1133,16 @@ export async function fetchIssuesFromGitHub(params: {
       orgFilter = 'org:deepchem';
     } else if (orgLower.includes('kornia')) {
       orgFilter = 'org:kornia';
+    } else if (orgLower.includes('zulip')) {
+      orgFilter = 'org:zulip';
+    } else if (orgLower.includes('learningequality')) {
+      orgFilter = 'org:learningequality';
+    } else if (orgLower.includes('rocketchat')) {
+      orgFilter = 'org:RocketChat';
+    } else if (orgLower.includes('circuitverse')) {
+      orgFilter = 'org:CircuitVerse';
+    } else if (orgLower.includes('wikimedia')) {
+      orgFilter = 'org:wikimedia org:WikiEducationFoundation org:Open-Knowledge-Impact-Foundation org:hatnote';
     }
   }
 
@@ -959,6 +1179,16 @@ export async function fetchIssuesFromGitHub(params: {
           gsocOrg = 'DeepChem';
         } else if (ownerLower === 'kornia') {
           gsocOrg = 'Kornia';
+        } else if (ownerLower === 'zulip') {
+          gsocOrg = 'Zulip';
+        } else if (ownerLower === 'learningequality') {
+          gsocOrg = 'Learning Equality';
+        } else if (['rocketchat', 'rocket.chat'].includes(ownerLower)) {
+          gsocOrg = 'Rocket.Chat';
+        } else if (ownerLower === 'circuitverse') {
+          gsocOrg = 'CircuitVerse.org';
+        } else if (['wikimedia', 'wikieducationfoundation', 'open-knowledge-impact-foundation', 'hatnote'].includes(ownerLower)) {
+          gsocOrg = 'Wikimedia Foundation';
         }
 
         const labels = (gh.labels || []).map((l: any) => typeof l === 'string' ? l : { name: l.name, color: l.color });

@@ -38,6 +38,15 @@ GSOC_ORGS_MAP: Dict[str, str] = {
 
     # Web, Collaboration, Education & Social
     "zulip": "Zulip",
+    "learningequality": "Learning Equality",
+    "kolibri": "Learning Equality (Kolibri)",
+    "studio": "Learning Equality (Studio)",
+    "kolibri-design-system": "Learning Equality (Design System)",
+    "rocketchat": "Rocket.Chat",
+    "rocket.chat": "Rocket.Chat",
+    "embeddedchat": "Rocket.Chat (EmbeddedChat)",
+    "circuitverse": "CircuitVerse.org",
+    "cv-frontend-vue": "CircuitVerse.org (Frontend Vue)",
     "oppia": "Oppia Foundation",
     "freecodecamp": "freeCodeCamp",
     "metacall": "MetaCall",
@@ -59,6 +68,13 @@ GSOC_ORGS_MAP: Dict[str, str] = {
     "jenkins": "Jenkins",
     "jenkinsci": "Jenkins",
     "wikimedia": "Wikimedia Foundation",
+    "wikieducationfoundation": "Wikimedia Foundation (WikiEdu)",
+    "wikiedudashboard": "Wikimedia Foundation (WikiEduDashboard)",
+    "open-knowledge-impact-foundation": "Wikimedia Foundation (OKIF)",
+    "campwiz-nxt-frontend2": "Wikimedia Foundation (CampWiz)",
+    "hatnote": "Wikimedia Foundation (Hatnote)",
+    "montage": "Wikimedia Foundation (Montage)",
+    "mediawiki-extensions-wikisource": "Wikimedia Foundation (Wikisource)",
     "gnome": "GNOME Foundation",
     "kde": "KDE",
     "llvm": "LLVM Compiler Infrastructure",
@@ -132,6 +148,34 @@ FOCUS_GSOC_ORGS: Dict[str, str] = {
 
     # Kornia
     "kornia": "Kornia",
+
+    # Zulip
+    "zulip": "Zulip",
+
+    # Learning Equality
+    "learningequality": "Learning Equality",
+    "kolibri": "Learning Equality",
+    "studio": "Learning Equality",
+    "kolibri-design-system": "Learning Equality",
+
+    # Rocket.Chat
+    "rocketchat": "Rocket.Chat",
+    "rocket.chat": "Rocket.Chat",
+    "embeddedchat": "Rocket.Chat",
+
+    # CircuitVerse.org
+    "circuitverse": "CircuitVerse.org",
+    "cv-frontend-vue": "CircuitVerse.org",
+
+    # Wikimedia Foundation
+    "wikimedia": "Wikimedia Foundation",
+    "wikieducationfoundation": "Wikimedia Foundation",
+    "wikiedudashboard": "Wikimedia Foundation",
+    "open-knowledge-impact-foundation": "Wikimedia Foundation",
+    "campwiz-nxt-frontend2": "Wikimedia Foundation",
+    "hatnote": "Wikimedia Foundation",
+    "montage": "Wikimedia Foundation",
+    "mediawiki-extensions-wikisource": "Wikimedia Foundation",
 }
 FOCUS_GSOC_OWNERS = set(FOCUS_GSOC_ORGS.keys())
 

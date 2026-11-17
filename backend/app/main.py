@@ -63,6 +63,184 @@ async def seed_initial_data_if_needed():
 
         logger.info("Platform settings verified. Ready for PR & Contribution tracking.")
 
+        # Seed new requested organizations (Zulip, Learning Equality, Rocket.Chat, CircuitVerse, Wikimedia)
+        try:
+            from datetime import datetime
+            new_org_repos = [
+                {
+                    "owner": "zulip", "name": "zulip", "full_name": "zulip/zulip",
+                    "html_url": "https://github.com/zulip/zulip", "primary_language": "Python",
+                    "license_spdx": "Apache-2.0", "stars_count": 21000, "gsoc_org_name": "Zulip",
+                    "issue": {
+                        "github_id": 6420284631, "issue_number": 40708,
+                        "title": "Scheduled messages are sent to the old topic after the topic is resolved or renamed",
+                        "body": "When a topic is renamed or marked as resolved, scheduled messages queued previously should route to the updated topic title.",
+                        "html_url": "https://github.com/zulip/zulip/issues/40708",
+                        "labels": [{"name": "area: scheduled messages", "color": "e11d48"}, {"name": "bug", "color": "d73a4a"}],
+                        "ranking_score": 92.0, "difficulty_estimate": "beginner", "estimated_effort_hours": 3,
+                    }
+                },
+                {
+                    "owner": "learningequality", "name": "kolibri", "full_name": "learningequality/kolibri",
+                    "html_url": "https://github.com/learningequality/kolibri", "primary_language": "Python",
+                    "license_spdx": "MIT", "stars_count": 3200, "gsoc_org_name": "Learning Equality",
+                    "issue": {
+                        "github_id": 6433233795, "issue_number": 15916,
+                        "title": "kolibri-server source package build aborts on `tests/`, which the orig tarball excludes",
+                        "body": "Source package build fails when searching for tests directory excluded from original release archive.",
+                        "html_url": "https://github.com/learningequality/kolibri/issues/15916",
+                        "labels": [{"name": "build", "color": "0284c7"}, {"name": "good first issue", "color": "10b981"}],
+                        "ranking_score": 94.0, "difficulty_estimate": "beginner", "estimated_effort_hours": 4,
+                    }
+                },
+                {
+                    "owner": "learningequality", "name": "studio", "full_name": "learningequality/studio",
+                    "html_url": "https://github.com/learningequality/studio", "primary_language": "Python",
+                    "license_spdx": "MIT", "stars_count": 800, "gsoc_org_name": "Learning Equality",
+                },
+                {
+                    "owner": "learningequality", "name": "kolibri-design-system", "full_name": "learningequality/kolibri-design-system",
+                    "html_url": "https://github.com/learningequality/kolibri-design-system", "primary_language": "JavaScript",
+                    "license_spdx": "MIT", "stars_count": 350, "gsoc_org_name": "Learning Equality",
+                },
+                {
+                    "owner": "RocketChat", "name": "Rocket.Chat", "full_name": "RocketChat/Rocket.Chat",
+                    "html_url": "https://github.com/rocketchat/rocket.chat", "primary_language": "TypeScript",
+                    "license_spdx": "GPL-3.0", "stars_count": 41000, "gsoc_org_name": "Rocket.Chat",
+                    "issue": {
+                        "github_id": 6432954219, "issue_number": 43767,
+                        "title": "Navigation sidebar accessibility and theme variations",
+                        "body": "Allow side navigation variations to respect compact view mode and high contrast accessibility settings.",
+                        "html_url": "https://github.com/rocketchat/rocket.chat/issues/43767",
+                        "labels": [{"name": "ui/ux", "color": "8b5cf6"}, {"name": "accessibility", "color": "f59e0b"}],
+                        "ranking_score": 89.0, "difficulty_estimate": "intermediate", "estimated_effort_hours": 6,
+                    }
+                },
+                {
+                    "owner": "RocketChat", "name": "EmbeddedChat", "full_name": "RocketChat/EmbeddedChat",
+                    "html_url": "https://github.com/RocketChat/EmbeddedChat", "primary_language": "TypeScript",
+                    "license_spdx": "MIT", "stars_count": 950, "gsoc_org_name": "Rocket.Chat",
+                    "issue": {
+                        "github_id": 6411254188, "issue_number": 1433,
+                        "title": "bug(layout-editor): theme refinements like 'change it to dark' are ignored with AI providers",
+                        "body": "Ensure theme toggle refinement commands are parsed properly when streaming LLM responses in layout editor.",
+                        "html_url": "https://github.com/RocketChat/EmbeddedChat/issues/1433",
+                        "labels": [{"name": "bug", "color": "d73a4a"}, {"name": "good first issue", "color": "10b981"}],
+                        "ranking_score": 96.0, "difficulty_estimate": "beginner", "estimated_effort_hours": 3,
+                    }
+                },
+                {
+                    "owner": "CircuitVerse", "name": "CircuitVerse", "full_name": "CircuitVerse/CircuitVerse",
+                    "html_url": "https://github.com/circuitverse/circuitverse", "primary_language": "Ruby",
+                    "license_spdx": "GPL-3.0", "stars_count": 2300, "gsoc_org_name": "CircuitVerse.org",
+                    "issue": {
+                        "github_id": 6422610048, "issue_number": 8189,
+                        "title": "ActiveRecord::QueryCanceled statement timeout optimization on simulator circuits index",
+                        "body": "Optimize heavy query joins when retrieving public circuits with multiple component tags.",
+                        "html_url": "https://github.com/circuitverse/circuitverse/issues/8189",
+                        "labels": [{"name": "performance", "color": "e11d48"}, {"name": "backend", "color": "2563eb"}],
+                        "ranking_score": 91.0, "difficulty_estimate": "intermediate", "estimated_effort_hours": 5,
+                    }
+                },
+                {
+                    "owner": "CircuitVerse", "name": "cv-frontend-vue", "full_name": "CircuitVerse/cv-frontend-vue",
+                    "html_url": "https://github.com/CircuitVerse/cv-frontend-vue", "primary_language": "JavaScript",
+                    "license_spdx": "GPL-3.0", "stars_count": 600, "gsoc_org_name": "CircuitVerse.org",
+                    "issue": {
+                        "github_id": 6422411851, "issue_number": 1542,
+                        "title": "Fix typo in PropertiesPanel prop name panleBodyData across desktop and child components",
+                        "body": "Standardize prop naming to panelBodyData across desktop views and circuit canvas.",
+                        "html_url": "https://github.com/CircuitVerse/cv-frontend-vue/issues/1542",
+                        "labels": [{"name": "bug", "color": "d73a4a"}, {"name": "good first issue", "color": "10b981"}],
+                        "ranking_score": 97.0, "difficulty_estimate": "beginner", "estimated_effort_hours": 2,
+                    }
+                },
+                {
+                    "owner": "WikiEducationFoundation", "name": "WikiEduDashboard", "full_name": "WikiEducationFoundation/WikiEduDashboard",
+                    "html_url": "https://github.com/WikiEducationFoundation/WikiEduDashboard", "primary_language": "Ruby",
+                    "license_spdx": "MIT", "stars_count": 1800, "gsoc_org_name": "Wikimedia Foundation",
+                    "issue": {
+                        "github_id": 6363715530, "issue_number": 7279,
+                        "title": "Improve Sidekiq worker concurrency and job monitoring documentation",
+                        "body": "Add setup instructions for Sidekiq worker pools and healthcheck endpoints in development.",
+                        "html_url": "https://github.com/WikiEducationFoundation/WikiEduDashboard/issues/7279",
+                        "labels": [{"name": "documentation", "color": "0284c7"}, {"name": "good first issue", "color": "10b981"}],
+                        "ranking_score": 95.0, "difficulty_estimate": "beginner", "estimated_effort_hours": 2,
+                    }
+                },
+                {
+                    "owner": "wikimedia", "name": "mediawiki-extensions-Wikisource", "full_name": "wikimedia/mediawiki-extensions-Wikisource",
+                    "html_url": "https://github.com/wikimedia/mediawiki-extensions-Wikisource", "primary_language": "PHP",
+                    "license_spdx": "GPL-2.0", "stars_count": 350, "gsoc_org_name": "Wikimedia Foundation",
+                },
+                {
+                    "owner": "Open-Knowledge-Impact-Foundation", "name": "campwiz-nxt-frontend2", "full_name": "Open-Knowledge-Impact-Foundation/campwiz-nxt-frontend2",
+                    "html_url": "https://github.com/Open-Knowledge-Impact-Foundation/campwiz-nxt-frontend2", "primary_language": "JavaScript",
+                    "license_spdx": "MIT", "stars_count": 120, "gsoc_org_name": "Wikimedia Foundation",
+                },
+                {
+                    "owner": "hatnote", "name": "montage", "full_name": "hatnote/montage",
+                    "html_url": "https://github.com/hatnote/montage", "primary_language": "Python",
+                    "license_spdx": "MIT", "stars_count": 280, "gsoc_org_name": "Wikimedia Foundation",
+                },
+            ]
+
+            for entry in new_org_repos:
+                fn = entry["full_name"]
+                r_stmt = select(Repository).where(Repository.full_name == fn)
+                existing_r = (await session.execute(r_stmt)).scalar_one_or_none()
+                if not existing_r:
+                    repo_obj = Repository(
+                        owner=entry["owner"],
+                        name=entry["name"],
+                        full_name=fn,
+                        html_url=entry["html_url"],
+                        default_branch="main",
+                        primary_language=entry.get("primary_language", "Python"),
+                        license_spdx=entry.get("license_spdx", "MIT"),
+                        stars_count=entry.get("stars_count", 100),
+                        is_gsoc=True,
+                        gsoc_org_name=entry.get("gsoc_org_name"),
+                        last_inspected_at=datetime.utcnow()
+                    )
+                    session.add(repo_obj)
+                    await session.flush()
+                else:
+                    repo_obj = existing_r
+                    repo_obj.is_gsoc = True
+                    repo_obj.gsoc_org_name = entry.get("gsoc_org_name")
+                    await session.flush()
+
+                iss_data = entry.get("issue")
+                if iss_data:
+                    i_stmt = select(Issue).where(Issue.github_id == iss_data["github_id"])
+                    existing_i = (await session.execute(i_stmt)).scalar_one_or_none()
+                    if not existing_i:
+                        new_iss = Issue(
+                            repository_id=repo_obj.id,
+                            github_id=iss_data["github_id"],
+                            issue_number=iss_data["issue_number"],
+                            title=iss_data["title"],
+                            body=iss_data["body"],
+                            html_url=iss_data["html_url"],
+                            state="open",
+                            labels=iss_data.get("labels", []),
+                            assignees=[],
+                            is_eligible=True,
+                            license_status="VERIFIED_OSI",
+                            policy_status="READY_TO_WORK",
+                            ranking_score=iss_data.get("ranking_score", 90.0),
+                            difficulty_estimate=iss_data.get("difficulty_estimate", "beginner"),
+                            estimated_effort_hours=iss_data.get("estimated_effort_hours", 4),
+                            last_verified_at=datetime.utcnow()
+                        )
+                        session.add(new_iss)
+
+            await session.commit()
+            logger.info("New organizations and repositories seeded successfully.")
+        except Exception as seed_err:
+            logger.warning(f"Error seeding new organizations: {seed_err}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing Issue-to-PR backend application...")

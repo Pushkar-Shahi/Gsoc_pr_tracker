@@ -55,6 +55,23 @@ class DiscoveryService:
             ("deepchem", "deepchem", "Python"),
             # Kornia
             ("kornia", "kornia", "Python"),
+            # Zulip
+            ("zulip", "zulip", "Python"),
+            # Learning Equality
+            ("learningequality", "kolibri", "Python"),
+            ("learningequality", "studio", "Python"),
+            ("learningequality", "kolibri-design-system", "JavaScript"),
+            # Rocket.Chat
+            ("RocketChat", "Rocket.Chat", "TypeScript"),
+            ("RocketChat", "EmbeddedChat", "TypeScript"),
+            # CircuitVerse.org
+            ("CircuitVerse", "CircuitVerse", "Ruby"),
+            ("CircuitVerse", "cv-frontend-vue", "JavaScript"),
+            # Wikimedia Foundation
+            ("wikimedia", "mediawiki-extensions-Wikisource", "PHP"),
+            ("WikiEducationFoundation", "WikiEduDashboard", "Ruby"),
+            ("Open-Knowledge-Impact-Foundation", "campwiz-nxt-frontend2", "JavaScript"),
+            ("hatnote", "montage", "Python"),
         ]
 
         http_sem = asyncio.Semaphore(6)
@@ -81,7 +98,7 @@ class DiscoveryService:
             ),
             (
                 "gsoc:aiml:batch2:open:unassigned",
-                "is:issue is:open no:assignee archived:false (org:psf OR org:python OR org:pallets OR org:pypa OR org:deepchem OR org:kornia)",
+                "is:issue is:open no:assignee archived:false (org:psf OR org:python OR org:pallets OR org:pypa OR org:deepchem OR org:kornia OR org:zulip OR org:learningequality OR org:RocketChat OR org:CircuitVerse OR org:wikimedia)",
             ),
         ]
 
